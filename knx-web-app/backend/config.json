@@ -1,0 +1,34 @@
+{
+  "knxIp": "192.168.1.85",
+  "rooms": [
+    {
+      "id": "1774709374928",
+      "name": "Büro",
+      "functions": [
+        {
+          "id": "1774710180077",
+          "name": "Aus",
+          "type": "scene",
+          "groupAddress": "3/5/5",
+          "sceneNumber": 1
+        },
+        {
+          "id": "1774709875210",
+          "name": "Hell",
+          "type": "scene",
+          "groupAddress": "3/5/5",
+          "sceneNumber": 2
+        },
+        {
+          "id": "1774710929240",
+          "name": "Linke Terassentür sperren",
+          "type": "switch",
+          "groupAddress": "3/2/201",
+          "sceneNumber": 1,
+          "statusGroupAddress": "3/7/47"
+        }
+      ]
+    }
+  ],
+  "knxPort": 3671
+}
