@@ -138,6 +138,20 @@ app.post('/api/action', (req, res) => {
   }
 });
 
+// Serve frontend static files
+const FRONTEND_DIST = path.join(__dirname, '..', 'frontend', 'dist');
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  
+  // Serve index.html for any non-API routes (SPA support)
+  app.get(/.*/, (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+    }
+  });
+  console.log(`Serving static files from ${FRONTEND_DIST}`);
+}
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('Client connected to UI');

@@ -65,6 +65,12 @@
           "name": "Privacy",
           "sceneNumber": 12,
           "category": "shade"
+        },
+        {
+          "id": "1774899435861",
+          "name": "Soos",
+          "sceneNumber": 8,
+          "category": "shade"
         }
       ],
       "functions": [

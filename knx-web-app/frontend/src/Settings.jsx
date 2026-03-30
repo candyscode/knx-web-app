@@ -196,13 +196,13 @@ export default function Settings({ config, fetchConfig, addToast }) {
     setRooms(rooms.map(r => r.id !== roomId ? r : { ...r, ...patch }));
   };
 
-  const handleAddScene = (roomId) => {
+  const handleAddScene = (roomId, category) => {
     const room = rooms.find(r => r.id === roomId);
     const usedNumbers = (room.scenes || []).map(s => s.sceneNumber);
     let nextNum = 1;
     while (usedNumbers.includes(nextNum) && nextNum <= 64) nextNum++;
     updateRoom(roomId, {
-      scenes: [...(room.scenes || []), { id: Date.now().toString(), name: '', sceneNumber: nextNum, category: 'light' }]
+      scenes: [...(room.scenes || []), { id: Date.now().toString(), name: '', sceneNumber: nextNum, category }]
     });
   };
 
@@ -393,15 +393,6 @@ export default function Settings({ config, fetchConfig, addToast }) {
                         onChange={e => handleUpdateScene(room.id, sc.id, 'sceneNumber', e.target.value === '' ? undefined : parseInt(e.target.value))}
                         title="Scene number (1–64)"
                       />
-                      <select
-                        className="form-input custom-select"
-                        style={{ width: '90px', flexShrink: 0, paddingLeft: '0.4rem', paddingRight: '0.4rem' }}
-                        value={sc.category || 'light'}
-                        onChange={e => handleUpdateScene(room.id, sc.id, 'category', e.target.value)}
-                      >
-                        <option value="light">Lights</option>
-                        <option value="shade">Shades</option>
-                      </select>
                       <input
                         className="form-input"
                         value={sc.name}
@@ -419,33 +410,39 @@ export default function Settings({ config, fetchConfig, addToast }) {
                   
                   return (
                     <>
-                      {lightScenes.length > 0 && (
-                        <div style={{ marginBottom: '1.5rem' }}>
-                          <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', marginTop: 0 }}>Light Scenes</h5>
-                          <div className="scene-list">
+                      {/* Light Scenes Section */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', marginTop: 0 }}>Light Scenes</h5>
+                        {lightScenes.length > 0 && (
+                          <div className="scene-list" style={{ marginBottom: '0.75rem' }}>
                             {lightScenes.map((sc, i) => renderSceneRow(sc, i === 0, i === lightScenes.length - 1, 'light'))}
                           </div>
-                        </div>
-                      )}
+                        )}
+                        <button className="btn-primary" style={{ background: 'rgba(255,200,100,0.15)', fontSize: '0.8rem', padding: '0.4rem 0.75rem', borderColor: 'rgba(255,200,100,0.3)' }}
+                          onClick={() => handleAddScene(room.id, 'light')}>
+                          <Plus size={13} /> Add Light Scene
+                        </button>
+                      </div>
                       
-                      {shadeScenes.length > 0 && (
-                        <div style={{ marginBottom: '1.5rem' }}>
-                          <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', marginTop: 0 }}>Shade Scenes</h5>
-                          <div className="scene-list">
+                      {/* Shade Scenes Section */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', marginTop: 0 }}>Shade Scenes</h5>
+                        {shadeScenes.length > 0 && (
+                          <div className="scene-list" style={{ marginBottom: '0.75rem' }}>
                             {shadeScenes.map((sc, i) => renderSceneRow(sc, i === 0, i === shadeScenes.length - 1, 'shade'))}
                           </div>
-                        </div>
-                      )}
+                        )}
+                        <button className="btn-primary" style={{ background: 'rgba(100,200,255,0.15)', fontSize: '0.8rem', padding: '0.4rem 0.75rem', borderColor: 'rgba(100,200,255,0.3)' }}
+                          onClick={() => handleAddScene(room.id, 'shade')}>
+                          <Plus size={13} /> Add Shade Scene
+                        </button>
+                      </div>
                     </>
                   );
                 })()}
 
-                {/* Scene actions */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                  <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-                    onClick={() => handleAddScene(room.id)}>
-                    <Plus size={13} /> Add Scene
-                  </button>
+                {/* Generate Base Scenes - stays at bottom */}
+                <div style={{ marginTop: '0.75rem' }}>
                   <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem', background: 'rgba(124, 58, 237, 0.3)', borderColor: 'rgba(124, 58, 237, 0.5)' }}
                     onClick={() => handleGenerateBaseScenes(room.id)}>
                     <Sparkles size={13} /> Generate Base Scenes
