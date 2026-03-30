@@ -29,13 +29,19 @@ jobs:
       - name: Add host to known hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "Known hosts added for ${{ secrets.VPS_HOST }}"
 
       - name: Deploy to VPS
         run: |
+          set -e
           BRANCH="${{ github.event.inputs.branch || github.ref_name }}"
           echo "Deploying branch: $BRANCH"
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd ~/knx-viz && ./deploy-staging.sh $BRANCH"
+          echo "Host: ${{ secrets.VPS_HOST }}"
+          echo "User: ${{ secrets.VPS_USER }}"
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo 'SSH connection successful' && cd ~/knx-viz && ./deploy-staging.sh $BRANCH"
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
 
       - name: Notify success
         run: |
