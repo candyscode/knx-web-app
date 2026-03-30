@@ -1,0 +1,50 @@
+# Staging: Baut lokal aus dem aktuellen Branch
+# For VPS staging tests before merging
+
+services:
+  frontend:
+    build:
+      context: ./knx-web-app/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - knx-web-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./knx-web-app/backend
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    environment:
+      PORT: 3001
+      KNX_IP: ${KNX_IP:-192.168.1.85}
+      KNX_PORT: ${KNX_PORT:-3671}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ./knx-web-app/backend/config.json:/app/config.json
+    networks:
+      - knx-web-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+networks:
+  knx-web-network:
+    driver: bridge

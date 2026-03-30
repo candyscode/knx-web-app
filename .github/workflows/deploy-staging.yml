@@ -1,0 +1,61 @@
+name: Deploy to Staging VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'main'
+  push:
+    branches-ignore:
+      - main
+      - build-docker
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add host to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "Known hosts added for ${{ secrets.VPS_HOST }}"
+
+      - name: Deploy to VPS
+        run: |
+          set -e
+          BRANCH="${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Deploying branch: $BRANCH"
+          echo "Host: ${{ secrets.VPS_HOST }}"
+          echo "User: ${{ secrets.VPS_USER }}"
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            echo 'SSH connection successful' &&
+            cd ~ &&
+            if [ ! -d 'knx-viz' ]; then
+              git clone https://github.com/candyscode/AI.git knx-viz
+            fi &&
+            cd knx-viz &&
+            git fetch origin &&
+            git checkout $BRANCH &&
+            git pull origin $BRANCH &&
+            chmod +x deploy-staging.sh &&
+            ./deploy-staging.sh $BRANCH
+          "
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+
+      - name: Notify success
+        run: |
+          echo "✅ Staging deployed successfully!"
+          echo "🌐 URL: http://${{ secrets.VPS_HOST }}:8080"
