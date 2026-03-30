@@ -5,6 +5,8 @@ import Settings from './Settings';
 import { Home, Settings as SettingsIcon, Wifi, WifiOff } from 'lucide-react';
 import { getConfig } from './configApi';
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [config, setConfig] = useState({ knxIp: '', knxPort: 3671, rooms: [] });
@@ -37,7 +39,7 @@ function App() {
     fetchConfig();
     
     // Initialize socket inside effect to prevent missing early "initial_states" events
-    const socket = io('http://localhost:3001');
+    const socket = io(SOCKET_URL);
 
     socket.on('knx_status', (status) => {
       setKnxStatus(status);

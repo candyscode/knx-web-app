@@ -1,0 +1,57 @@
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/candyscode/ai-frontend}:${IMAGE_TAG:-latest}
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - knx-web-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/candyscode/ai-backend}:${IMAGE_TAG:-latest}
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    environment:
+      PORT: 3001
+      KNX_IP: ${KNX_IP:-192.168.1.85}
+      KNX_PORT: ${KNX_PORT:-3671}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ./knx-web-app/backend/config.json:/app/config.json
+    networks:
+      - knx-web-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    profiles:
+      - watchtower
+    environment:
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_INCLUDE_RESTARTING: "true"
+      WATCHTOWER_POLL_INTERVAL: ${WATCHTOWER_POLL_INTERVAL:-300}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.docker/config.json:/config.json:ro
+    command: frontend backend
+    restart: unless-stopped
+
+networks:
+  knx-web-network:
+    driver: bridge
