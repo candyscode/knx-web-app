@@ -9,14 +9,16 @@ const KnxService = require('./knxService');
 
 const app = express();
 const server = http.createServer(app);
+const corsOrigin = process.env.CORS_ORIGIN || '*';
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: { origin: corsOrigin }
 });
 
-app.use(cors());
+app.use(cors({ origin: corsOrigin }));
 app.use(bodyParser.json());
 
 const CONFIG_FILE = path.join(__dirname, 'config.json');
+const PORT = parseInt(process.env.PORT, 10) || 3001;
 
 const knxService = new KnxService(io);
 
@@ -28,8 +30,11 @@ let config = {
 };
 
 function establishConnection() {
-  if (config.knxIp) {
-    knxService.connect(config.knxIp, config.knxPort, () => {
+  const knxIp = process.env.KNX_IP || config.knxIp;
+  const knxPort = parseInt(process.env.KNX_PORT, 10) || config.knxPort;
+
+  if (knxIp) {
+    knxService.connect(knxIp, knxPort, () => {
       console.log('Orchestrating read requests for status GAs...');
       const statusGAs = new Set();
       const gaToType = {};
@@ -84,6 +89,14 @@ if (!fs.existsSync(CONFIG_FILE)) {
 }
 
 // API Routes
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    port: PORT,
+    knxConnected: knxService.isConnected
+  });
+});
+
 app.get('/api/config', (req, res) => {
   res.json(config);
 });
@@ -151,7 +164,30 @@ io.on('connection', (socket) => {
   socket.emit('knx_initial_states', knxService.deviceStates);
 });
 
-const PORT = 3001;
 server.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
 });
+
+function shutdown(signal) {
+  console.log(`Received ${signal}, shutting down backend...`);
+
+  server.close(() => {
+    if (knxService.connection) {
+      try {
+        knxService.connection.Disconnect();
+      } catch (error) {
+        console.error('Error while disconnecting KNX session during shutdown:', error.message);
+      }
+    }
+
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000).unref();
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

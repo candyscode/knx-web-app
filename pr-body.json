@@ -1,0 +1,6 @@
+{
+  "title": "Add Docker deployment with GHCR and Watchtower",
+  "body": "This PR adds a complete Docker-based deployment setup for the KNX Web App.\n\n## Changes:\n- Add GitHub Actions workflow for multi-arch Docker builds (linux/amd64, linux/arm64)\n- Add docker-compose.prod.yml for production deployments using prebuilt GHCR images\n- Add docker-compose.yml for local development\n- Add healthchecks and graceful shutdown for both services\n- Add README-DEPLOY.md with complete setup instructions\n- Add setup-watchtower.sh for automated updates\n- Update frontend and backend code to use environment variables\n- Add .dockerignore files for cleaner builds\n\n## Usage:\nAfter merging, GitHub Actions will automatically build and publish Docker images to GHCR.\n\nOn the VPS, run:\n```bash\nchmod +x setup-watchtower.sh\n./setup-watchtower.sh\n```\n\nOr manually:\n```bash\ndocker compose -f docker-compose.prod.yml pull\ndocker compose -f docker-compose.prod.yml up -d\n```\n\nWatchtower will automatically check for new images every 5 minutes and update the containers.",
+  "head": "docker-deployment",
+  "base": "main"
+}
