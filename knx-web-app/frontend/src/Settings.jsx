@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights } from './configApi';
 import { 
-  Plus, Trash2, Save, ArrowUp, ArrowDown, ChevronDown, HelpCircle, Sparkles,
+  Plus, Trash2, Save, ArrowUp, ArrowDown, ChevronDown, HelpCircle, Sparkles, GripVertical,
   Lightbulb, Lock
 } from 'lucide-react';
 
@@ -147,6 +147,17 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const [hueLampModal, setHueLampModal] = useState({ open: false, roomId: null });
   const [hueLamps, setHueLamps] = useState([]);
   const [hueLampsLoading, setHueLampsLoading] = useState(false);
+  const [dragState, setDragState] = useState(null);
+
+  useEffect(() => {
+    const clearDragState = () => setDragState(null);
+    window.addEventListener('pointerup', clearDragState);
+    window.addEventListener('pointercancel', clearDragState);
+    return () => {
+      window.removeEventListener('pointerup', clearDragState);
+      window.removeEventListener('pointercancel', clearDragState);
+    };
+  }, []);
 
   // Hue wizard handlers
   const handleHueDiscover = async () => {
@@ -289,17 +300,40 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   };
 
   // --- Room scenes ---
-  const updateRoom = (roomId, patch) => {
-    setRooms(rooms.map(r => r.id !== roomId ? r : { ...r, ...patch }));
+  const moveItem = (items, fromIndex, toIndex) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return items;
+    const nextItems = [...items];
+    const [movedItem] = nextItems.splice(fromIndex, 1);
+    nextItems.splice(toIndex, 0, movedItem);
+    return nextItems;
   };
 
-  const handleAddScene = (roomId) => {
+  const reorderCategoryItems = (items, category, draggedId, targetId) => {
+    const categoryItems = items.filter(item => (item.category || 'light') === category);
+    const fromIndex = categoryItems.findIndex(item => item.id === draggedId);
+    const toIndex = categoryItems.findIndex(item => item.id === targetId);
+
+    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return items;
+
+    const reorderedCategoryItems = moveItem(categoryItems, fromIndex, toIndex);
+    let categoryIndex = 0;
+
+    return items.map(item => (
+      (item.category || 'light') === category ? reorderedCategoryItems[categoryIndex++] : item
+    ));
+  };
+
+  const updateRoom = (roomId, patch) => {
+    setRooms(prevRooms => prevRooms.map(r => r.id !== roomId ? r : { ...r, ...patch }));
+  };
+
+  const handleAddScene = (roomId, category = 'light') => {
     const room = rooms.find(r => r.id === roomId);
     const usedNumbers = (room.scenes || []).map(s => s.sceneNumber);
     let nextNum = 1;
     while (usedNumbers.includes(nextNum) && nextNum <= 64) nextNum++;
     updateRoom(roomId, {
-      scenes: [...(room.scenes || []), { id: Date.now().toString(), name: '', sceneNumber: nextNum, category: 'light' }]
+      scenes: [...(room.scenes || []), { id: Date.now().toString(), name: '', sceneNumber: nextNum, category }]
     });
   };
 
@@ -315,27 +349,23 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     });
   };
 
-  const handleMoveSceneCategory = (roomId, sceneId, direction, category) => {
-    const room = rooms.find(r => r.id === roomId);
-    if (!room || !room.scenes) return;
-    
-    // Get all scenes of this category
-    const catScenes = room.scenes.filter(s => (s.category || 'light') === category);
-    const catIdx = catScenes.findIndex(s => s.id === sceneId);
-    if (catIdx < 0) return;
-    if (direction === -1 && catIdx === 0) return;
-    if (direction === 1 && catIdx === catScenes.length - 1) return;
-    
-    // Find the actual indices in the main array
-    const currGlobalIdx = room.scenes.findIndex(s => s.id === sceneId);
-    const targetGlobalIdx = room.scenes.findIndex(s => s.id === catScenes[catIdx + direction].id);
-    
-    const newScenes = [...room.scenes];
-    const temp = newScenes[currGlobalIdx];
-    newScenes[currGlobalIdx] = newScenes[targetGlobalIdx];
-    newScenes[targetGlobalIdx] = temp;
-    
-    updateRoom(roomId, { scenes: newScenes });
+  const startSceneDrag = (roomId, category, sceneId) => {
+    setDragState({ type: 'scene', roomId, category, itemId: sceneId });
+  };
+
+  const handleSceneDragEnter = (roomId, category, targetSceneId) => {
+    if (!dragState || dragState.type !== 'scene') return;
+    if (dragState.roomId !== roomId || dragState.category !== category || dragState.itemId === targetSceneId) return;
+
+    setRooms(prevRooms => prevRooms.map(room => {
+      if (room.id !== roomId) return room;
+      return {
+        ...room,
+        scenes: reorderCategoryItems(room.scenes || [], category, dragState.itemId, targetSceneId),
+      };
+    }));
+
+    setDragState(prev => prev ? { ...prev, itemId: targetSceneId } : prev);
   };
 
   const handleGenerateBaseScenes = (roomId) => {
@@ -378,7 +408,8 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const handleDeleteFunction = async (roomId, funcId) => {
     const updated = rooms.map(r => r.id !== roomId ? r : { ...r, functions: r.functions.filter(f => f.id !== funcId) });
     setRooms(updated);
-    try { await updateConfig({ rooms: updated }); fetchConfig(); } catch {}
+    try { await updateConfig({ rooms: updated }); fetchConfig(); }
+    catch { addToast('Failed to delete function', 'error'); }
   };
 
   const moveRoom = (i, dir) => {
@@ -388,14 +419,25 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     setRooms(r);
   };
 
-  const moveFunc = (roomId, fi, dir) => {
-    setRooms(rooms.map(r => {
-      if (r.id !== roomId) return r;
-      const f = [...r.functions];
-      if (dir === 'up' && fi > 0) [f[fi-1], f[fi]] = [f[fi], f[fi-1]];
-      if (dir === 'down' && fi < f.length-1) [f[fi+1], f[fi]] = [f[fi], f[fi+1]];
-      return { ...r, functions: f };
+  const startFunctionDrag = (roomId, funcId) => {
+    setDragState({ type: 'function', roomId, itemId: funcId });
+  };
+
+  const handleFunctionDragEnter = (roomId, targetFuncId) => {
+    if (!dragState || dragState.type !== 'function') return;
+    if (dragState.roomId !== roomId || dragState.itemId === targetFuncId) return;
+
+    setRooms(prevRooms => prevRooms.map(room => {
+      if (room.id !== roomId) return room;
+      const fromIndex = room.functions.findIndex(func => func.id === dragState.itemId);
+      const toIndex = room.functions.findIndex(func => func.id === targetFuncId);
+      return {
+        ...room,
+        functions: moveItem(room.functions, fromIndex, toIndex),
+      };
     }));
+
+    setDragState(prev => prev ? { ...prev, itemId: targetFuncId } : prev);
   };
 
   const upd = (roomId, funcId, key) => (val) => handleUpdateFunction(roomId, funcId, key, val);
@@ -538,8 +580,8 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                   <button className="sort-btn" onClick={() => moveRoom(ri, 'up')} disabled={ri === 0} title="Move up"><ArrowUp size={13}/></button>
                   <button className="sort-btn" onClick={() => moveRoom(ri, 'down')} disabled={ri === rooms.length-1} title="Move down"><ArrowDown size={13}/></button>
                 </div>
-                <button className="btn-danger" onClick={() => handleDeleteRoom(room.id)}>
-                  <Trash2 size={14} /> Delete Room
+                <button className="icon-btn danger compact" onClick={() => handleDeleteRoom(room.id)} title="Delete room" aria-label={`Delete room ${room.name}`}>
+                  <Trash2 size={14} />
                 </button>
               </div>
 
@@ -563,8 +605,22 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                   const lightScenes = (room.scenes || []).filter(s => (s.category || 'light') === 'light');
                   const shadeScenes = (room.scenes || []).filter(s => s.category === 'shade');
                   
-                  const renderSceneRow = (sc, isFirst, isLast, categoryStr) => (
-                    <div key={sc.id} className="scene-row">
+                  const renderSceneRow = (sc, categoryStr) => (
+                    <div
+                      key={sc.id}
+                      className={`scene-row ${dragState?.type === 'scene' && dragState.itemId === sc.id ? 'is-dragging' : ''}`}
+                      onPointerEnter={() => handleSceneDragEnter(room.id, categoryStr, sc.id)}
+                      onPointerUp={() => setDragState(null)}
+                    >
+                      <button
+                        className="drag-handle"
+                        type="button"
+                        onPointerDown={() => startSceneDrag(room.id, categoryStr, sc.id)}
+                        title="Drag to reorder scene"
+                        aria-label={`Reorder scene ${sc.name || sc.sceneNumber || ''}`}
+                      >
+                        <GripVertical size={14} />
+                      </button>
                       <span className="scene-number-label">#</span>
                       <input
                         className="form-input scene-number-input"
@@ -575,24 +631,13 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                         onChange={e => handleUpdateScene(room.id, sc.id, 'sceneNumber', e.target.value === '' ? undefined : parseInt(e.target.value))}
                         title="Scene number (1–64)"
                       />
-                      <select
-                        className="form-input custom-select"
-                        style={{ width: '90px', flexShrink: 0, paddingLeft: '0.4rem', paddingRight: '0.4rem' }}
-                        value={sc.category || 'light'}
-                        onChange={e => handleUpdateScene(room.id, sc.id, 'category', e.target.value)}
-                      >
-                        <option value="light">Lights</option>
-                        <option value="shade">Shades</option>
-                      </select>
                       <input
                         className="form-input"
                         value={sc.name}
                         onChange={e => handleUpdateScene(room.id, sc.id, 'name', e.target.value)}
                         placeholder="Scene name"
                       />
-                      <button className="sort-btn" onClick={() => handleMoveSceneCategory(room.id, sc.id, -1, categoryStr)} disabled={isFirst} title="Move up" style={{ padding: '0.4rem' }}><ArrowUp size={14}/></button>
-                      <button className="sort-btn" onClick={() => handleMoveSceneCategory(room.id, sc.id, 1, categoryStr)} disabled={isLast} title="Move down" style={{ padding: '0.4rem' }}><ArrowDown size={14}/></button>
-                      <button className="btn-danger" style={{ padding: '0.4rem 0.5rem' }}
+                      <button className="icon-btn danger compact"
                         onClick={() => handleDeleteScene(room.id, sc.id)} title="Delete scene">
                         <Trash2 size={13} />
                       </button>
@@ -601,33 +646,43 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                   
                   return (
                     <>
-                      {lightScenes.length > 0 && (
-                        <div style={{ marginBottom: '1.5rem' }}>
-                          <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', marginTop: 0 }}>Light Scenes</h5>
-                          <div className="scene-list">
-                            {lightScenes.map((sc, i) => renderSceneRow(sc, i === 0, i === lightScenes.length - 1, 'light'))}
-                          </div>
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <div className="scene-section-header">
+                          <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Light Scenes</h5>
+                          <button className="btn-primary compact-secondary-btn" onClick={() => handleAddScene(room.id, 'light')}>
+                            <Plus size={13} /> Add Light Scene
+                          </button>
                         </div>
-                      )}
-                      
-                      {shadeScenes.length > 0 && (
-                        <div style={{ marginBottom: '1.5rem' }}>
-                          <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', marginTop: 0 }}>Shade Scenes</h5>
+                        {lightScenes.length > 0 ? (
                           <div className="scene-list">
-                            {shadeScenes.map((sc, i) => renderSceneRow(sc, i === 0, i === shadeScenes.length - 1, 'shade'))}
+                            {lightScenes.map((sc) => renderSceneRow(sc, 'light'))}
                           </div>
+                        ) : (
+                          <p className="empty-inline-hint">No light scenes configured.</p>
+                        )}
+                      </div>
+
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <div className="scene-section-header">
+                          <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Shade Scenes</h5>
+                          <button className="btn-primary compact-secondary-btn" onClick={() => handleAddScene(room.id, 'shade')}>
+                            <Plus size={13} /> Add Shade Scene
+                          </button>
                         </div>
-                      )}
+                        {shadeScenes.length > 0 ? (
+                          <div className="scene-list">
+                            {shadeScenes.map((sc) => renderSceneRow(sc, 'shade'))}
+                          </div>
+                        ) : (
+                          <p className="empty-inline-hint">No shade scenes configured.</p>
+                        )}
+                      </div>
                     </>
                   );
                 })()}
 
                 {/* Scene actions */}
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                  <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-                    onClick={() => handleAddScene(room.id)}>
-                    <Plus size={13} /> Add Scene
-                  </button>
                   <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem', background: 'rgba(124, 58, 237, 0.3)', borderColor: 'rgba(124, 58, 237, 0.5)' }}
                     onClick={() => handleGenerateBaseScenes(room.id)}>
                     <Sparkles size={13} /> Generate Base Scenes
@@ -642,17 +697,28 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                   Standalone scenes, switches, blinds, and other KNX functions.
                 </p>
 
-                {room.functions.map((func, fi) => {
+                {room.functions.map((func) => {
                   const info = TYPE_OPTIONS.find(o => o.value === func.type) || TYPE_OPTIONS[0];
                   const isHue = func.type === 'hue';
                   return (
-                    <div key={func.id} className={`function-card ${isHue ? 'hue-card' : ''}`}>
+                    <div
+                      key={func.id}
+                      className={`function-card ${isHue ? 'hue-card' : ''} ${dragState?.type === 'function' && dragState.itemId === func.id ? 'is-dragging' : ''}`}
+                      onPointerEnter={() => handleFunctionDragEnter(room.id, func.id)}
+                      onPointerUp={() => setDragState(null)}
+                    >
                       <div className="function-layout" style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
 
-                        {/* Sort buttons */}
                         <div className="func-sort">
-                          <button className="sort-btn" onClick={() => moveFunc(room.id, fi, 'up')} disabled={fi === 0} title="Move up"><ArrowUp size={12}/></button>
-                          <button className="sort-btn" onClick={() => moveFunc(room.id, fi, 'down')} disabled={fi === room.functions.length-1} title="Move down"><ArrowDown size={12}/></button>
+                          <button
+                            className="drag-handle"
+                            type="button"
+                            onPointerDown={() => startFunctionDrag(room.id, func.id)}
+                            title="Drag to reorder function"
+                            aria-label={`Reorder function ${func.name || info.label}`}
+                          >
+                            <GripVertical size={14} />
+                          </button>
                         </div>
                         
                         {isHue ? (
@@ -734,8 +800,8 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                         )}
 
                         {/* Delete button (for ALL types, including Hue) - vertically centered and pushed to the right */}
-                        <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', alignSelf: 'stretch', paddingLeft: '1rem' }}>
-                          <button className="btn-danger" style={{ padding: '0.5rem 0.6rem' }}
+                        <div className="func-delete" style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', alignSelf: 'stretch', paddingLeft: '1rem' }}>
+                          <button className="icon-btn danger compact"
                             onClick={() => handleDeleteFunction(room.id, func.id)} title="Delete function">
                             <Trash2 size={16} />
                           </button>
