@@ -84,9 +84,9 @@ function App() {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
           <div className={`status-badge ${knxStatus.connected ? 'status-connected' : 'status-disconnected'}`}>
-            <div className="status-dot"></div>
             {knxStatus.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
-            {knxStatus.connected ? 'Connected' : 'Offline'}
+            <div className="status-dot"></div>
+            <span className="nav-link-text">{knxStatus.connected ? 'Connected' : 'Offline'}</span>
           </div>
           
           <nav className="nav-links glass-panel" style={{ padding: '0.5rem', display: 'flex', gap: '0.5rem' }}>
@@ -95,14 +95,14 @@ function App() {
               onClick={() => setActiveTab('dashboard')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
             >
-              <Home size={18} /> Dashboard
+              <Home size={18} /><span className="nav-link-text"> Dashboard</span>
             </button>
             <button 
               className={`nav-link ${activeTab === 'settings' ? 'active' : ''}`}
               onClick={() => setActiveTab('settings')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
             >
-              <SettingsIcon size={18} /> Settings
+              <SettingsIcon size={18} /><span className="nav-link-text"> Settings</span>
             </button>
           </nav>
         </div>

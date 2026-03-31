@@ -29,6 +29,7 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden; /* prevent horizontal scroll on mobile */
   background-image: 
     radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 25%);
@@ -524,13 +525,11 @@ body {
 }
 
 .scene-category-title {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  margin-bottom: 0.4rem;
-  margin-left: 0.2rem;
-  opacity: 0.8;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: 0.01em;
 }
 
 .shade-pill {
@@ -918,3 +917,439 @@ body {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ─────────────────────────────────────────────────────
+   NEW SETTINGS COMPONENTS
+   ───────────────────────────────────────────────────── */
+
+/* Panel wrapper */
+.settings-panel {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* KNX IP row — flex row, stacks on mobile */
+.knx-ip-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.knx-ip-row .settings-field { flex-shrink: 0; }
+.knx-ip-row .knx-port-field { width: 110px; }
+
+/* Room card in Settings */
+.room-settings-card {
+  background: linear-gradient(160deg, var(--bg-card) 0%, rgba(20, 22, 28, 0.8) 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* Header row: drag handle | room name | delete */
+.room-settings-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.room-drag-handle {
+  font-size: 1.1rem;
+}
+
+/* Sections inside room card (scenes, functions) */
+.room-section {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+/* ── Scene category blocks ──────────────────────── */
+.scene-category-block {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.scene-category-block:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.scene-category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border-left: 3px solid rgba(59, 130, 246, 0.5);
+}
+.scene-category-block:last-child .scene-category-header {
+  border-left-color: rgba(168, 85, 247, 0.5);
+}
+
+.scene-category-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.scene-add-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.3);
+  cursor: grab;
+  touch-action: none;
+  flex-shrink: 0;
+  padding: 2px;
+  transition: color 0.15s;
+}
+.drag-handle:hover { color: rgba(255,255,255,0.7); }
+.drag-handle:active { cursor: grabbing; }
+
+/* ── Function card ─────────────────────────────────── */
+.function-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  margin-bottom: 0.6rem;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.function-card:hover { border-color: rgba(59, 130, 246, 0.2); }
+
+.hue-card {
+  background: rgba(139, 92, 246, 0.07);
+  border-color: rgba(139, 92, 246, 0.18);
+}
+
+/* Card header: [drag] [title] [delete] */
+.func-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(0,0,0,0.15);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.func-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0; /* allow text to truncate */
+}
+
+.func-name-preview {
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.func-type-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-color);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.hue-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.func-original-name {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Small icon-only delete button */
+.func-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: var(--danger-color);
+  border-radius: 6px;
+  padding: 0.3rem;
+  cursor: pointer;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.func-delete-btn:hover { background: var(--danger-color); color: white; }
+
+/* Icon-only btn (also for scene delete) */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: var(--danger-color);
+  border-radius: 6px;
+  padding: 0.35rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.icon-btn:hover { background: var(--danger-color); color: white; }
+
+/* Card body: fields */
+.func-card-body {
+  padding: 0.85rem;
+}
+
+/* Two-column row for Name + Type on desktop */
+.func-fields-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.func-ga-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ── Small secondary action buttons ────────────────── */
+.btn-secondary-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.38rem 0.8rem;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-secondary-sm:hover { background: rgba(255,255,255,0.12); }
+
+.btn-purple-sm {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.25);
+  color: #c4b5fd;
+}
+.btn-purple-sm:hover { background: rgba(139, 92, 246, 0.22); }
+
+/* Scene row: 3-column grid [drag | fields | delete] */
+.scene-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 34px;
+  gap: 0.5rem;
+  align-items: start; /* fields may be taller, so align to top */
+  margin-bottom: 0.5rem;
+  padding: 0.6rem 0.5rem;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+}
+
+/* Drag handle: align center vertically relative to the fields block */
+.scene-drag-handle {
+  margin-top: 0.25rem;
+}
+
+/* Fields column: two labeled inputs stacked */
+.scene-row-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.scene-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.scene-field-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding-left: 0.1rem;
+}
+
+/* Scene # input: don't take full width */
+.scene-row .scene-number-input {
+  width: 100%;
+}
+
+/* Delete button: align to top of the fields block */
+.scene-delete-btn {
+  margin-top: 0.25rem;
+}
+
+/* ─────────────────────────────────────────────────────
+   MOBILE RESPONSIVE
+   ───────────────────────────────────────────────────── */
+
+/* Fix overflow on ALL elements — must be on both html and body */
+html { overflow-x: hidden; }
+
+@media (max-width: 640px) {
+  .app-container {
+    padding: 0.6rem 0.6rem;
+  }
+
+  /* Settings panel: full bleed, no wasted side-margins */
+  .settings-panel {
+    padding: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    max-width: 100%;
+    box-shadow: none;
+    /* Pull it out of the .app-container's 0.6rem side padding */
+    margin-left: -0.6rem;
+    margin-right: -0.6rem;
+    width: calc(100% + 1.2rem);
+  }
+
+  /* ── Header: icon-only nav ── */
+  .header {
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+    gap: 0.4rem;
+  }
+  .header h1 {
+    font-size: 1rem;
+  }
+  .nav-link .nav-link-text {
+    display: none; /* hide text labels */
+  }
+  .nav-link {
+    padding: 0.45rem 0.55rem;
+    gap: 0;
+  }
+  .nav-link svg {
+    width: 20px;
+    height: 20px;
+  }
+  .status-badge {
+    font-size: 0;    /* hide "Connected" text */
+    padding: 0.35rem 0.5rem;
+    gap: 0;
+  }
+  .status-badge svg { display: block; }
+
+  /* ── Dashboard ── */
+  .room-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .room-card { padding: 0.85rem; }
+  .room-header { margin-bottom: 1.5rem; }
+  .scene-pills { margin-bottom: 0.75rem; }
+  .scene-pill {
+    padding: 0.38rem 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  /* Action buttons: horizontal row on mobile */
+  .functions-grid {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+  .action-btn {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.65rem 0.9rem;
+    gap: 0.7rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+  }
+  .action-icon-wrapper { margin-bottom: 0; flex-shrink: 0; }
+  .action-name { flex: 1; text-align: left; }
+  .toggle-switch { margin-top: 0; margin-left: auto; flex-shrink: 0; }
+
+  /* Blinds: shorter */
+  .blinds-widget { height: 120px; }
+
+  /* ── Toasts ── */
+  .toast-container { bottom: 0.75rem; right: 0.6rem; left: 0.6rem; }
+  .toast { min-width: unset; width: 100%; padding: 0.7rem 0.9rem; }
+
+  /* ── Settings ── */
+  .settings-section { padding: 1rem 1.25rem; }
+
+  /* KNX IP: stack fields */
+  .knx-ip-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .knx-ip-row .settings-field,
+  .knx-ip-row .knx-port-field {
+    width: 100% !important;
+  }
+  .knx-ip-row .btn-primary { width: 100%; justify-content: center; }
+
+  /* Room settings card */
+  .room-settings-card { padding: 0.75rem; }
+  .room-section {
+    padding: 0.75rem 0.6rem;
+    /* Remove nested background — flatten to save space */
+    background: transparent;
+    border-color: rgba(255,255,255,0.06);
+  }
+
+  /* Function card: minimal padding */
+  .function-card { margin-bottom: 0.5rem; }
+  .func-card-body { padding: 0.65rem; }
+
+  /* Name + Type: stack vertically on mobile */
+  .func-fields-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+
+
+
+  /* Modal */
+  .modal-content { width: 96vw; padding: 1rem; }
+}
+
