@@ -5,6 +5,10 @@ import Settings from './Settings';
 import { Home, Settings as SettingsIcon, Wifi, WifiOff } from 'lucide-react';
 import { getConfig } from './configApi';
 
+const SOCKET_OPTIONS = {
+  path: '/socket.io'
+};
+
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [config, setConfig] = useState({ knxIp: '', knxPort: 3671, hue: { bridgeIp: '', apiKey: '' }, rooms: [] });
@@ -39,7 +43,7 @@ function App() {
     fetchConfig();
     
     // Initialize socket inside effect to prevent missing early "initial_states" events
-    const socket = io();
+    const socket = io(SOCKET_OPTIONS);
 
     socket.on('knx_status', (status) => {
       setKnxStatus(status);
@@ -113,7 +117,7 @@ function App() {
         </div>
       </header>
 
-      <main>
+      <main className="app-main">
         {activeTab === 'dashboard' && <Dashboard config={config} deviceStates={deviceStates} setDeviceStates={setDeviceStates} hueStates={hueStates} setHueStates={setHueStates} addToast={addToast} />}
         {activeTab === 'settings' && <Settings config={config} fetchConfig={fetchConfig} hueStatus={hueStatus} setHueStatus={setHueStatus} addToast={addToast} />}
       </main>
