@@ -680,7 +680,24 @@ body {
   max-width: none;
 }
 
-.drag-handle,
+.sort-controls,
+.icon-btn {
+  flex-shrink: 0;
+}
+
+.sort-controls {
+  width: 32px;
+  min-height: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sort-controls:empty {
+  visibility: hidden;
+}
+
+.sort-btn,
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -690,25 +707,6 @@ body {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text-secondary);
   transition: background 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
-  flex-shrink: 0;
-}
-
-.drag-handle {
-  width: 32px;
-  height: 32px;
-  cursor: grab;
-  touch-action: none;
-}
-
-.drag-handle:hover,
-.drag-handle:focus-visible {
-  color: var(--text-primary);
-  border-color: rgba(59, 130, 246, 0.28);
-  background: rgba(59, 130, 246, 0.12);
-}
-
-.drag-handle:active {
-  cursor: grabbing;
 }
 
 .icon-btn {
@@ -732,17 +730,6 @@ body {
   background: rgba(255,255,255,0.08);
   font-size: 0.78rem;
   padding: 0.4rem 0.75rem;
-}
-
-.scene-row.is-dragging,
-.function-card.is-dragging {
-  opacity: 0.72;
-  border-color: rgba(59, 130, 246, 0.35);
-}
-
-.scene-row.is-dragging {
-  background: rgba(59, 130, 246, 0.06);
-  border-radius: 10px;
 }
 
 /* Settings: Labeled Field */
@@ -1002,15 +989,25 @@ main {
   color: var(--text-secondary);
   padding: 0.28rem 0.38rem;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
   transition: background 0.15s, color 0.15s;
   min-width: 44px;
   min-height: 44px;
   touch-action: manipulation;
 }
-.sort-btn:hover:not(:disabled) { background: rgba(59, 130, 246, 0.15); color: var(--accent-color); }
-.sort-btn:disabled { opacity: 0.2; cursor: default; }
+.sort-btn:hover,
+.sort-btn:focus-visible {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-color);
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.sort-btn.compact {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+}
 
 .section-label {
   font-size: 0.72rem;
@@ -1284,9 +1281,8 @@ main {
     padding-top: 0;
   }
 
-  .func-sort .drag-handle {
-    width: 36px;
-    height: 36px;
+  .func-sort .sort-controls {
+    width: 32px;
   }
 
   .function-layout > div:nth-child(2),
@@ -1372,11 +1368,24 @@ main {
   }
 
   .scene-row .form-input,
-  .scene-row .drag-handle,
+  .scene-row .sort-controls,
   .scene-row .icon-btn {
     width: 100% !important;
     max-width: none;
     min-width: 0;
+  }
+
+  .sort-controls {
+    width: 36px;
+    min-height: 36px;
+    gap: 0.35rem;
+  }
+
+  .sort-btn.compact {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
   }
 
   .scene-number-label {

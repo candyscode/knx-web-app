@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights } from './configApi';
 import { 
-  Plus, Trash2, Save, ArrowUp, ArrowDown, ChevronDown, HelpCircle, Sparkles, GripVertical,
+  Plus, Trash2, Save, ArrowUp, ArrowDown, ChevronDown, HelpCircle, Sparkles,
   Lightbulb, Lock
 } from 'lucide-react';
 
@@ -147,17 +147,6 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const [hueLampModal, setHueLampModal] = useState({ open: false, roomId: null });
   const [hueLamps, setHueLamps] = useState([]);
   const [hueLampsLoading, setHueLampsLoading] = useState(false);
-  const [dragState, setDragState] = useState(null);
-
-  useEffect(() => {
-    const clearDragState = () => setDragState(null);
-    window.addEventListener('pointerup', clearDragState);
-    window.addEventListener('pointercancel', clearDragState);
-    return () => {
-      window.removeEventListener('pointerup', clearDragState);
-      window.removeEventListener('pointercancel', clearDragState);
-    };
-  }, []);
 
   // Hue wizard handlers
   const handleHueDiscover = async () => {
@@ -308,21 +297,6 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     return nextItems;
   };
 
-  const reorderCategoryItems = (items, category, draggedId, targetId) => {
-    const categoryItems = items.filter(item => (item.category || 'light') === category);
-    const fromIndex = categoryItems.findIndex(item => item.id === draggedId);
-    const toIndex = categoryItems.findIndex(item => item.id === targetId);
-
-    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return items;
-
-    const reorderedCategoryItems = moveItem(categoryItems, fromIndex, toIndex);
-    let categoryIndex = 0;
-
-    return items.map(item => (
-      (item.category || 'light') === category ? reorderedCategoryItems[categoryIndex++] : item
-    ));
-  };
-
   const updateRoom = (roomId, patch) => {
     setRooms(prevRooms => prevRooms.map(r => r.id !== roomId ? r : { ...r, ...patch }));
   };
@@ -349,23 +323,26 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     });
   };
 
-  const startSceneDrag = (roomId, category, sceneId) => {
-    setDragState({ type: 'scene', roomId, category, itemId: sceneId });
-  };
-
-  const handleSceneDragEnter = (roomId, category, targetSceneId) => {
-    if (!dragState || dragState.type !== 'scene') return;
-    if (dragState.roomId !== roomId || dragState.category !== category || dragState.itemId === targetSceneId) return;
-
+  const moveScene = (roomId, category, sceneId, dir) => {
     setRooms(prevRooms => prevRooms.map(room => {
       if (room.id !== roomId) return room;
+
+      const categoryItems = (room.scenes || []).filter(item => (item.category || 'light') === category);
+      const fromIndex = categoryItems.findIndex(item => item.id === sceneId);
+      const toIndex = dir === 'up' ? fromIndex - 1 : fromIndex + 1;
+
+      if (fromIndex < 0 || toIndex < 0 || toIndex >= categoryItems.length) return room;
+
+      const reorderedCategoryItems = moveItem(categoryItems, fromIndex, toIndex);
+      let categoryIndex = 0;
+
       return {
         ...room,
-        scenes: reorderCategoryItems(room.scenes || [], category, dragState.itemId, targetSceneId),
+        scenes: (room.scenes || []).map(item => (
+          (item.category || 'light') === category ? reorderedCategoryItems[categoryIndex++] : item
+        )),
       };
     }));
-
-    setDragState(prev => prev ? { ...prev, itemId: targetSceneId } : prev);
   };
 
   const handleGenerateBaseScenes = (roomId) => {
@@ -419,28 +396,36 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     setRooms(r);
   };
 
-  const startFunctionDrag = (roomId, funcId) => {
-    setDragState({ type: 'function', roomId, itemId: funcId });
-  };
-
-  const handleFunctionDragEnter = (roomId, targetFuncId) => {
-    if (!dragState || dragState.type !== 'function') return;
-    if (dragState.roomId !== roomId || dragState.itemId === targetFuncId) return;
-
+  const moveFunction = (roomId, funcId, dir) => {
     setRooms(prevRooms => prevRooms.map(room => {
       if (room.id !== roomId) return room;
-      const fromIndex = room.functions.findIndex(func => func.id === dragState.itemId);
-      const toIndex = room.functions.findIndex(func => func.id === targetFuncId);
+      const fromIndex = room.functions.findIndex(func => func.id === funcId);
+      const toIndex = dir === 'up' ? fromIndex - 1 : fromIndex + 1;
+
+      if (fromIndex < 0 || toIndex < 0 || toIndex >= room.functions.length) return room;
+
       return {
         ...room,
         functions: moveItem(room.functions, fromIndex, toIndex),
       };
     }));
-
-    setDragState(prev => prev ? { ...prev, itemId: targetFuncId } : prev);
   };
 
   const upd = (roomId, funcId, key) => (val) => handleUpdateFunction(roomId, funcId, key, val);
+  const renderSortControls = (onMoveUp, onMoveDown, canMoveUp, canMoveDown, label) => (
+    <div className="sort-controls" aria-label={label}>
+      {canMoveUp && (
+        <button className="sort-btn compact" type="button" onClick={onMoveUp} title="Move up" aria-label={`${label} up`}>
+          <ArrowUp size={14} />
+        </button>
+      )}
+      {canMoveDown && (
+        <button className="sort-btn compact" type="button" onClick={onMoveDown} title="Move down" aria-label={`${label} down`}>
+          <ArrowDown size={14} />
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="glass-panel" style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -577,8 +562,13 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <h3 style={{ margin: 0 }}>{room.name}</h3>
-                  <button className="sort-btn" onClick={() => moveRoom(ri, 'up')} disabled={ri === 0} title="Move up"><ArrowUp size={13}/></button>
-                  <button className="sort-btn" onClick={() => moveRoom(ri, 'down')} disabled={ri === rooms.length-1} title="Move down"><ArrowDown size={13}/></button>
+                  {(ri > 0 || ri < rooms.length - 1) && renderSortControls(
+                    () => moveRoom(ri, 'up'),
+                    () => moveRoom(ri, 'down'),
+                    ri > 0,
+                    ri < rooms.length - 1,
+                    `Reorder room ${room.name}`
+                  )}
                 </div>
                 <button className="icon-btn danger compact" onClick={() => handleDeleteRoom(room.id)} title="Delete room" aria-label={`Delete room ${room.name}`}>
                   <Trash2 size={14} />
@@ -606,21 +596,14 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                   const shadeScenes = (room.scenes || []).filter(s => s.category === 'shade');
                   
                   const renderSceneRow = (sc, categoryStr) => (
-                    <div
-                      key={sc.id}
-                      className={`scene-row ${dragState?.type === 'scene' && dragState.itemId === sc.id ? 'is-dragging' : ''}`}
-                      onPointerEnter={() => handleSceneDragEnter(room.id, categoryStr, sc.id)}
-                      onPointerUp={() => setDragState(null)}
-                    >
-                      <button
-                        className="drag-handle"
-                        type="button"
-                        onPointerDown={() => startSceneDrag(room.id, categoryStr, sc.id)}
-                        title="Drag to reorder scene"
-                        aria-label={`Reorder scene ${sc.name || sc.sceneNumber || ''}`}
-                      >
-                        <GripVertical size={14} />
-                      </button>
+                    <div key={sc.id} className="scene-row">
+                      {renderSortControls(
+                        () => moveScene(room.id, categoryStr, sc.id, 'up'),
+                        () => moveScene(room.id, categoryStr, sc.id, 'down'),
+                        (categoryStr === 'light' ? lightScenes : shadeScenes).findIndex(item => item.id === sc.id) > 0,
+                        (categoryStr === 'light' ? lightScenes : shadeScenes).findIndex(item => item.id === sc.id) < (categoryStr === 'light' ? lightScenes : shadeScenes).length - 1,
+                        `Reorder scene ${sc.name || sc.sceneNumber || ''}`
+                      )}
                       <span className="scene-number-label">#</span>
                       <input
                         className="form-input scene-number-input"
@@ -703,22 +686,18 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                   return (
                     <div
                       key={func.id}
-                      className={`function-card ${isHue ? 'hue-card' : ''} ${dragState?.type === 'function' && dragState.itemId === func.id ? 'is-dragging' : ''}`}
-                      onPointerEnter={() => handleFunctionDragEnter(room.id, func.id)}
-                      onPointerUp={() => setDragState(null)}
+                      className={`function-card ${isHue ? 'hue-card' : ''}`}
                     >
                       <div className="function-layout" style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
 
                         <div className="func-sort">
-                          <button
-                            className="drag-handle"
-                            type="button"
-                            onPointerDown={() => startFunctionDrag(room.id, func.id)}
-                            title="Drag to reorder function"
-                            aria-label={`Reorder function ${func.name || info.label}`}
-                          >
-                            <GripVertical size={14} />
-                          </button>
+                          {renderSortControls(
+                            () => moveFunction(room.id, func.id, 'up'),
+                            () => moveFunction(room.id, func.id, 'down'),
+                            room.functions.findIndex(item => item.id === func.id) > 0,
+                            room.functions.findIndex(item => item.id === func.id) < room.functions.length - 1,
+                            `Reorder function ${func.name || info.label}`
+                          )}
                         </div>
                         
                         {isHue ? (
