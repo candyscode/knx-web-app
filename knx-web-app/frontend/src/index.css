@@ -651,6 +651,10 @@ body {
   margin: 0.25rem 0 0;
 }
 
+.scene-add-btn {
+  margin-top: 0.65rem;
+}
+
 .scene-row {
   display: grid;
   grid-template-columns: 44px 16px 56px minmax(0, 1fr) 32px;
@@ -701,6 +705,13 @@ body {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
   border-color: rgba(59, 130, 246, 0.45);
   background: rgba(18, 24, 38, 0.96);
+  width: min(100%, 720px);
+  max-width: min(720px, calc(100vw - 2rem));
+  overflow: visible;
+}
+
+.drag-overlay-preview * {
+  pointer-events: none;
 }
 
 .drag-handle {
@@ -874,6 +885,10 @@ main {
   grid-template-columns: 48px 200px 1fr 36px;
   gap: 1rem;
   align-items: start;
+}
+
+.function-layout-preview {
+  grid-template-columns: 48px minmax(200px, 240px) minmax(280px, 1fr) 36px;
 }
 
 .func-sort {
@@ -1303,6 +1318,14 @@ main {
     padding: 0.75rem;
   }
 
+  .room-scenes-settings {
+    padding: 0.5rem;
+  }
+
+  .function-card {
+    padding: 0.5rem;
+  }
+
   .action-btn {
     padding: 0.75rem 0.5rem;
     font-size: 0.85rem;
@@ -1336,14 +1359,14 @@ main {
 
   .function-layout {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: 52px minmax(0, 1fr) 40px;
+    gap: 0.5rem;
   }
 
   .func-sort {
     grid-column: 1;
     grid-row: 1;
-    width: auto;
+    width: 52px;
     padding-top: 0;
   }
 
@@ -1352,10 +1375,10 @@ main {
   }
 
   .func-sort .drag-handle {
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    min-height: 42px;
+    width: 52px;
+    height: 44px;
+    min-width: 52px;
+    min-height: 44px;
   }
 
   .function-layout > div:nth-child(2),
@@ -1377,14 +1400,14 @@ main {
     grid-row: 1;
     display: flex !important;
     justify-content: flex-end;
-    width: 100%;
+    width: 40px;
     padding-top: 0;
   }
 
   .function-layout > div:last-child .icon-btn,
   .func-delete .icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 
   .func-left-col,
@@ -1413,8 +1436,8 @@ main {
 
   .scene-row {
     display: grid;
-    grid-template-columns: 44px 16px 64px minmax(0, 1fr) 36px;
-    gap: 0.5rem;
+    grid-template-columns: 52px 12px 68px minmax(0, 1fr) 40px;
+    gap: 0.35rem;
     align-items: stretch;
   }
 
@@ -1450,7 +1473,9 @@ main {
   }
 
   .drag-handle {
+    width: 52px;
     height: 44px;
+    min-width: 52px;
     min-height: 44px;
   }
 
@@ -1474,6 +1499,7 @@ main {
 
   .room-scenes-settings .btn-primary {
     flex: 1 1 100%;
+    width: 100%;
   }
 
   .status-badge,

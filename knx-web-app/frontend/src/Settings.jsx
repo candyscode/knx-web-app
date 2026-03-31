@@ -245,7 +245,7 @@ function SortableSceneRow({ scene, roomId, category, onUpdate, onDelete }) {
 function FunctionCardPreview({ func, info, isHue }) {
   return (
     <div className={`function-card drag-overlay-preview ${isHue ? 'hue-card' : ''}`}>
-      <div className="function-layout">
+      <div className="function-layout function-layout-preview">
         <div className="func-sort">
           <div className="drag-handle drag-handle-static" aria-hidden="true">
             <GripVertical size={18} />
@@ -288,6 +288,39 @@ function FunctionCardPreview({ func, info, isHue }) {
                 <label className="settings-field-label">Action GA</label>
                 <input className="form-input" value={func.groupAddress || ''} readOnly />
               </div>
+              {func.type === 'scene' && (
+                <div className="settings-field ga-field">
+                  <label className="settings-field-label">Scene Number</label>
+                  <input className="form-input" value={func.sceneNumber || ''} readOnly />
+                </div>
+              )}
+              {(func.type === 'switch' || func.type === 'percentage') && (
+                <div className="settings-field ga-field">
+                  <label className="settings-field-label">Feedback GA</label>
+                  <input className="form-input" value={func.statusGroupAddress || ''} readOnly />
+                </div>
+              )}
+              {func.type === 'percentage' && (
+                <div className="settings-field ga-field">
+                  <label className="settings-field-label">
+                    Moving GA
+                    <span className="badge-optional">Optional</span>
+                  </label>
+                  <input className="form-input" value={func.movingGroupAddress || ''} readOnly />
+                </div>
+              )}
+              {func.type === 'switch' && (
+                <div className="settings-field" style={{ marginTop: '0.6rem' }}>
+                  <label className="settings-field-label">Icon</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <IconSelect value={func.iconType || 'lightbulb'} onChange={() => {}} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      <input type="checkbox" checked={!!func.invertIcon} readOnly />
+                      Invert Icons
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -926,9 +959,6 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                       <div style={{ marginBottom: '1.5rem' }}>
                         <div className="scene-section-header">
                           <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Light Scenes</h5>
-                          <button className="btn-primary compact-secondary-btn" onClick={() => handleAddScene(room.id, 'light')}>
-                            <Plus size={13} /> Add Light Scene
-                          </button>
                         </div>
                         {lightScenes.length > 0 ? (
                           <SortableContext items={lightScenes.map(sc => sc.id)} strategy={verticalListSortingStrategy}>
@@ -948,14 +978,14 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                         ) : (
                           <p className="empty-inline-hint">No light scenes configured.</p>
                         )}
+                        <button className="btn-primary compact-secondary-btn scene-add-btn" onClick={() => handleAddScene(room.id, 'light')}>
+                          <Plus size={13} /> Add Light Scene
+                        </button>
                       </div>
 
                       <div style={{ marginBottom: '1.5rem' }}>
                         <div className="scene-section-header">
                           <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Shade Scenes</h5>
-                          <button className="btn-primary compact-secondary-btn" onClick={() => handleAddScene(room.id, 'shade')}>
-                            <Plus size={13} /> Add Shade Scene
-                          </button>
                         </div>
                         {shadeScenes.length > 0 ? (
                           <SortableContext items={shadeScenes.map(sc => sc.id)} strategy={verticalListSortingStrategy}>
@@ -975,6 +1005,9 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                         ) : (
                           <p className="empty-inline-hint">No shade scenes configured.</p>
                         )}
+                        <button className="btn-primary compact-secondary-btn scene-add-btn" onClick={() => handleAddScene(room.id, 'shade')}>
+                          <Plus size={13} /> Add Shade Scene
+                        </button>
                       </div>
                     </>
                   );
