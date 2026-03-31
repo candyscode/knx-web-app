@@ -23,6 +23,12 @@
   padding: 0;
 }
 
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background-color: var(--bg-primary);
@@ -39,6 +45,9 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* Base Layout */
@@ -47,6 +56,7 @@ body {
   margin: 0 auto;
   padding: 2rem;
   width: 100%;
+  overflow-x: hidden;
 }
 
 .header {
@@ -56,6 +66,21 @@ body {
   padding-bottom: 2rem;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 2rem;
+}
+
+.header-main,
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.header-main {
+  gap: 1rem;
+  min-width: 0;
+}
+
+.header-actions {
+  justify-content: flex-end;
 }
 
 .header h1 {
@@ -73,18 +98,28 @@ body {
 .nav-links {
   display: flex;
   gap: 1rem;
+  padding: 0.5rem;
 }
 
 .nav-link {
   color: var(--text-secondary);
   text-decoration: none;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.95rem;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
 }
 
 .nav-link:hover {
@@ -106,6 +141,7 @@ body {
   border-radius: 16px;
   padding: 2rem;
   box-shadow: var(--glass-shadow);
+  max-width: 100%;
 }
 
 /* Dashboard Rooms */
@@ -121,6 +157,8 @@ body {
   border-radius: 16px;
   padding: 1.5rem;
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .room-card:hover {
@@ -164,6 +202,7 @@ body {
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 500;
+  min-height: 56px;
 }
 
 .action-btn:hover {
@@ -297,6 +336,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 1rem;
   border-radius: 8px;
+  max-width: 100%;
 }
 
 /* Status Indicator */
@@ -338,6 +378,7 @@ body {
   flex-direction: column;
   gap: 1rem;
   z-index: 1000;
+  max-width: calc(100vw - 2rem);
 }
 
 .toast {
@@ -352,6 +393,7 @@ body {
   align-items: center;
   gap: 1rem;
   min-width: 300px;
+  max-width: 100%;
 }
 
 .toast.error {
@@ -650,6 +692,8 @@ body {
   padding: 1rem;
   margin-bottom: 0.6rem;
   transition: border-color 0.2s;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .hue-card {
@@ -879,6 +923,7 @@ body {
   border-radius: 16px;
   padding: 1.75rem;
   width: min(460px, 90vw);
+  max-width: calc(100vw - 2rem);
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
@@ -917,4 +962,128 @@ body {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  .app-container {
+    padding: 1.25rem;
+    max-width: 100vw;
+  }
+
+  .room-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .function-layout {
+    grid-template-columns: 32px minmax(0, 1fr) 36px;
+  }
+
+  .func-left-col,
+  .func-right-col {
+    grid-column: 2;
+  }
+
+  .func-right-col {
+    margin-top: 0.75rem;
+  }
+
+  .func-delete {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-container,
+  .glass-panel,
+  .room-card,
+  .function-card,
+  .item-row,
+  .toast,
+  .modal-content,
+  .blinds-widget {
+    max-width: 100vw;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .header-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .nav-links {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .nav-link {
+    flex: 1 1 0;
+    padding: 0.9rem;
+  }
+
+  .nav-label {
+    display: none;
+  }
+
+  .room-grid,
+  .functions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .item-row,
+  .scene-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .scene-row .form-input {
+    max-width: none;
+  }
+
+  .status-badge,
+  .btn-primary,
+  .btn-danger,
+  .sort-btn,
+  .scene-pill,
+  .toast-close,
+  .toggle-switch,
+  .type-select-trigger,
+  .form-input,
+  .form-select {
+    min-height: 44px;
+  }
+
+  .toast-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ga-tooltip-bubble {
+    left: 0;
+    transform: none;
+    width: min(220px, calc(100vw - 3rem));
+  }
+
+  .ga-tooltip-bubble::after {
+    left: 1rem;
+    transform: none;
+  }
 }

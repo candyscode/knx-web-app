@@ -39,7 +39,7 @@ function App() {
     fetchConfig();
     
     // Initialize socket inside effect to prevent missing early "initial_states" events
-    const socket = io('http://localhost:3001');
+    const socket = io();
 
     socket.on('knx_status', (status) => {
       setKnxStatus(status);
@@ -78,31 +78,36 @@ function App() {
   return (
     <div className="app-container">
       <header className="header">
-        <h1>
-          KNX Control
-        </h1>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <div className="header-main">
+          <h1>
+            KNX Control
+          </h1>
           <div className={`status-badge ${knxStatus.connected ? 'status-connected' : 'status-disconnected'}`}>
             <div className="status-dot"></div>
             {knxStatus.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
             {knxStatus.connected ? 'Connected' : 'Offline'}
           </div>
-          
-          <nav className="nav-links glass-panel" style={{ padding: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+        </div>
+
+        <div className="header-actions">
+          <nav className="nav-links glass-panel">
             <button 
               className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
               onClick={() => setActiveTab('dashboard')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
+              type="button"
+              aria-label="Dashboard"
             >
-              <Home size={18} /> Dashboard
+              <Home size={18} />
+              <span className="nav-label">Dashboard</span>
             </button>
             <button 
               className={`nav-link ${activeTab === 'settings' ? 'active' : ''}`}
               onClick={() => setActiveTab('settings')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
+              type="button"
+              aria-label="Settings"
             >
-              <SettingsIcon size={18} /> Settings
+              <SettingsIcon size={18} />
+              <span className="nav-label">Settings</span>
             </button>
           </nav>
         </div>
@@ -110,7 +115,7 @@ function App() {
 
       <main>
         {activeTab === 'dashboard' && <Dashboard config={config} deviceStates={deviceStates} setDeviceStates={setDeviceStates} hueStates={hueStates} setHueStates={setHueStates} addToast={addToast} />}
-        {activeTab === 'settings' && <Settings config={config} fetchConfig={fetchConfig} hueStatus={hueStatus} setHueStatus={setHueStatus} addToast={addToast} socket={io('http://localhost:3001')} />}
+        {activeTab === 'settings' && <Settings config={config} fetchConfig={fetchConfig} hueStatus={hueStatus} setHueStatus={setHueStatus} addToast={addToast} />}
       </main>
 
       {/* Toasts overlay */}
