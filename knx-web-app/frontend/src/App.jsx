@@ -39,7 +39,7 @@ function App() {
     fetchConfig();
     
     // Initialize socket inside effect to prevent missing early "initial_states" events
-    const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001');
+    const socket = io('http://localhost:3001');
 
     socket.on('knx_status', (status) => {
       setKnxStatus(status);
