@@ -1271,7 +1271,7 @@ html { overflow-x: hidden; }
   .status-badge {
     font-size: 0;    /* hide "Connected" text */
     padding: 0.35rem 0.5rem;
-    gap: 0;
+    gap: 4px;
   }
   .status-badge svg { display: block; }
 
@@ -1352,4 +1352,3 @@ html { overflow-x: hidden; }
   /* Modal */
   .modal-content { width: 96vw; padding: 1rem; }
 }
-
