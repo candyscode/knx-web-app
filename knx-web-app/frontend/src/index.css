@@ -987,12 +987,13 @@ body {
   gap: 0.5rem;
   margin-bottom: 0.75rem;
   padding: 0.4rem 0.6rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(245, 158, 11, 0.12);
   border-radius: 8px;
-  border-left: 3px solid rgba(59, 130, 246, 0.5);
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 .scene-category-block:last-child .scene-category-header {
-  border-left-color: rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.25);
 }
 
 .scene-category-icon {
@@ -1352,4 +1353,3 @@ html { overflow-x: hidden; }
   /* Modal */
   .modal-content { width: 96vw; padding: 1rem; }
 }
-
