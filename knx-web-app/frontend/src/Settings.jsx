@@ -323,7 +323,7 @@ function SortableRoomCard({
           <SortableContext items={allSceneIds} strategy={verticalListSortingStrategy}>
 
             {/* ── Light Scenes ── */}
-            <div className="scene-category-block">
+            <div className="scene-category-block scene-category-block--light">
               <div className="scene-category-header">
                 <h5 className="scene-category-title">Light Scenes</h5>
               </div>
@@ -340,7 +340,7 @@ function SortableRoomCard({
             </div>
 
             {/* ── Shade Scenes ── */}
-            <div className="scene-category-block">
+            <div className="scene-category-block scene-category-block--shade">
               <div className="scene-category-header">
                 <h5 className="scene-category-title">Shade Scenes</h5>
               </div>

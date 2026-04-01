@@ -991,7 +991,7 @@ body {
   border-radius: 8px;
   border: 1px solid rgba(251, 146, 60, 0.3);
 }
-.scene-category-block:last-child .scene-category-header {
+.scene-category-block--shade .scene-category-header {
   background: rgba(59, 130, 246, 0.15);
   border-color: rgba(59, 130, 246, 0.3);
 }
