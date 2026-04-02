@@ -52,9 +52,15 @@ function establishConnection() {
             gaToType[func.movingGroupAddress] = 'moving';
           }
         });
+
+        // Register room scene GA as 'scene' type for bus listener
+        if (room.sceneGroupAddress) {
+          gaToType[room.sceneGroupAddress] = 'scene';
+        }
       });
       
       knxService.setGaToType(gaToType);
+      knxService.setSceneTriggerCallback(handleExternalSceneTrigger);
       
       let delay = 0;
       statusGAs.forEach(ga => {
@@ -63,6 +69,15 @@ function establishConnection() {
       });
     });
   }
+}
+
+/**
+ * Called by KnxService when an external scene telegram is received on the bus
+ * (e.g. from a wall-mounted switch).
+ */
+async function handleExternalSceneTrigger(groupAddress, sceneNumber) {
+  console.log(`External scene trigger: GA=${groupAddress} scene=${sceneNumber}`);
+  await triggerLinkedHueScene(groupAddress, sceneNumber);
 }
 
 // Load config
@@ -121,12 +136,14 @@ app.post('/api/config', (req, res) => {
 });
 
 // Action trigger
-app.post('/api/action', (req, res) => {
+app.post('/api/action', async (req, res) => {
   const { groupAddress, type, sceneNumber, value } = req.body;
   
   try {
     if (type === 'scene') {
       knxService.writeScene(groupAddress, sceneNumber);
+      // Trigger linked Hue scene if configured
+      await triggerLinkedHueScene(groupAddress, sceneNumber);
     } else if (type === 'percentage') {
       // 0-100% -> 'DPT5.001'
       knxService.writeGroupValue(groupAddress, value, 'DPT5.001');
@@ -142,6 +159,32 @@ app.post('/api/action', (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+/**
+ * Given a KNX scene group address and scene number, trigger the corresponding Hue scene (if any).
+ * If the scene is named 'Aus' or 'Off', turn off the linked Hue room instead.
+ */
+async function triggerLinkedHueScene(groupAddress, sceneNumber) {
+  if (!hueService.isPaired) return;
+
+  for (const room of config.rooms) {
+    if (room.sceneGroupAddress !== groupAddress) continue;
+
+    const scene = (room.scenes || []).find(s => s.sceneNumber === sceneNumber && s.category !== 'shade');
+    if (!scene) return;
+
+    const isOff = scene.name && /^(aus|off)$/i.test(scene.name.trim());
+
+    if (isOff && room.hueRoomId) {
+      console.log(`Turning off Hue room ${room.hueRoomId} for scene "${scene.name}"`);
+      await hueService.turnOffRoom(room.hueRoomId);
+    } else if (scene.hueSceneId) {
+      console.log(`Triggering Hue scene ${scene.hueSceneId} for KNX scene "${scene.name}"`);
+      await hueService.triggerScene(scene.hueSceneId);
+    }
+    return;
+  }
+}
 
 // ══════ Hue API Routes ══════
 
@@ -178,6 +221,79 @@ app.post('/api/hue/unpair', (req, res) => {
 app.get('/api/hue/lights', async (req, res) => {
   const result = await hueService.getLights();
   res.json(result);
+});
+
+app.get('/api/hue/rooms', async (req, res) => {
+  const result = await hueService.getRooms();
+  res.json(result);
+});
+
+app.get('/api/hue/scenes', async (req, res) => {
+  const result = await hueService.getScenes();
+  res.json(result);
+});
+
+// ── Hue room/scene linking ──
+
+app.post('/api/config/rooms/:roomId/hue-room', (req, res) => {
+  const { roomId } = req.params;
+  const { hueRoomId } = req.body;
+  if (!hueRoomId) return res.status(400).json({ success: false, error: 'hueRoomId required' });
+
+  const room = config.rooms.find(r => r.id === roomId);
+  if (!room) return res.status(404).json({ success: false, error: 'Room not found' });
+
+  room.hueRoomId = hueRoomId;
+  saveConfig();
+  res.json({ success: true });
+});
+
+app.delete('/api/config/rooms/:roomId/hue-room', (req, res) => {
+  const { roomId } = req.params;
+  const room = config.rooms.find(r => r.id === roomId);
+  if (!room) return res.status(404).json({ success: false, error: 'Room not found' });
+
+  delete room.hueRoomId;
+  saveConfig();
+  res.json({ success: true });
+});
+
+app.post('/api/config/scenes/:sceneId/hue-scene', (req, res) => {
+  const { sceneId } = req.params;
+  const { hueSceneId } = req.body;
+  if (!hueSceneId) return res.status(400).json({ success: false, error: 'hueSceneId required' });
+
+  let found = false;
+  for (const room of config.rooms) {
+    const scene = (room.scenes || []).find(s => s.id === sceneId);
+    if (scene) {
+      scene.hueSceneId = hueSceneId;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) return res.status(404).json({ success: false, error: 'Scene not found' });
+  saveConfig();
+  res.json({ success: true });
+});
+
+app.delete('/api/config/scenes/:sceneId/hue-scene', (req, res) => {
+  const { sceneId } = req.params;
+
+  let found = false;
+  for (const room of config.rooms) {
+    const scene = (room.scenes || []).find(s => s.id === sceneId);
+    if (scene) {
+      delete scene.hueSceneId;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) return res.status(404).json({ success: false, error: 'Scene not found' });
+  saveConfig();
+  res.json({ success: true });
 });
 
 app.post('/api/hue/action', async (req, res) => {

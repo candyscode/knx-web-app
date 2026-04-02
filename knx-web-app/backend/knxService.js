@@ -7,10 +7,19 @@ class KnxService {
     this.isConnected = false;
     this.deviceStates = {};
     this.gaToType = {};
+    this.sceneTriggerCallback = null;
   }
 
   setGaToType(map) {
     this.gaToType = map;
+  }
+
+  /**
+   * Register a callback for externally triggered KNX scenes (from bus, e.g. wall switches).
+   * Callback signature: (groupAddress, sceneNumber) => void
+   */
+  setSceneTriggerCallback(callback) {
+    this.sceneTriggerCallback = callback;
   }
 
   connect(ipAddress, port = 3671, onConnectCallback = null) {
@@ -65,6 +74,18 @@ class KnxService {
               if (evt === 'GroupValue_Write' || evt === 'GroupValue_Response') {
                 this.deviceStates[dest] = parsedValue;
                 this.io.emit('knx_state_update', { groupAddress: dest, value: parsedValue });
+
+                // If this is a scene GA and we have a callback, notify server for Hue sync
+                if (evt === 'GroupValue_Write' && type === 'scene' && this.sceneTriggerCallback) {
+                  // DPT17.001: bus value is sceneNumber - 1 (0-based), stored as integer
+                  let sceneNum = parsedValue;
+                  if (Buffer.isBuffer(value)) {
+                    sceneNum = (value[0] & 0x3F) + 1; // mask activation bit, convert to 1-based
+                  } else if (typeof parsedValue === 'number') {
+                    sceneNum = parsedValue + 1; // 0-based bus value → 1-based scene number
+                  }
+                  this.sceneTriggerCallback(dest, sceneNum);
+                }
               }
             },
             error: (connstatus) => {

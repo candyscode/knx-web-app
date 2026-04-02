@@ -9,7 +9,7 @@ import {
   useSortable, arrayMove
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights } from './configApi';
+import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights, getHueRooms, getHueScenes, linkHueRoom, unlinkHueRoom, linkHueScene, unlinkHueScene } from './configApi';
 import {
   Plus, Trash2, Save, ChevronDown, HelpCircle, Sparkles,
   Lightbulb, Lock, GripVertical
@@ -133,10 +133,12 @@ function GAField({ label, tooltipKey, optional, value, onChange, placeholder, ty
 
 // ── Sortable Scene Row ────────────────────────────────────────────────────────
 
-function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene }) {
+function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene, hueStatus, openHueSceneModal }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: sc.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  const isLight = (sc.category || 'light') === 'light';
 
   return (
     <div ref={setNodeRef} style={style} className="scene-row">
@@ -163,6 +165,31 @@ function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene }) 
             placeholder="1–64"
           />
         </div>
+        {/* Hue scene link — only for light scenes when bridge is paired */}
+        {hueStatus && hueStatus.paired && isLight && (
+          <div className="scene-field scene-field--hue">
+            {sc.hueSceneId ? (
+              <div className="hue-linked-badge" title={`Linked: ${sc.hueSceneId}`}>
+                <Lightbulb size={12} style={{ color: 'var(--accent-color)' }} />
+                <span className="hue-linked-label">{sc.hueSceneName || sc.hueSceneId}</span>
+                <button
+                  className="hue-unlink-btn"
+                  title="Unlink Hue scene"
+                  onClick={() => handleUpdateScene(roomId, sc.id, '_unlinkHue', true)}
+                >×</button>
+              </div>
+            ) : (
+              <button
+                className="btn-secondary-sm btn-purple-sm"
+                style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem' }}
+                onClick={() => openHueSceneModal(roomId, sc.id)}
+                title="Link a Hue scene"
+              >
+                <Lightbulb size={11} /> Link Hue
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <button className="btn-danger icon-btn scene-delete-btn" onClick={() => handleDeleteScene(roomId, sc.id)} title="Delete scene">
         <Trash2 size={14} />
@@ -278,6 +305,7 @@ function SortableRoomCard({
   handleAddScene, handleDeleteScene, handleUpdateScene,
   handleAddFunction, handleDeleteFunction, handleUpdateFunction,
   handleGenerateBaseScenes, handleSaveRooms,
+  openHueSceneModal, openHueRoomModal,
   openHueLampModal, hueStatus,
   onFuncDragEnd, onSceneDragEnd,
   sensors,
@@ -318,6 +346,32 @@ function SortableRoomCard({
             placeholder="e.g. 2/5/0" />
         </div>
 
+        {/* Hue room link */}
+        {hueStatus && hueStatus.paired && (
+          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', minWidth: '90px' }}>Hue Room:</span>
+            {room.hueRoomId ? (
+              <div className="hue-linked-badge">
+                <Lightbulb size={12} style={{ color: 'var(--accent-color)' }} />
+                <span className="hue-linked-label">{room.hueRoomName || room.hueRoomId}</span>
+                <button
+                  className="hue-unlink-btn"
+                  title="Unlink Hue room"
+                  onClick={() => updateRoom(room.id, { hueRoomId: null, hueRoomName: null })}
+                >×</button>
+              </div>
+            ) : (
+              <button
+                className="btn-secondary-sm btn-purple-sm"
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                onClick={() => openHueRoomModal(room.id)}
+              >
+                <Lightbulb size={12} /> Link Hue Room
+              </button>
+            )}
+          </div>
+        )}
+
         <DndContext sensors={sensors} collisionDetection={closestCenter}
           onDragEnd={(e) => onSceneDragEnd(e, room.id)}>
           <SortableContext items={allSceneIds} strategy={verticalListSortingStrategy}>
@@ -331,7 +385,9 @@ function SortableRoomCard({
                 {lightScenes.map(sc => (
                   <SortableSceneRow key={sc.id} sc={sc} roomId={room.id}
                     handleUpdateScene={handleUpdateScene}
-                    handleDeleteScene={handleDeleteScene} />
+                    handleDeleteScene={handleDeleteScene}
+                    hueStatus={hueStatus}
+                    openHueSceneModal={openHueSceneModal} />
                 ))}
               </div>
               <button className="btn-secondary-sm scene-add-btn" onClick={() => handleAddScene(room.id, 'light')}>
@@ -348,7 +404,9 @@ function SortableRoomCard({
                 {shadeScenes.map(sc => (
                   <SortableSceneRow key={sc.id} sc={sc} roomId={room.id}
                     handleUpdateScene={handleUpdateScene}
-                    handleDeleteScene={handleDeleteScene} />
+                    handleDeleteScene={handleDeleteScene}
+                    hueStatus={hueStatus}
+                    openHueSceneModal={openHueSceneModal} />
                 ))}
               </div>
               <button className="btn-secondary-sm scene-add-btn" onClick={() => handleAddScene(room.id, 'shade')}>
@@ -431,6 +489,16 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const [hueLamps, setHueLamps] = useState([]);
   const [hueLampsLoading, setHueLampsLoading] = useState(false);
 
+  // Hue room linking modal
+  const [hueRoomModal, setHueRoomModal] = useState({ open: false, roomId: null });
+  const [hueRooms, setHueRooms] = useState([]);
+  const [hueRoomsLoading, setHueRoomsLoading] = useState(false);
+
+  // Hue scene linking modal
+  const [hueSceneModal, setHueSceneModal] = useState({ open: false, roomId: null, sceneId: null });
+  const [hueScenes, setHueScenes] = useState([]);
+  const [hueScenesLoading, setHueScenesLoading] = useState(false);
+
   // DnD sensors — touch + pointer + keyboard
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -497,6 +565,82 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     setRooms(updated); setHueLampModal({ open: false, roomId: null }); addToast(`Added "${lamp.name}"`, 'success');
   };
 
+  // Hue room linking
+  const openHueRoomModal = async (roomId) => {
+    setHueRoomModal({ open: true, roomId }); setHueRoomsLoading(true);
+    try {
+      const res = await getHueRooms();
+      if (res.success) setHueRooms(res.rooms);
+      else addToast('Failed to load Hue rooms: ' + (res.error || ''), 'error');
+    } catch { addToast('Could not reach Hue Bridge', 'error'); }
+    setHueRoomsLoading(false);
+  };
+
+  const selectHueRoom = async (hueRoom) => {
+    const roomId = hueRoomModal.roomId;
+    try {
+      const res = await linkHueRoom(roomId, hueRoom.id);
+      if (res.success) {
+        updateRoom(roomId, { hueRoomId: hueRoom.id, hueRoomName: hueRoom.name });
+        addToast(`Linked Hue room "${hueRoom.name}"`, 'success');
+        fetchConfig();
+      } else {
+        addToast('Link failed: ' + (res.error || ''), 'error');
+      }
+    } catch { addToast('Could not reach backend', 'error'); }
+    setHueRoomModal({ open: false, roomId: null });
+  };
+
+  const handleUnlinkHueRoom = async (roomId) => {
+    try {
+      await unlinkHueRoom(roomId);
+      updateRoom(roomId, { hueRoomId: null, hueRoomName: null });
+      addToast('Hue room unlinked', 'success');
+      fetchConfig();
+    } catch { addToast('Unlink failed', 'error'); }
+  };
+
+  // Hue scene linking
+  const openHueSceneModal = async (roomId, sceneId) => {
+    setHueSceneModal({ open: true, roomId, sceneId }); setHueScenesLoading(true);
+    try {
+      const res = await getHueScenes();
+      if (res.success) setHueScenes(res.scenes);
+      else addToast('Failed to load Hue scenes: ' + (res.error || ''), 'error');
+    } catch { addToast('Could not reach Hue Bridge', 'error'); }
+    setHueScenesLoading(false);
+  };
+
+  const selectHueScene = async (hueScene) => {
+    const { roomId, sceneId } = hueSceneModal;
+    try {
+      const res = await linkHueScene(sceneId, hueScene.id);
+      if (res.success) {
+        setRooms(prev => prev.map(r => r.id !== roomId ? r : {
+          ...r,
+          scenes: r.scenes.map(s => s.id !== sceneId ? s : { ...s, hueSceneId: hueScene.id, hueSceneName: hueScene.name })
+        }));
+        addToast(`Linked Hue scene "${hueScene.name}"`, 'success');
+        fetchConfig();
+      } else {
+        addToast('Link failed: ' + (res.error || ''), 'error');
+      }
+    } catch { addToast('Could not reach backend', 'error'); }
+    setHueSceneModal({ open: false, roomId: null, sceneId: null });
+  };
+
+  const handleUnlinkHueScene = async (roomId, sceneId) => {
+    try {
+      await unlinkHueScene(sceneId);
+      setRooms(prev => prev.map(r => r.id !== roomId ? r : {
+        ...r,
+        scenes: r.scenes.map(s => s.id !== sceneId ? s : { ...s, hueSceneId: null, hueSceneName: null })
+      }));
+      addToast('Hue scene unlinked', 'success');
+      fetchConfig();
+    } catch { addToast('Unlink failed', 'error'); }
+  };
+
   // Room handlers
   const handleSaveIp = async () => {
     try { await updateConfig({ knxIp: ip, knxPort: port }); addToast('Connection settings saved', 'success'); fetchConfig(); }
@@ -532,6 +676,10 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   };
 
   const handleUpdateScene = (roomId, sceneId, key, val) => {
+    if (key === '_unlinkHue') {
+      handleUnlinkHueScene(roomId, sceneId);
+      return;
+    }
     const room = rooms.find(r => r.id === roomId);
     updateRoom(roomId, { scenes: room.scenes.map(s => s.id !== sceneId ? s : { ...s, [key]: val }) });
   };
@@ -727,6 +875,8 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
                 handleGenerateBaseScenes={handleGenerateBaseScenes}
                 handleSaveRooms={handleSaveRooms}
                 openHueLampModal={openHueLampModal}
+                openHueRoomModal={openHueRoomModal}
+                openHueSceneModal={openHueSceneModal}
                 hueStatus={hueStatus}
                 onFuncDragEnd={onFuncDragEnd}
                 onSceneDragEnd={onSceneDragEnd}
@@ -769,6 +919,84 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
             <div style={{ textAlign: 'right', marginTop: '1rem' }}>
               <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
                 onClick={() => setHueLampModal({ open: false, roomId: null })}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Hue Room Linking Modal */}
+      {hueRoomModal.open && createPortal(
+        <div className="modal-overlay" onClick={() => setHueRoomModal({ open: false, roomId: null })}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 1rem 0' }}>Select Hue Room</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              When a KNX scene named "Aus" or "Off" is triggered, the linked Hue room will be turned off.
+            </p>
+            {hueRoomsLoading ? (
+              <p style={{ color: 'var(--text-secondary)' }}>Loading rooms…</p>
+            ) : hueRooms.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No Hue rooms found.</p>
+            ) : (
+              <div className="hue-lamp-list">
+                {hueRooms.map(hr => (
+                  <button key={hr.id} className="hue-lamp-item" onClick={() => selectHueRoom(hr)}>
+                    <Lightbulb size={18} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                    <div style={{ flex: 1, textAlign: 'left' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{hr.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {hr.lights.length} light{hr.lights.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                    <Plus size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ textAlign: 'right', marginTop: '1rem' }}>
+              <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                onClick={() => setHueRoomModal({ open: false, roomId: null })}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Hue Scene Linking Modal */}
+      {hueSceneModal.open && createPortal(
+        <div className="modal-overlay" onClick={() => setHueSceneModal({ open: false, roomId: null, sceneId: null })}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 1rem 0' }}>Select Hue Scene</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              This scene will be activated on the Hue Bridge when the KNX scene is triggered.
+            </p>
+            {hueScenesLoading ? (
+              <p style={{ color: 'var(--text-secondary)' }}>Loading scenes…</p>
+            ) : hueScenes.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No Hue scenes found.</p>
+            ) : (
+              <div className="hue-lamp-list">
+                {hueScenes.map(hs => (
+                  <button key={hs.id} className="hue-lamp-item" onClick={() => selectHueScene(hs)}>
+                    <Sparkles size={18} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                    <div style={{ flex: 1, textAlign: 'left' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{hs.name}</div>
+                      {hs.group && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Group {hs.group}</div>
+                      )}
+                    </div>
+                    <Plus size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ textAlign: 'right', marginTop: '1rem' }}>
+              <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                onClick={() => setHueSceneModal({ open: false, roomId: null, sceneId: null })}>
                 Cancel
               </button>
             </div>

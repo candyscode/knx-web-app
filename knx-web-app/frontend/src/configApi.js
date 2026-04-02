@@ -49,6 +49,44 @@ export const getHueLights = async () => {
   return res.json();
 };
 
+export const getHueRooms = async () => {
+  const res = await fetch(`${API_BASE}/hue/rooms`);
+  return res.json();
+};
+
+export const getHueScenes = async () => {
+  const res = await fetch(`${API_BASE}/hue/scenes`);
+  return res.json();
+};
+
+export const linkHueRoom = async (roomId, hueRoomId) => {
+  const res = await fetch(`${API_BASE}/config/rooms/${roomId}/hue-room`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ hueRoomId })
+  });
+  return res.json();
+};
+
+export const unlinkHueRoom = async (roomId) => {
+  const res = await fetch(`${API_BASE}/config/rooms/${roomId}/hue-room`, { method: 'DELETE' });
+  return res.json();
+};
+
+export const linkHueScene = async (sceneId, hueSceneId) => {
+  const res = await fetch(`${API_BASE}/config/scenes/${sceneId}/hue-scene`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ hueSceneId })
+  });
+  return res.json();
+};
+
+export const unlinkHueScene = async (sceneId) => {
+  const res = await fetch(`${API_BASE}/config/scenes/${sceneId}/hue-scene`, { method: 'DELETE' });
+  return res.json();
+};
+
 export const triggerHueAction = async (lightId, on) => {
   const res = await fetch(`${API_BASE}/hue/action`, {
     method: 'POST',

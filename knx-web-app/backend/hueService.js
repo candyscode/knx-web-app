@@ -160,6 +160,128 @@ class HueService {
       return {};
     }
   }
+
+  /**
+   * Get all rooms (groups of type Room) from the paired bridge.
+   * Returns array of { id, name, lights }
+   */
+  async getRooms() {
+    if (!this.isPaired) return { success: false, error: 'Not paired', rooms: [] };
+
+    try {
+      const res = await fetch(`http://${this.bridgeIp}/api/${this.apiKey}/groups`, {
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (!res.ok) throw new Error(`Bridge returned ${res.status}`);
+      const data = await res.json();
+
+      const rooms = Object.entries(data)
+        .filter(([, g]) => g.type === 'Room')
+        .map(([id, g]) => ({
+          id,
+          name: g.name,
+          lights: g.lights || [],
+        }));
+
+      return { success: true, rooms };
+    } catch (err) {
+      console.error('Failed to get Hue rooms:', err.message);
+      return { success: false, error: err.message, rooms: [] };
+    }
+  }
+
+  /**
+   * Get all scenes from the paired bridge.
+   * Returns array of { id, name, group, type }
+   */
+  async getScenes() {
+    if (!this.isPaired) return { success: false, error: 'Not paired', scenes: [] };
+
+    try {
+      const res = await fetch(`http://${this.bridgeIp}/api/${this.apiKey}/scenes`, {
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (!res.ok) throw new Error(`Bridge returned ${res.status}`);
+      const data = await res.json();
+
+      const scenes = Object.entries(data).map(([id, s]) => ({
+        id,
+        name: s.name,
+        group: s.group || null,
+        type: s.type || 'LightScene',
+      }));
+
+      return { success: true, scenes };
+    } catch (err) {
+      console.error('Failed to get Hue scenes:', err.message);
+      return { success: false, error: err.message, scenes: [] };
+    }
+  }
+
+  /**
+   * Trigger a Hue scene by scene ID.
+   */
+  async triggerScene(sceneId) {
+    if (!this.isPaired) return { success: false, error: 'Not paired' };
+
+    try {
+      // Scenes are triggered via the group endpoint
+      // We need to find the group associated with the scene
+      const scenesRes = await fetch(`http://${this.bridgeIp}/api/${this.apiKey}/scenes/${sceneId}`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!scenesRes.ok) throw new Error(`Bridge returned ${scenesRes.status}`);
+      const sceneData = await scenesRes.json();
+
+      const groupId = sceneData.group;
+      if (!groupId) {
+        // Fallback: use group 0 (all lights)
+        const res = await fetch(`http://${this.bridgeIp}/api/${this.apiKey}/groups/0/action`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scene: sceneId }),
+          signal: AbortSignal.timeout(5000),
+        });
+        const data = await res.json();
+        return { success: true, data };
+      }
+
+      const res = await fetch(`http://${this.bridgeIp}/api/${this.apiKey}/groups/${groupId}/action`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scene: sceneId }),
+        signal: AbortSignal.timeout(5000),
+      });
+      const data = await res.json();
+      return { success: true, data };
+    } catch (err) {
+      console.error(`Failed to trigger Hue scene ${sceneId}:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * Turn off an entire Hue room (group) by group ID.
+   */
+  async turnOffRoom(groupId) {
+    if (!this.isPaired) return { success: false, error: 'Not paired' };
+
+    try {
+      const res = await fetch(`http://${this.bridgeIp}/api/${this.apiKey}/groups/${groupId}/action`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ on: false }),
+        signal: AbortSignal.timeout(5000),
+      });
+      const data = await res.json();
+      return { success: true, data };
+    } catch (err) {
+      console.error(`Failed to turn off Hue room ${groupId}:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
 }
 
 module.exports = HueService;
