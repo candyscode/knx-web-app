@@ -1,0 +1,15 @@
+Issue #18: Button Layout "Generate Base Scenes" + "Add Light Scene"
+
+Aufgabe:
+- "Add Light Scene" Button soll 75% der Breite nutzen
+- "Generate Base Scenes" Button soll 25% der Breite nutzen
+- Nebeneinander anordnen
+- Auf Mobile: untereinander, jeweils 100% Breite
+
+Betroffene Dateien:
+- knx-web-app/frontend/src/Settings.jsx
+- knx-web-app/frontend/src/index.css
+
+Basis-Branch: fix/issue-18-button-layout (neuer Branch von main)
+
+ACHTUNG: Vor dem Editieren automatisch "git pull origin main" ausführen um auf dem neuesten Stand zu sein!
