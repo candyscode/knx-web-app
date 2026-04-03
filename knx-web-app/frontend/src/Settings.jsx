@@ -334,9 +334,20 @@ function SortableRoomCard({
                     handleDeleteScene={handleDeleteScene} />
                 ))}
               </div>
-              <button className="btn-secondary-sm scene-add-btn" onClick={() => handleAddScene(room.id, 'light')}>
-                <Plus size={13} /> Add Light Scene
-              </button>
+              <div className="scene-actions-row">
+                <button
+                  className="btn-secondary-sm scene-add-btn scene-actions-row__add"
+                  onClick={() => handleAddScene(room.id, 'light')}
+                >
+                  <Plus size={13} /> Add Light Scene
+                </button>
+                <button
+                  className="btn-secondary-sm btn-purple-sm scene-actions-row__generate"
+                  onClick={() => handleGenerateBaseScenes(room.id)}
+                >
+                  <Sparkles size={13} /> Generate Base Scenes
+                </button>
+              </div>
             </div>
 
             {/* ── Shade Scenes ── */}
@@ -358,12 +369,6 @@ function SortableRoomCard({
 
           </SortableContext>
         </DndContext>
-
-        <div style={{ marginTop: '0.75rem' }}>
-          <button className="btn-secondary-sm btn-purple-sm" onClick={() => handleGenerateBaseScenes(room.id)}>
-            <Sparkles size={13} /> Generate Base Scenes
-          </button>
-        </div>
       </div>
 
       {/* ═══ ADDITIONAL FUNCTIONS ═══ */}

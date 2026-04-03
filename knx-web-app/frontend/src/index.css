@@ -1013,6 +1013,22 @@ body {
   justify-content: center;
 }
 
+.scene-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.scene-actions-row__add {
+  flex: 3 1 0;
+  margin-top: 0;
+}
+
+.scene-actions-row__generate {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
 
 .drag-handle {
   display: inline-flex;
@@ -1350,6 +1366,17 @@ html { overflow-x: hidden; }
   .func-fields-row {
     grid-template-columns: 1fr;
     gap: 0.5rem;
+  }
+
+  .scene-actions-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .scene-actions-row__add,
+  .scene-actions-row__generate {
+    width: 100%;
+    flex: 1 1 auto;
   }
 
 
