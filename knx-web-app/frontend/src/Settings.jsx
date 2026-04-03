@@ -543,9 +543,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     const toAdd = [];
     if (!used.includes(1)) toAdd.push({ id: Date.now() + '_1', name: 'Off', sceneNumber: 1, category: 'light' });
     if (!used.includes(2)) toAdd.push({ id: Date.now() + '_2', name: 'Bright', sceneNumber: 2, category: 'light' });
-    if (!used.includes(3)) toAdd.push({ id: Date.now() + '_3', name: 'Shades Up', sceneNumber: 3, category: 'shade' });
-    if (!used.includes(4)) toAdd.push({ id: Date.now() + '_4', name: 'Shades Down', sceneNumber: 4, category: 'shade' });
-    if (!toAdd.length) { addToast('Base numbers 1-4 already exist', 'success'); return; }
+    if (!toAdd.length) { addToast('Base scenes Off and Bright already exist', 'success'); return; }
     updateRoom(roomId, { scenes: [...existing, ...toAdd] });
     addToast(`Added ${toAdd.map(s => s.name).join(' & ')}`, 'success');
   };
