@@ -139,7 +139,8 @@ function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene, hu
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
   const isLight = (sc.category || 'light') === 'light';
-  const isHueOffScene = /^(aus|off)$/i.test((sc.name || '').trim());
+  const sceneName = (sc.name || '').trim();
+  const isHueOffScene = /^(aus|off)$/i.test(sceneName);
 
   return (
     <div ref={setNodeRef} style={style} className="scene-row">
@@ -180,7 +181,7 @@ function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene, hu
                 >×</button>
               </div>
             ) : isHueOffScene ? (
-              <span className="hue-off-label">This scene will turn off the hue room.</span>
+              <span className="hue-off-label">{sceneName || 'Off'}</span>
             ) : (
               <button
                 className="btn-secondary-sm btn-purple-sm"
