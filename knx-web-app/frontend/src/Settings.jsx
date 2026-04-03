@@ -139,6 +139,7 @@ function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene, hu
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
   const isLight = (sc.category || 'light') === 'light';
+  const isHueOffScene = /^(aus|off)$/i.test((sc.name || '').trim());
 
   return (
     <div ref={setNodeRef} style={style} className="scene-row">
@@ -170,7 +171,7 @@ function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene, hu
           <div className="scene-field scene-field--hue">
             {sc.hueSceneId ? (
               <div className="hue-linked-badge" title={`Linked: ${sc.hueSceneId}`}>
-                <Lightbulb size={12} style={{ color: 'var(--accent-color)' }} />
+                <Lightbulb size={12} />
                 <span className="hue-linked-label">{sc.hueSceneName || sc.hueSceneId}</span>
                 <button
                   className="hue-unlink-btn"
@@ -178,6 +179,8 @@ function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene, hu
                   onClick={() => handleUpdateScene(roomId, sc.id, '_unlinkHue', true)}
                 >×</button>
               </div>
+            ) : isHueOffScene ? (
+              <span className="hue-off-label">This scene will turn off the hue room.</span>
             ) : (
               <button
                 className="btn-secondary-sm btn-purple-sm"
@@ -352,7 +355,7 @@ function SortableRoomCard({
             <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', minWidth: '90px' }}>Hue Room:</span>
             {room.hueRoomId ? (
               <div className="hue-linked-badge">
-                <Lightbulb size={12} style={{ color: 'var(--accent-color)' }} />
+                <Lightbulb size={12} />
                 <span className="hue-linked-label">{room.hueRoomName || room.hueRoomId}</span>
                 <button
                   className="hue-unlink-btn"
@@ -609,6 +612,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const openHueSceneModal = async (roomId, sceneId) => {
     setHueSceneModal({ open: true, roomId, sceneId }); setHueScenesLoading(true);
     try {
+      await updateConfig({ rooms });
       const res = await getHueScenes();
       if (res.success) setHueScenes(res.scenes);
       else addToast('Failed to load Hue scenes: ' + (res.error || ''), 'error');
