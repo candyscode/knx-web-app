@@ -12,7 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights, getHueRooms, getHueScenes, linkHueRoom, unlinkHueRoom, linkHueScene, unlinkHueScene } from './configApi';
 import {
   Plus, Trash2, Save, ChevronDown, HelpCircle, Sparkles,
-  Lightbulb, Lock, GripVertical
+  Lightbulb, Lock, GripVertical, Search
 } from 'lucide-react';
 
 const ICON_OPTIONS = [
@@ -498,11 +498,13 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
 
   // Hue room linking modal
   const [hueRoomModal, setHueRoomModal] = useState({ open: false, roomId: null });
+  const [hueRoomSearch, setHueRoomSearch] = useState('');
   const [hueRooms, setHueRooms] = useState([]);
   const [hueRoomsLoading, setHueRoomsLoading] = useState(false);
 
   // Hue scene linking modal
   const [hueSceneModal, setHueSceneModal] = useState({ open: false, roomId: null, sceneId: null });
+  const [hueSceneSearch, setHueSceneSearch] = useState('');
   const [hueScenes, setHueScenes] = useState([]);
   const [hueScenesLoading, setHueScenesLoading] = useState(false);
 
@@ -595,6 +597,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         addToast('Link failed: ' + (res.error || ''), 'error');
       }
     } catch { addToast('Could not reach backend', 'error'); }
+    setHueRoomSearch('');
     setHueRoomModal({ open: false, roomId: null });
   };
 
@@ -634,6 +637,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         addToast('Link failed: ' + (res.error || ''), 'error');
       }
     } catch { addToast('Could not reach backend', 'error'); }
+    setHueSceneSearch('');
     setHueSceneModal({ open: false, roomId: null, sceneId: null });
   };
 
@@ -760,6 +764,8 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   };
 
   const roomIds = rooms.map(r => r.id);
+  const filteredHueRooms = hueRooms.filter(room => room.name.toLowerCase().includes(hueRoomSearch.trim().toLowerCase()));
+  const filteredHueScenes = hueScenes.filter(scene => scene.name.toLowerCase().includes(hueSceneSearch.trim().toLowerCase()));
 
   return (
     <div className="glass-panel settings-panel">
@@ -935,19 +941,30 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
 
       {/* Hue Room Linking Modal */}
       {hueRoomModal.open && createPortal(
-        <div className="modal-overlay" onClick={() => setHueRoomModal({ open: false, roomId: null })}>
+        <div className="modal-overlay" onClick={() => { setHueRoomModal({ open: false, roomId: null }); setHueRoomSearch(''); }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 1rem 0' }}>Select Hue Room</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               When a KNX scene named "Aus" or "Off" is triggered, the linked Hue room will be turned off.
             </p>
+            <div style={{ position: 'relative', marginBottom: '1rem' }}>
+              <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input
+                className="form-input"
+                style={{ paddingLeft: '2.5rem' }}
+                type="text"
+                placeholder="Search Hue rooms"
+                value={hueRoomSearch}
+                onChange={e => setHueRoomSearch(e.target.value)}
+              />
+            </div>
             {hueRoomsLoading ? (
               <p style={{ color: 'var(--text-secondary)' }}>Loading rooms…</p>
-            ) : hueRooms.length === 0 ? (
+            ) : filteredHueRooms.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)' }}>No Hue rooms found.</p>
             ) : (
               <div className="hue-lamp-list">
-                {hueRooms.map(hr => (
+                {filteredHueRooms.map(hr => (
                   <button key={hr.id} className="hue-lamp-item" onClick={() => selectHueRoom(hr)}>
                     <Lightbulb size={18} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
                     <div style={{ flex: 1, textAlign: 'left' }}>
@@ -963,7 +980,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
             )}
             <div style={{ textAlign: 'right', marginTop: '1rem' }}>
               <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
-                onClick={() => setHueRoomModal({ open: false, roomId: null })}>
+                onClick={() => { setHueRoomModal({ open: false, roomId: null }); setHueRoomSearch(''); }}>
                 Cancel
               </button>
             </div>
@@ -974,19 +991,30 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
 
       {/* Hue Scene Linking Modal */}
       {hueSceneModal.open && createPortal(
-        <div className="modal-overlay" onClick={() => setHueSceneModal({ open: false, roomId: null, sceneId: null })}>
+        <div className="modal-overlay" onClick={() => { setHueSceneModal({ open: false, roomId: null, sceneId: null }); setHueSceneSearch(''); }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 1rem 0' }}>Select Hue Scene</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               This scene will be activated on the Hue Bridge when the KNX scene is triggered.
             </p>
+            <div style={{ position: 'relative', marginBottom: '1rem' }}>
+              <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input
+                className="form-input"
+                style={{ paddingLeft: '2.5rem' }}
+                type="text"
+                placeholder="Search Hue scenes"
+                value={hueSceneSearch}
+                onChange={e => setHueSceneSearch(e.target.value)}
+              />
+            </div>
             {hueScenesLoading ? (
               <p style={{ color: 'var(--text-secondary)' }}>Loading scenes…</p>
-            ) : hueScenes.length === 0 ? (
+            ) : filteredHueScenes.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)' }}>No Hue scenes found.</p>
             ) : (
               <div className="hue-lamp-list">
-                {hueScenes.map(hs => (
+                {filteredHueScenes.map(hs => (
                   <button key={hs.id} className="hue-lamp-item" onClick={() => selectHueScene(hs)}>
                     <Sparkles size={18} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
                     <div style={{ flex: 1, textAlign: 'left' }}>
@@ -1002,7 +1030,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
             )}
             <div style={{ textAlign: 'right', marginTop: '1rem' }}>
               <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
-                onClick={() => setHueSceneModal({ open: false, roomId: null, sceneId: null })}>
+                onClick={() => { setHueSceneModal({ open: false, roomId: null, sceneId: null }); setHueSceneSearch(''); }}>
                 Cancel
               </button>
             </div>
