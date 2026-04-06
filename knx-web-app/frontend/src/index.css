@@ -774,10 +774,19 @@ body {
   padding: 0.6rem 0.875rem;
   cursor: pointer;
   transition: background 0.15s;
+  color: #ffffff;
 }
 .type-select-option:hover { background: rgba(59, 130, 246, 0.12); }
 .type-select-option.active { background: rgba(59, 130, 246, 0.18); }
-.type-select-option.active .type-select-name { color: var(--accent-color); }
+.type-select-option.active .type-select-name { color: #ffffff; }
+
+/* IconSelect dropdown styling - ensure white icons and text */
+.type-select-option svg {
+  color: #ffffff !important;
+}
+.type-select-option .type-select-name {
+  color: #ffffff;
+}
 
 /* ── GA Field Tooltip ───────────────────────────── */
 .ga-field .settings-field-label {

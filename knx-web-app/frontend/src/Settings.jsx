@@ -94,7 +94,7 @@ function IconSelect({ value, onChange }) {
               <div key={opt.value} className={`type-select-option ${opt.value === value ? 'active' : ''}`}
                 onClick={() => { onChange(opt.value); setOpen(false); }}
                 style={{ padding: '0.5rem 0.6rem', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '0.6rem' }}>
-                <OptIcon size={18} color={opt.value === value ? '#fff' : 'var(--accent-color)'} />
+                <OptIcon size={18} color="#ffffff" />
                 <span className="type-select-name">{opt.label}</span>
               </div>
             );
