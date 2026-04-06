@@ -22,7 +22,7 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 const knxService = new KnxService(io);
 const hueService = new HueService();
 
-// Floor options
+// Floor options constant
 const FLOOR_OPTIONS = ['KG', 'UG', 'EG', 'OG'];
 
 // Default empty config
@@ -31,7 +31,7 @@ let config = {
   knxPort: 3671,
   hue: { bridgeIp: '', apiKey: '' },
   rooms: [],
-  ui: { expandedFloors: ['EG'] } // Default expanded floor (EG = Erdgeschoss)
+  ui: { expandedFloors: ['EG'] }
 };
 
 function establishConnection() {
@@ -94,13 +94,12 @@ if (fs.existsSync(CONFIG_FILE)) {
     if (!config.ui) config.ui = { expandedFloors: ['EG'] };
     if (!config.ui.expandedFloors) config.ui.expandedFloors = ['EG'];
     
-    // Migrate rooms to include floor field if missing
-    if (config.rooms) {
-      config.rooms = config.rooms.map(room => {
-        if (!room.floor) {
-          return { ...room, floor: 'EG' }; // Default to Erdgeschoss
+    // Migration: Add floor field to existing rooms without floor
+    if (config.rooms && Array.isArray(config.rooms)) {
+      config.rooms.forEach(room => {
+        if (!room.floor || !FLOOR_OPTIONS.includes(room.floor)) {
+          room.floor = 'EG';
         }
-        return room;
       });
     }
     
@@ -125,9 +124,26 @@ app.get('/api/config', (req, res) => {
   res.json(config);
 });
 
-// Get floor options
+// Floor API Routes
 app.get('/api/floors', (req, res) => {
-  res.json({ success: true, floors: FLOOR_OPTIONS });
+  res.json(FLOOR_OPTIONS);
+});
+
+// Update room floor
+app.post('/api/config/rooms/:roomId/floor', (req, res) => {
+  const { roomId } = req.params;
+  const { floor } = req.body;
+  
+  if (!floor || !FLOOR_OPTIONS.includes(floor)) {
+    return res.status(400).json({ success: false, error: 'Invalid floor. Must be one of: ' + FLOOR_OPTIONS.join(', ') });
+  }
+  
+  const room = config.rooms.find(r => r.id === roomId);
+  if (!room) return res.status(404).json({ success: false, error: 'Room not found' });
+  
+  room.floor = floor;
+  saveConfig();
+  res.json({ success: true, room });
 });
 
 app.post('/api/config', (req, res) => {
@@ -151,6 +167,12 @@ app.post('/api/config', (req, res) => {
   
   if (rooms !== undefined) {
     config.rooms = rooms;
+    // Ensure all rooms have a floor value
+    config.rooms.forEach(room => {
+      if (!room.floor || !FLOOR_OPTIONS.includes(room.floor)) {
+        room.floor = 'EG';
+      }
+    });
   }
   
   if (ui !== undefined) {
@@ -159,23 +181,6 @@ app.post('/api/config', (req, res) => {
   
   saveConfig();
   res.json({ success: true, config });
-});
-
-// Update room floor
-app.post('/api/config/rooms/:roomId/floor', (req, res) => {
-  const { roomId } = req.params;
-  const { floor } = req.body;
-  
-  if (!floor || !FLOOR_OPTIONS.includes(floor)) {
-    return res.status(400).json({ success: false, error: 'Invalid floor. Must be one of: ' + FLOOR_OPTIONS.join(', ') });
-  }
-  
-  const room = config.rooms.find(r => r.id === roomId);
-  if (!room) return res.status(404).json({ success: false, error: 'Room not found' });
-  
-  room.floor = floor;
-  saveConfig();
-  res.json({ success: true, room });
 });
 
 // Action trigger
