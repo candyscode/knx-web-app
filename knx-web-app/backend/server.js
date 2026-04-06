@@ -22,12 +22,15 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 const knxService = new KnxService(io);
 const hueService = new HueService();
 
+// Floor options constant
+const FLOOR_OPTIONS = ['KG', 'UG', 'EG', 'OG'];
 // Default empty config
 let config = {
   knxIp: '',
   knxPort: 3671,
   hue: { bridgeIp: '', apiKey: '' },
-  rooms: []
+  rooms: [],
+  ui: { expandedFloors: ['EG'] }
 };
 
 function establishConnection() {
@@ -87,6 +90,18 @@ if (fs.existsSync(CONFIG_FILE)) {
     config = JSON.parse(data);
     if (!config.knxPort) config.knxPort = 3671;
     if (!config.hue) config.hue = { bridgeIp: '', apiKey: '' };
+    if (!config.ui) config.ui = { expandedFloors: ['EG'] };
+    if (!config.ui.expandedFloors) config.ui.expandedFloors = ['EG'];
+    
+    // Migration: Add floor field to existing rooms without floor
+    if (config.rooms && Array.isArray(config.rooms)) {
+      config.rooms.forEach(room => {
+        if (!room.floor || !FLOOR_OPTIONS.includes(room.floor)) {
+          room.floor = 'EG';
+        }
+      });
+    }
+    
     hueService.init(config.hue);
     establishConnection();
   } catch(e) {
@@ -108,6 +123,27 @@ app.get('/api/config', (req, res) => {
   res.json(config);
 });
 
+// Floor API Routes
+app.get('/api/floors', (req, res) => {
+  res.json(FLOOR_OPTIONS);
+});
+
+// Update room floor
+app.post('/api/config/rooms/:roomId/floor', (req, res) => {
+  const { roomId } = req.params;
+  const { floor } = req.body;
+  
+  if (!floor || !FLOOR_OPTIONS.includes(floor)) {
+    return res.status(400).json({ success: false, error: 'Invalid floor. Must be one of: ' + FLOOR_OPTIONS.join(', ') });
+  }
+  
+  const room = config.rooms.find(r => r.id === roomId);
+  if (!room) return res.status(404).json({ success: false, error: 'Room not found' });
+  
+  room.floor = floor;
+  saveConfig();
+  res.json({ success: true, room });
+});
 app.post('/api/config', (req, res) => {
   const { knxIp, knxPort, rooms } = req.body;
   
@@ -129,6 +165,12 @@ app.post('/api/config', (req, res) => {
   
   if (rooms !== undefined) {
     config.rooms = rooms;
+    // Ensure all rooms have a floor value
+    config.rooms.forEach(room => {
+      if (!room.floor || !FLOOR_OPTIONS.includes(room.floor)) {
+        room.floor = 'EG';
+      }
+    });
   }
   
   saveConfig();
