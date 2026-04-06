@@ -23,7 +23,13 @@ const knxService = new KnxService(io);
 const hueService = new HueService();
 
 // Floor options constant
-const FLOOR_OPTIONS = ['KG', 'UG', 'EG', 'OG'];
+const FLOOR_OPTIONS = [
+  { value: 'KG', label: 'KG', fullLabel: 'Keller' },
+  { value: 'UG', label: 'UG', fullLabel: 'Untergeschoss' },
+  { value: 'EG', label: 'EG', fullLabel: 'Erdgeschoss' },
+  { value: 'OG', label: 'OG', fullLabel: 'Obergeschoss' }
+];
+const FLOOR_VALUES = FLOOR_OPTIONS.map(f => f.value);
 // Default empty config
 let config = {
   knxIp: '',
@@ -96,7 +102,7 @@ if (fs.existsSync(CONFIG_FILE)) {
     // Migration: Add floor field to existing rooms without floor
     if (config.rooms && Array.isArray(config.rooms)) {
       config.rooms.forEach(room => {
-        if (!room.floor || !FLOOR_OPTIONS.includes(room.floor)) {
+        if (!room.floor || !FLOOR_VALUES.includes(room.floor)) {
           room.floor = 'EG';
         }
       });
@@ -133,8 +139,8 @@ app.post('/api/config/rooms/:roomId/floor', (req, res) => {
   const { roomId } = req.params;
   const { floor } = req.body;
   
-  if (!floor || !FLOOR_OPTIONS.includes(floor)) {
-    return res.status(400).json({ success: false, error: 'Invalid floor. Must be one of: ' + FLOOR_OPTIONS.join(', ') });
+  if (!floor || !FLOOR_VALUES.includes(floor)) {
+    return res.status(400).json({ success: false, error: 'Invalid floor. Must be one of: ' + FLOOR_VALUES.join(', ') });
   }
   
   const room = config.rooms.find(r => r.id === roomId);
@@ -167,7 +173,7 @@ app.post('/api/config', (req, res) => {
     config.rooms = rooms;
     // Ensure all rooms have a floor value
     config.rooms.forEach(room => {
-      if (!room.floor || !FLOOR_OPTIONS.includes(room.floor)) {
+      if (!room.floor || !FLOOR_VALUES.includes(room.floor)) {
         room.floor = 'EG';
       }
     });
