@@ -11,6 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights, getHueRooms, getHueScenes, linkHueRoom, unlinkHueRoom, linkHueScene, unlinkHueScene } from './configApi';
 import { getDropdownPosition, getSelectOption } from './iconSelectUtils';
+import { FLOOR_OPTIONS, migrateRooms, groupRoomsByFloor, moveRoomToFloor } from './settingsRoomFloorUtils';
 import {
   Plus, Trash2, Save, ChevronDown, HelpCircle, Sparkles,
   Lightbulb, Lock, GripVertical, Search, ChevronRight, Building2, MoreHorizontal
@@ -25,13 +26,6 @@ const TYPE_OPTIONS = [
   { value: 'switch',     label: 'Switch', dpt: 'DPT 1.001'  },
   { value: 'percentage', label: 'Blind',  dpt: 'DPT 5.001'  },
 ];
-const FLOOR_OPTIONS = [
-  { value: 'KG', label: 'KG', fullLabel: 'Keller' },
-  { value: 'UG', label: 'UG', fullLabel: 'Untergeschoss' },
-  { value: 'EG', label: 'EG', fullLabel: 'Erdgeschoss' },
-  { value: 'OG', label: 'OG', fullLabel: 'Obergeschoss' },
-];
-
 const GA_TOOLTIPS = {
   action:   'The group address this function writes to on the KNX bus.',
   scene:    'Scene number to activate (1–64). The bus value is automatically offset by −1.',
@@ -708,39 +702,8 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     localStorage.setItem('knx_expanded_rooms', JSON.stringify([...expandedRooms]));
   }, [expandedRooms]);
 
-  // One-time migration
-  function migrateRooms(inputRooms) {
-    return inputRooms.map(room => {
-      // Migrate floor field
-      if (!room.floor) {
-        room = { ...room, floor: 'EG' };
-      }
-      // Existing scene migration
-      if (room.scenes !== undefined) return room;
-      const sceneFuncs = (room.functions || []).filter(f => f.type === 'scene');
-      const otherFuncs = (room.functions || []).filter(f => f.type !== 'scene');
-      if (sceneFuncs.length === 0) return { ...room, sceneGroupAddress: '', scenes: [] };
-      const gaCounts = {};
-      sceneFuncs.forEach(f => { gaCounts[f.groupAddress] = (gaCounts[f.groupAddress] || 0) + 1; });
-      const primaryGA = Object.entries(gaCounts).sort((a, b) => b[1] - a[1])[0][0];
-      const roomScenes = sceneFuncs.filter(f => f.groupAddress === primaryGA)
-        .map(f => ({ id: f.id, name: f.name, sceneNumber: f.sceneNumber || 1, category: 'light' }));
-      const standaloneFuncs = sceneFuncs.filter(f => f.groupAddress !== primaryGA);
-      return { ...room, sceneGroupAddress: primaryGA, scenes: roomScenes, functions: [...standaloneFuncs, ...otherFuncs] };
-    });
-  }
-
   // Group rooms by floor
-  const roomsByFloor = React.useMemo(() => {
-    const grouped = {};
-    FLOOR_OPTIONS.forEach(f => grouped[f.value] = []);
-    rooms.forEach(room => {
-      const floor = room.floor || 'EG';
-      if (!grouped[floor]) grouped[floor] = [];
-      grouped[floor].push(room);
-    });
-    return grouped;
-  }, [rooms]);
+  const roomsByFloor = React.useMemo(() => groupRoomsByFloor(rooms), [rooms]);
   const selectedFloorRooms = roomsByFloor[selectedFloor] || [];
   const selectedFloorConfig = FLOOR_OPTIONS.find(floor => floor.value === selectedFloor) || FLOOR_OPTIONS[2];
 
@@ -906,9 +869,18 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
 
   const updateRoom = (roomId, patch) => setRooms(rooms.map(r => r.id !== roomId ? r : { ...r, ...patch }));
 
-  const handleMoveRoom = (roomId, floor) => {
-    setRooms(prev => prev.map(r => r.id !== roomId ? r : { ...r, floor }));
-    addToast(`Room moved to ${floor}`, 'success');
+  const handleMoveRoom = async (roomId, floor) => {
+    const floorConfig = FLOOR_OPTIONS.find(option => option.value === floor);
+    const updated = moveRoomToFloor(rooms, roomId, floor);
+    setRooms(updated);
+    try {
+      await updateConfig({ rooms: updated });
+      addToast(`Room moved to ${floorConfig?.fullLabel || floor}`, 'success');
+      fetchConfig();
+    } catch {
+      setRooms(rooms);
+      addToast('Failed to move room', 'error');
+    }
   };
 
   const handleAddScene = (roomId, category = 'light') => {
