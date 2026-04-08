@@ -10,9 +10,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights, getHueRooms, getHueScenes, linkHueRoom, unlinkHueRoom, linkHueScene, unlinkHueScene } from './configApi';
+import { KNXGroupAddressModal } from './components/KNXGroupAddressModal';
 import {
   Plus, Trash2, Save, ChevronDown, HelpCircle, Sparkles,
-  Lightbulb, Lock, GripVertical, Search
+  Lightbulb, Lock, GripVertical, Search, FileText
 } from 'lucide-react';
 
 const ICON_OPTIONS = [
@@ -309,7 +310,7 @@ function SortableRoomCard({
   handleAddFunction, handleDeleteFunction, handleUpdateFunction,
   handleGenerateBaseScenes, handleSaveRooms,
   openHueSceneModal, openHueRoomModal,
-  openHueLampModal, hueStatus,
+  openHueLampModal, openGroupAddressModal, hueStatus,
   onFuncDragEnd, onSceneDragEnd,
   sensors,
 }) {
@@ -462,6 +463,9 @@ function SortableRoomCard({
           <button className="btn-secondary-sm" onClick={() => handleAddFunction(room.id)}>
             <Plus size={13} /> Add Function
           </button>
+          <button className="btn-secondary-sm" onClick={() => openGroupAddressModal(room.id)}>
+            <FileText size={13} /> Import from XML
+          </button>
           {hueStatus.paired && (
             <button className="btn-secondary-sm btn-purple-sm" onClick={() => openHueLampModal(room.id)}>
               <Lightbulb size={13} /> Add Hue Lamp
@@ -508,6 +512,9 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const [hueSceneSearch, setHueSceneSearch] = useState('');
   const [hueScenes, setHueScenes] = useState([]);
   const [hueScenesLoading, setHueScenesLoading] = useState(false);
+  const [groupAddressModal, setGroupAddressModal] = useState({ open: false, roomId: null, title: 'Select Group Address' });
+  const [groupAddressBook, setGroupAddressBook] = useState([]);
+  const [groupAddressFileName, setGroupAddressFileName] = useState('');
 
   // DnD sensors — touch + pointer + keyboard
   const sensors = useSensors(
@@ -707,6 +714,57 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     if (!toAdd.length) { addToast('Base scenes Off and Bright already exist', 'success'); return; }
     updateRoom(roomId, { scenes: [...existing, ...toAdd] });
     addToast(`Added ${toAdd.map(s => s.name).join(' & ')}`, 'success');
+  };
+
+  const openGroupAddressModal = (roomId) => {
+    setGroupAddressModal({ open: true, roomId, title: 'Import from XML' });
+  };
+
+  const closeGroupAddressModal = () => {
+    setGroupAddressModal({ open: false, roomId: null, title: 'Select Group Address' });
+  };
+
+  const importGroupAddresses = (addresses, fileName) => {
+    setGroupAddressBook(addresses);
+    setGroupAddressFileName(fileName);
+    addToast(`Imported ${addresses.length} group addresses`, 'success');
+  };
+
+  const clearGroupAddresses = () => {
+    setGroupAddressBook([]);
+    setGroupAddressFileName('');
+    addToast('Imported group addresses cleared', 'success');
+  };
+
+  const handleSelectGroupAddress = async (groupAddress) => {
+    const roomId = groupAddressModal.roomId;
+    if (!roomId) return;
+
+    const newFunction = {
+      id: Date.now().toString(),
+      name: groupAddress.name,
+      type: groupAddress.functionType || 'switch',
+      groupAddress: groupAddress.address,
+    };
+
+    if (newFunction.type === 'switch') {
+      newFunction.iconType = 'lightbulb';
+    }
+
+    const updated = rooms.map((room) => room.id !== roomId ? room : {
+      ...room,
+      functions: [...room.functions, newFunction],
+    });
+
+    try {
+      await updateConfig({ rooms: updated });
+      setRooms(updated);
+      addToast(`Added "${groupAddress.name}" from ETS`, 'success');
+      fetchConfig();
+      closeGroupAddressModal();
+    } catch {
+      addToast('Failed to add ETS function', 'error');
+    }
   };
 
   const handleAddFunction = async (roomId) => {
@@ -951,6 +1009,17 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         </div>,
         document.body
       )}
+
+      <KNXGroupAddressModal
+        isOpen={groupAddressModal.open}
+        title={groupAddressModal.title}
+        addresses={groupAddressBook}
+        importedFileName={groupAddressFileName}
+        onClose={closeGroupAddressModal}
+        onSelect={handleSelectGroupAddress}
+        onImport={importGroupAddresses}
+        onClear={clearGroupAddresses}
+      />
 
       {/* Hue Room Linking Modal */}
       {hueRoomModal.open && createPortal(
