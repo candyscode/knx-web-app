@@ -495,6 +495,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const [hueLampModal, setHueLampModal] = useState({ open: false, roomId: null });
   const [hueLamps, setHueLamps] = useState([]);
   const [hueLampsLoading, setHueLampsLoading] = useState(false);
+  const [hueLampSearch, setHueLampSearch] = useState('');
 
   // Hue room linking modal
   const [hueRoomModal, setHueRoomModal] = useState({ open: false, roomId: null });
@@ -571,7 +572,10 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     const updated = rooms.map(r => r.id !== roomId ? r : {
       ...r, functions: [...r.functions, { id: Date.now().toString(), name: lamp.name, originalHueName: lamp.name, type: 'hue', hueLightId: lamp.id, iconType: 'lightbulb' }]
     });
-    setRooms(updated); setHueLampModal({ open: false, roomId: null }); addToast(`Added "${lamp.name}"`, 'success');
+    setRooms(updated);
+    setHueLampSearch('');
+    setHueLampModal({ open: false, roomId: null });
+    addToast(`Added "${lamp.name}"`, 'success');
   };
 
   // Hue room linking
@@ -764,6 +768,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   };
 
   const roomIds = rooms.map(r => r.id);
+  const filteredHueLamps = hueLamps.filter(lamp => lamp.name.toLowerCase().includes(hueLampSearch.trim().toLowerCase()));
   const filteredHueRooms = hueRooms.filter(room => room.name.toLowerCase().includes(hueRoomSearch.trim().toLowerCase()));
   const filteredHueScenes = hueScenes.filter(scene => scene.name.toLowerCase().includes(hueSceneSearch.trim().toLowerCase()));
 
@@ -905,16 +910,29 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
 
       {/* Hue Lamp Selection Modal */}
       {hueLampModal.open && createPortal(
-        <div className="modal-overlay" onClick={() => setHueLampModal({ open: false, roomId: null })}>
+        <div className="modal-overlay" onClick={() => { setHueLampModal({ open: false, roomId: null }); setHueLampSearch(''); }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 1rem 0' }}>Select Hue Lamp</h3>
+            <div style={{ position: 'relative', marginBottom: '1rem' }}>
+              <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input
+                className="form-input"
+                style={{ paddingLeft: '2.5rem' }}
+                type="text"
+                placeholder="Search Hue lamps"
+                value={hueLampSearch}
+                onChange={e => setHueLampSearch(e.target.value)}
+              />
+            </div>
             {hueLampsLoading ? (
               <p style={{ color: 'var(--text-secondary)' }}>Loading lamps…</p>
-            ) : hueLamps.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>No Hue lights found.</p>
+            ) : filteredHueLamps.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>
+                {hueLampSearch ? 'No Hue lights match your search.' : 'No Hue lights found.'}
+              </p>
             ) : (
               <div className="hue-lamp-list">
-                {hueLamps.map(lamp => (
+                {filteredHueLamps.map(lamp => (
                   <button key={lamp.id} className="hue-lamp-item" onClick={() => selectHueLamp(lamp)}>
                     <Lightbulb size={18} style={{ color: lamp.on ? 'var(--success-color)' : 'var(--text-secondary)', flexShrink: 0 }} fill={lamp.on ? 'currentColor' : 'none'} />
                     <div style={{ flex: 1, textAlign: 'left' }}>
@@ -930,7 +948,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
             )}
             <div style={{ textAlign: 'right', marginTop: '1rem' }}>
               <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
-                onClick={() => setHueLampModal({ open: false, roomId: null })}>
+                onClick={() => { setHueLampModal({ open: false, roomId: null }); setHueLampSearch(''); }}>
                 Cancel
               </button>
             </div>
