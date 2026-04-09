@@ -884,6 +884,21 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
           IP address and port of your KNX IP interface.
         </p>
+        <div className="knx-ip-row">
+          <div className="settings-field">
+            <label className="settings-field-label">IP Address</label>
+            <input className="form-input" placeholder="192.168.1.50" value={ip} onChange={e => setIp(e.target.value)} />
+          </div>
+          <div className="settings-field knx-port-field">
+            <label className="settings-field-label">Port</label>
+            <input className="form-input" type="number" placeholder="3671" value={port} onChange={e => setPort(e.target.value)} />
+          </div>
+          <button className="btn-primary" onClick={handleSaveIp}>
+            <Save size={16} /> Save
+          </button>
+        </div>
+   
+
         <div style={{ marginBottom: '1rem', padding: '0.9rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <FileText size={16} style={{ color: 'var(--accent-color)' }} />
@@ -900,20 +915,6 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
               Loaded: <strong style={{ color: 'var(--text-primary)' }}>{groupAddressFileName}</strong> · {groupAddressBook.filter(address => address.supported).length} supported addresses
             </div>
           )}
-        </div>
-
-        <div className="knx-ip-row">
-          <div className="settings-field">
-            <label className="settings-field-label">IP Address</label>
-            <input className="form-input" placeholder="192.168.1.50" value={ip} onChange={e => setIp(e.target.value)} />
-          </div>
-          <div className="settings-field knx-port-field">
-            <label className="settings-field-label">Port</label>
-            <input className="form-input" type="number" placeholder="3671" value={port} onChange={e => setPort(e.target.value)} />
-          </div>
-          <button className="btn-primary" onClick={handleSaveIp}>
-            <Save size={16} /> Save
-          </button>
         </div>
       </div>
 

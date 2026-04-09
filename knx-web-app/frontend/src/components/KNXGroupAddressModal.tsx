@@ -49,27 +49,17 @@ export function KNXGroupAddressModal({
     [supportedAddresses, mode]
   );
 
-  const roomOptions = useMemo(() => {
-    const rooms = Array.from(new Set(visibleAddresses.map((address) => address.room).filter(Boolean)));
-    return ['all', ...rooms.sort((a, b) => a.localeCompare(b))];
-  }, [visibleAddresses]);
-
-  const filteredAddresses = useMemo(() => {
+  const filteredAddresses = visibleAddresses.filter((address) => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return visibleAddresses.filter((address) => {
-      const matchesRoom = roomFilter === 'all' || address.room === roomFilter;
-      const matchesQuery = !normalizedQuery || [
-        address.name,
-        address.address,
-        address.dpt,
-        address.room,
-        ...(address.rangePath || []),
-      ].some((value) => (value || '').toLowerCase().includes(normalizedQuery));
-
-      return matchesRoom && matchesQuery;
-    });
-  }, [visibleAddresses, roomFilter, searchQuery]);
+    return !normalizedQuery || [
+      address.name,
+      address.address,
+      address.dpt,
+      address.room,
+      ...(address.rangePath || []),
+    ].some((value) => (value || '').toLowerCase().includes(normalizedQuery));
+  });
 
   if (!isOpen) return null;
 
@@ -77,7 +67,6 @@ export function KNXGroupAddressModal({
 
   const handleClose = () => {
     setSearchQuery('');
-    setRoomFilter('all');
     setImportError('');
     setImportSuccess('');
     onClose();
@@ -105,8 +94,7 @@ export function KNXGroupAddressModal({
 
         const parsedAddresses = parseKNXGroupAddressXML(xmlContent);
         onImport(parsedAddresses, file.name);
-        setRoomFilter('all');
-        const supportedCount = parsedAddresses.filter((address) => address.supported).length;
+            const supportedCount = parsedAddresses.filter((address) => address.supported).length;
         const droppedCount = parsedAddresses.length - supportedCount;
         setImportSuccess(`Imported ${supportedCount} supported group addresses from ${file.name}${droppedCount ? ` (${droppedCount} unsupported filtered out)` : ''}.`);
       } catch (error) {
@@ -191,7 +179,7 @@ export function KNXGroupAddressModal({
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div style={{ marginBottom: '1rem' }}>
           <div style={{ position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
             <input
@@ -204,19 +192,6 @@ export function KNXGroupAddressModal({
               disabled={visibleAddresses.length === 0}
             />
           </div>
-
-          <select
-            className="form-select"
-            value={roomFilter}
-            onChange={(event) => setRoomFilter(event.target.value)}
-            disabled={visibleAddresses.length === 0}
-          >
-            {roomOptions.map((room) => (
-              <option key={room} value={room}>
-                {room === 'all' ? 'All Rooms' : room}
-              </option>
-            ))}
-          </select>
         </div>
 
         {visibleAddresses.length === 0 ? (
@@ -246,13 +221,8 @@ export function KNXGroupAddressModal({
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-          <span>
-            {visibleAddresses.length > 0 ? `Showing ${filteredAddresses.length} of ${visibleAddresses.length} supported addresses.` : 'Import an ETS XML file to start.'}
-          </span>
-          <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.85rem', padding: '0.4rem 1rem' }} onClick={handleClose}>
-            Close
-          </button>
+        <div style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+          {visibleAddresses.length > 0 ? `Showing ${filteredAddresses.length} of ${visibleAddresses.length} supported addresses.` : 'Import an ETS XML file to start.'}
         </div>
       </div>
     </div>,
