@@ -899,7 +899,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         </div>
    
 
-        <div style={{ marginBottom: '1rem', padding: '0.9rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ marginTop: '1rem', marginBottom: '1rem', padding: '0.9rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <FileText size={16} style={{ color: 'var(--accent-color)' }} />
             <strong style={{ fontSize: '0.9rem' }}>ETS XML Group Address Import</strong>
