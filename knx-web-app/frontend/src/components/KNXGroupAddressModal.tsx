@@ -3,6 +3,15 @@ import { createPortal } from 'react-dom';
 import { Search, Upload, X, FileText, Trash2, Check } from 'lucide-react';
 import { parseKNXGroupAddressXML } from '../knx-xml-parser';
 
+function isAddressAllowedForMode(address, mode) {
+  if (!address.supported) return false;
+  if (mode === 'any') return true;
+  if (mode === 'scene') return address.functionType === 'scene';
+  if (mode === 'switch') return address.functionType === 'switch';
+  if (mode === 'percentage') return address.functionType === 'percentage';
+  return true;
+}
+
 export function KNXGroupAddressModal({
   isOpen,
   title,
@@ -12,6 +21,9 @@ export function KNXGroupAddressModal({
   onSelect,
   onImport,
   onClear,
+  mode = 'any',
+  allowUpload = false,
+  helperText,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roomFilter, setRoomFilter] = useState('all');
@@ -19,15 +31,26 @@ export function KNXGroupAddressModal({
   const [importSuccess, setImportSuccess] = useState('');
   const fileInputRef = useRef(null);
 
+  const supportedAddresses = useMemo(
+    () => addresses.filter((address) => address.supported),
+    [addresses]
+  );
+  const unsupportedCount = addresses.length - supportedAddresses.length;
+
+  const visibleAddresses = useMemo(
+    () => supportedAddresses.filter((address) => isAddressAllowedForMode(address, mode)),
+    [supportedAddresses, mode]
+  );
+
   const roomOptions = useMemo(() => {
-    const rooms = Array.from(new Set(addresses.map((address) => address.room).filter(Boolean)));
+    const rooms = Array.from(new Set(visibleAddresses.map((address) => address.room).filter(Boolean)));
     return ['all', ...rooms.sort((a, b) => a.localeCompare(b))];
-  }, [addresses]);
+  }, [visibleAddresses]);
 
   const filteredAddresses = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return addresses.filter((address) => {
+    return visibleAddresses.filter((address) => {
       const matchesRoom = roomFilter === 'all' || address.room === roomFilter;
       const matchesQuery = !normalizedQuery || [
         address.name,
@@ -39,7 +62,7 @@ export function KNXGroupAddressModal({
 
       return matchesRoom && matchesQuery;
     });
-  }, [addresses, roomFilter, searchQuery]);
+  }, [visibleAddresses, roomFilter, searchQuery]);
 
   if (!isOpen) return null;
 
@@ -74,7 +97,9 @@ export function KNXGroupAddressModal({
         const parsedAddresses = parseKNXGroupAddressXML(xmlContent);
         onImport(parsedAddresses, file.name);
         setRoomFilter('all');
-        setImportSuccess(`Imported ${parsedAddresses.length} group addresses from ${file.name}.`);
+        const supportedCount = parsedAddresses.filter((address) => address.supported).length;
+        const droppedCount = parsedAddresses.length - supportedCount;
+        setImportSuccess(`Imported ${supportedCount} supported group addresses from ${file.name}${droppedCount ? ` (${droppedCount} unsupported filtered out)` : ''}.`);
       } catch (error) {
         setImportError(error.message || 'Failed to parse XML file.');
       }
@@ -91,7 +116,7 @@ export function KNXGroupAddressModal({
           <div>
             <h3 style={{ margin: 0 }}>{title}</h3>
             <p style={{ margin: '0.35rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              Upload an ETS XML export or reuse the currently imported address list in this session.
+              {helperText || 'Browse imported ETS group addresses and select one for this field.'}
             </p>
           </div>
           <button className="icon-btn" onClick={handleClose} title="Close">
@@ -99,49 +124,57 @@ export function KNXGroupAddressModal({
           </button>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '0.9rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <FileText size={16} style={{ color: 'var(--accent-color)' }} />
-            <strong style={{ fontSize: '0.9rem' }}>ETS Group Address Import</strong>
-          </div>
+        {allowUpload && (
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '0.9rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <FileText size={16} style={{ color: 'var(--accent-color)' }} />
+              <strong style={{ fontSize: '0.9rem' }}>ETS Group Address Import</strong>
+            </div>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xml,text/xml,application/xml"
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-          />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xml,text/xml,application/xml"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
 
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button className="btn-secondary-sm" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={14} /> Upload XML File
-            </button>
-            {addresses.length > 0 && (
-              <button className="btn-secondary-sm" onClick={onClear}>
-                <Trash2 size={14} /> Forget Addresses
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button className="btn-secondary-sm" onClick={() => fileInputRef.current?.click()}>
+                <Upload size={14} /> Upload XML File
               </button>
+              {addresses.length > 0 && (
+                <button className="btn-secondary-sm" onClick={onClear}>
+                  <Trash2 size={14} /> Forget Addresses
+                </button>
+              )}
+            </div>
+
+            {importedFileName && addresses.length > 0 && (
+              <p style={{ margin: '0.75rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                Loaded file: <strong style={{ color: 'var(--text-primary)' }}>{importedFileName}</strong> with {supportedAddresses.length} supported addresses.
+              </p>
+            )}
+
+            {importError && (
+              <div style={{ marginTop: '0.75rem', color: '#fca5a5', fontSize: '0.82rem' }}>
+                {importError}
+              </div>
+            )}
+
+            {importSuccess && (
+              <div style={{ marginTop: '0.75rem', color: '#86efac', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Check size={14} /> {importSuccess}
+              </div>
             )}
           </div>
+        )}
 
-          {importedFileName && addresses.length > 0 && (
-            <p style={{ margin: '0.75rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-              Loaded file: <strong style={{ color: 'var(--text-primary)' }}>{importedFileName}</strong> with {addresses.length} addresses.
-            </p>
-          )}
-
-          {importError && (
-            <div style={{ marginTop: '0.75rem', color: '#fca5a5', fontSize: '0.82rem' }}>
-              {importError}
-            </div>
-          )}
-
-          {importSuccess && (
-            <div style={{ marginTop: '0.75rem', color: '#86efac', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Check size={14} /> {importSuccess}
-            </div>
-          )}
-        </div>
+        {unsupportedCount > 0 && (
+          <div style={{ marginBottom: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+            {unsupportedCount} unsupported group address{unsupportedCount === 1 ? '' : 'es'} hidden because their DPT/DPST is not supported yet.
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: '0.75rem', marginBottom: '1rem' }}>
           <div style={{ position: 'relative' }}>
@@ -153,7 +186,7 @@ export function KNXGroupAddressModal({
               placeholder="Search by name, address, DPT or room"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              disabled={addresses.length === 0}
+              disabled={visibleAddresses.length === 0}
             />
           </div>
 
@@ -161,7 +194,7 @@ export function KNXGroupAddressModal({
             className="form-select"
             value={roomFilter}
             onChange={(event) => setRoomFilter(event.target.value)}
-            disabled={addresses.length === 0}
+            disabled={visibleAddresses.length === 0}
           >
             {roomOptions.map((room) => (
               <option key={room} value={room}>
@@ -171,9 +204,9 @@ export function KNXGroupAddressModal({
           </select>
         </div>
 
-        {addresses.length === 0 ? (
+        {visibleAddresses.length === 0 ? (
           <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem 1rem' }}>
-            No XML data loaded yet.
+            {addresses.length === 0 ? 'No XML data loaded yet.' : 'No supported group addresses available for this selection.'}
           </div>
         ) : filteredAddresses.length === 0 ? (
           <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem 1rem' }}>
@@ -200,7 +233,7 @@ export function KNXGroupAddressModal({
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
           <span>
-            {addresses.length > 0 ? `Showing ${filteredAddresses.length} of ${addresses.length} imported addresses.` : 'Import an ETS XML file to start.'}
+            {visibleAddresses.length > 0 ? `Showing ${filteredAddresses.length} of ${visibleAddresses.length} supported addresses.` : 'Import an ETS XML file to start.'}
           </span>
           <button className="btn-primary" style={{ background: 'rgba(255,255,255,0.08)', fontSize: '0.85rem', padding: '0.4rem 1rem' }} onClick={handleClose}>
             Close
