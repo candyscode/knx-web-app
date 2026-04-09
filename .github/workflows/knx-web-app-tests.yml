@@ -1,0 +1,68 @@
+name: KNX Web App — Tests
+
+# GitHub Actions REQUIRES workflow files to be at the repository root:
+#   .github/workflows/
+# This repo is candyscode/AI with the project in knx-web-app/
+#
+# Triggers:
+#   - Push to any branch when knx-web-app/ files change
+#   - Any pull request when knx-web-app/ files change
+#
+# Path filter: only fires for changes inside knx-web-app/, so unrelated
+# commits elsewhere in this monorepo do not trigger unnecessary CI runs.
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'knx-web-app/**'
+  pull_request:
+    paths:
+      - 'knx-web-app/**'
+
+jobs:
+  backend-tests:
+    name: Backend Tests (Jest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: knx-web-app/backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: knx-web-app/backend
+
+      - name: Run backend tests
+        run: npm test
+        working-directory: knx-web-app/backend
+
+  frontend-tests:
+    name: Frontend Tests (Vitest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: knx-web-app/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: knx-web-app/frontend
+
+      - name: Run frontend tests
+        run: npm test
+        working-directory: knx-web-app/frontend
