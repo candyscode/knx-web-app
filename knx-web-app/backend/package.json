@@ -4,7 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --runInBand --forceExit",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --runInBand --forceExit --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "collectCoverageFrom": ["*.js", "!node_modules/**"],
+    "coverageThreshold": {
+      "global": { "lines": 75 }
+    }
   },
   "keywords": [],
   "author": "",
@@ -16,5 +26,11 @@
     "express": "^5.2.1",
     "knx": "^2.5.4",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "jest-fetch-mock": "^3.0.3",
+    "socket.io-client": "^4.8.3",
+    "supertest": "^7.2.2"
   }
 }
