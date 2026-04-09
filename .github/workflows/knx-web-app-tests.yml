@@ -1,21 +1,13 @@
 name: KNX Web App — Tests
 
-# GitHub Actions REQUIRES workflow files to be at the repository root:
-#   .github/workflows/
-# This repo is candyscode/AI with the project in knx-web-app/
+# Runs only on pull_request events (open, reopen, push to PR branch).
+# This avoids double-running on pushes to branches that already have an open PR,
+# and skips CI entirely for branches without a PR.
 #
-# Triggers:
-#   - Push to any branch when knx-web-app/ files change
-#   - Any pull request when knx-web-app/ files change
-#
-# Path filter: only fires for changes inside knx-web-app/, so unrelated
-# commits elsewhere in this monorepo do not trigger unnecessary CI runs.
+# Path filter: only fires when knx-web-app/ files are changed,
+# so unrelated commits elsewhere in the monorepo are ignored.
 
 on:
-  push:
-    branches: ['**']
-    paths:
-      - 'knx-web-app/**'
   pull_request:
     paths:
       - 'knx-web-app/**'
