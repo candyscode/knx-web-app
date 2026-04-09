@@ -106,7 +106,7 @@ function IconSelect({ value, onChange }) {
   );
 }
 
-function GAField({ label, tooltipKey, optional, value, onChange, placeholder, type = 'text', min, max }) {
+function GAField({ label, tooltipKey, optional, value, onChange, placeholder, type = 'text', min, max, onBrowse }) {
   return (
     <div className="settings-field ga-field">
       <label className="settings-field-label">
@@ -119,15 +119,20 @@ function GAField({ label, tooltipKey, optional, value, onChange, placeholder, ty
           </span>
         )}
       </label>
-      <input
-        className="form-input"
-        value={value || ''}
-        onChange={e => onChange(type === 'number' ? parseInt(e.target.value) : e.target.value)}
-        placeholder={placeholder}
-        type={type}
-        min={min}
-        max={max}
-      />
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <input
+          className="form-input"
+          value={value || ''}
+          onChange={e => onChange(type === 'number' ? parseInt(e.target.value) : e.target.value)}
+          placeholder={placeholder}
+          type={type}
+          min={min}
+          max={max}
+        />
+        {onBrowse && type !== 'number' && (
+          <button type="button" className="btn-secondary-sm" onClick={onBrowse}>Browse</button>
+        )}
+      </div>
     </div>
   );
 }
@@ -263,7 +268,8 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
 
             <div className="func-ga-fields">
               <GAField label="Action GA" tooltipKey="action"
-                value={func.groupAddress} onChange={upd('groupAddress')} placeholder="e.g. 1/5/0" />
+                value={func.groupAddress} onChange={upd('groupAddress')} placeholder="e.g. 1/5/0"
+                onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: func.type === 'scene' ? 'scene' : func.type, target: { kind: 'field', functionId: func.id, field: 'groupAddress' }, helperText: 'Select a compatible ETS group address for this field.' })} />
 
               {func.type === 'scene' && (
                 <GAField label="Scene Number" tooltipKey="scene"
@@ -272,7 +278,8 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
 
               {(func.type === 'switch' || func.type === 'percentage') && (
                 <GAField label="Feedback GA" tooltipKey="feedback"
-                  value={func.statusGroupAddress} onChange={upd('statusGroupAddress')} placeholder="e.g. 1/5/1" />
+                  value={func.statusGroupAddress} onChange={upd('statusGroupAddress')} placeholder="e.g. 1/5/1"
+                  onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: 'switch', target: { kind: 'field', functionId: func.id, field: 'statusGroupAddress' }, helperText: 'Select a compatible feedback/status GA.' })} />
               )}
 
               {func.type === 'switch' && (
@@ -291,7 +298,8 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
 
               {func.type === 'percentage' && (
                 <GAField label="Moving GA" tooltipKey="moving" optional
-                  value={func.movingGroupAddress} onChange={upd('movingGroupAddress')} placeholder="e.g. 1/5/2" />
+                  value={func.movingGroupAddress} onChange={upd('movingGroupAddress')} placeholder="e.g. 1/5/2"
+                  onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: 'percentage', target: { kind: 'field', functionId: func.id, field: 'movingGroupAddress' }, helperText: 'Select a compatible moving/status GA for blinds.' })} />
               )}
             </div>
           </>
@@ -347,7 +355,8 @@ function SortableRoomCard({
           <GAField label="Scene GA" tooltipKey="sceneGA"
             value={room.sceneGroupAddress}
             onChange={(val) => updateRoom(room.id, { sceneGroupAddress: val })}
-            placeholder="e.g. 2/5/0" />
+            placeholder="e.g. 2/5/0"
+            onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: 'scene', target: { kind: 'sceneGA' }, helperText: 'Select a compatible scene group address.' })} />
         </div>
 
         {/* Hue room link */}
@@ -463,8 +472,8 @@ function SortableRoomCard({
           <button className="btn-secondary-sm" onClick={() => handleAddFunction(room.id)}>
             <Plus size={13} /> Add Function
           </button>
-          <button className="btn-secondary-sm" onClick={() => openGroupAddressModal(room.id)}>
-            <FileText size={13} /> Import from XML
+          <button className="btn-secondary-sm" onClick={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: 'any', target: { kind: 'addFunction' }, helperText: 'Select a compatible imported ETS group address to create a new function.' })}>
+            <FileText size={13} /> Select group address
           </button>
           {hueStatus.paired && (
             <button className="btn-secondary-sm btn-purple-sm" onClick={() => openHueLampModal(room.id)}>
@@ -512,7 +521,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const [hueSceneSearch, setHueSceneSearch] = useState('');
   const [hueScenes, setHueScenes] = useState([]);
   const [hueScenesLoading, setHueScenesLoading] = useState(false);
-  const [groupAddressModal, setGroupAddressModal] = useState({ open: false, roomId: null, title: 'Select Group Address' });
+  const [groupAddressModal, setGroupAddressModal] = useState({ open: false, roomId: null, title: 'Select Group Address', mode: 'any', target: null, allowUpload: false, helperText: '' });
   const [groupAddressBook, setGroupAddressBook] = useState([]);
   const [groupAddressFileName, setGroupAddressFileName] = useState('');
 
@@ -719,12 +728,20 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     addToast(`Added ${toAdd.map(s => s.name).join(' & ')}`, 'success');
   };
 
-  const openGroupAddressModal = (roomId) => {
-    setGroupAddressModal({ open: true, roomId, title: 'Import from XML' });
+  const openGroupAddressModal = (options) => {
+    setGroupAddressModal({
+      open: true,
+      roomId: options.roomId || null,
+      title: options.title || 'Select Group Address',
+      mode: options.mode || 'any',
+      target: options.target || null,
+      allowUpload: !!options.allowUpload,
+      helperText: options.helperText || '',
+    });
   };
 
   const closeGroupAddressModal = () => {
-    setGroupAddressModal({ open: false, roomId: null, title: 'Select Group Address' });
+    setGroupAddressModal({ open: false, roomId: null, title: 'Select Group Address', mode: 'any', target: null, allowUpload: false, helperText: '' });
   };
 
   const importGroupAddresses = (addresses, fileName) => {
@@ -742,6 +759,21 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const handleSelectGroupAddress = async (groupAddress) => {
     const roomId = groupAddressModal.roomId;
     if (!roomId) return;
+
+    if (groupAddressModal.target?.kind === 'field') {
+      const { functionId, field } = groupAddressModal.target;
+      await handleUpdateFunction(roomId, functionId, field, groupAddress.address);
+      addToast(`Inserted "${groupAddress.name}"`, 'success');
+      closeGroupAddressModal();
+      return;
+    }
+
+    if (groupAddressModal.target?.kind === 'sceneGA') {
+      updateRoom(roomId, { sceneGroupAddress: groupAddress.address });
+      addToast(`Selected scene GA "${groupAddress.name}"`, 'success');
+      closeGroupAddressModal();
+      return;
+    }
 
     const newFunction = {
       id: Date.now().toString(),
@@ -839,6 +871,24 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
           IP address and port of your KNX IP interface.
         </p>
+        <div style={{ marginBottom: '1rem', padding: '0.9rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <FileText size={16} style={{ color: 'var(--accent-color)' }} />
+            <strong style={{ fontSize: '0.9rem' }}>ETS XML Group Address Import</strong>
+          </div>
+          <p style={{ margin: '0 0 0.75rem 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+            Upload the ETS XML once here. Afterwards you can browse compatible group addresses from the room and field-level Browse buttons below.
+          </p>
+          <button className="btn-secondary-sm" onClick={() => openGroupAddressModal({ title: 'ETS XML import', allowUpload: true, mode: 'any', helperText: 'Upload an ETS XML export and review the imported supported addresses.' })}>
+            <FileText size={14} /> Manage imported ETS XML
+          </button>
+          {groupAddressFileName && groupAddressBook.length > 0 && (
+            <div style={{ marginTop: '0.65rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+              Loaded: <strong style={{ color: 'var(--text-primary)' }}>{groupAddressFileName}</strong> · {groupAddressBook.filter(address => address.supported).length} supported addresses
+            </div>
+          )}
+        </div>
+
         <div className="knx-ip-row">
           <div className="settings-field">
             <label className="settings-field-label">IP Address</label>
@@ -1025,6 +1075,9 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         onSelect={handleSelectGroupAddress}
         onImport={importGroupAddresses}
         onClear={clearGroupAddresses}
+        mode={groupAddressModal.mode}
+        allowUpload={groupAddressModal.allowUpload}
+        helperText={groupAddressModal.helperText}
       />
 
       {/* Hue Room Linking Modal */}

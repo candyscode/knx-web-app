@@ -24,11 +24,13 @@ function inferFunctionType(name: string, dpt: string) {
   const normalizedDpt = (dpt || '').toLowerCase();
 
   if (normalizedDpt.includes('17.') || normalizedDpt.includes('17-')) return 'scene';
+  if (normalizedDpt.includes('1.') || normalizedDpt.includes('1-')) return 'switch';
   if (normalizedDpt.includes('5.001') || normalizedDpt.includes('5-1')) return 'percentage';
   if (/(jalousie|blind|shade|shutter|rollladen)/.test(normalizedName)) return 'percentage';
   if (/(scene|szene)/.test(normalizedName)) return 'scene';
+  if (/(switch|light|licht|on\/off|ein\/aus)/.test(normalizedName)) return 'switch';
 
-  return 'switch';
+  return null;
 }
 
 export interface ImportedGroupAddress {
@@ -38,7 +40,8 @@ export interface ImportedGroupAddress {
   dpt: string;
   room: string;
   rangePath: string[];
-  functionType: 'switch' | 'percentage' | 'scene';
+  functionType: 'switch' | 'percentage' | 'scene' | null;
+  supported: boolean;
 }
 
 export function parseKNXGroupAddressXML(xmlString: string): ImportedGroupAddress[] {
@@ -71,6 +74,7 @@ export function parseKNXGroupAddressXML(xmlString: string): ImportedGroupAddress
     const dpt = (node.getAttribute('DPTs') || node.getAttribute('DatapointType') || '').trim();
     const derivedRoom = extractRoomFromName(name);
     const fallbackRoom = rangePath[rangePath.length - 1] || rangePath[0] || 'Unknown';
+    const functionType = inferFunctionType(name, dpt);
 
     return {
       id: `${node.getAttribute('Id') || node.getAttribute('Address') || 'ga'}-${index}`,
@@ -79,7 +83,8 @@ export function parseKNXGroupAddressXML(xmlString: string): ImportedGroupAddress
       dpt,
       room: derivedRoom || fallbackRoom,
       rangePath,
-      functionType: inferFunctionType(name, dpt),
+      functionType,
+      supported: functionType !== null,
     };
   });
 }
