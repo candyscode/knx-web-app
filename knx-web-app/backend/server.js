@@ -135,6 +135,27 @@ app.post('/api/config', (req, res) => {
   res.json({ success: true, config });
 });
 
+// Load configuration from config.dev.json
+app.post('/api/dev/load-config', (req, res) => {
+  const DEV_CONFIG_FILE = path.join(__dirname, 'config.dev.json');
+  if (fs.existsSync(DEV_CONFIG_FILE)) {
+    try {
+      const data = fs.readFileSync(DEV_CONFIG_FILE, 'utf8');
+      config = JSON.parse(data);
+      saveConfig();
+      if (config.knxIp) {
+        establishConnection();
+      }
+      res.json({ success: true, config });
+    } catch (e) {
+      console.error('Error parsing config.dev.json', e);
+      res.status(500).json({ success: false, error: 'Internal Server Error reading dev config' });
+    }
+  } else {
+    res.status(404).json({ success: false, error: 'config.dev.json not found' });
+  }
+});
+
 // Action trigger
 app.post('/api/action', async (req, res) => {
   const { groupAddress, type, sceneNumber, value } = req.body;

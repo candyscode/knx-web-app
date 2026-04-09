@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, useEffectEvent } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -9,7 +9,7 @@ import {
   useSortable, arrayMove
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights, getHueRooms, getHueScenes, linkHueRoom, unlinkHueRoom, linkHueScene, unlinkHueScene } from './configApi';
+import { updateConfig, discoverHueBridge, pairHueBridge, unpairHueBridge, getHueLights, getHueRooms, getHueScenes, linkHueRoom, unlinkHueRoom, linkHueScene, unlinkHueScene, loadDevConfig } from './configApi';
 import { KNXGroupAddressModal } from './components/KNXGroupAddressModal';
 import { getDropdownPosition, getSelectOption } from './iconSelectUtils';
 import {
@@ -79,53 +79,53 @@ function IconSelect({ value, onChange }) {
   const current = getSelectOption(ICON_OPTIONS, value);
   const CurrentIcon = current.Icon;
 
-  const closeDropdown = () => {
+  const closeDropdown = useCallback(() => {
     setOpen(false);
     setDropdownStyle(null);
-  };
+  }, []);
 
-  const updateDropdownStyle = useEffectEvent(() => {
+  const updateDropdownStyle = useCallback(() => {
     if (!triggerRef.current) {
       return;
     }
-
-    setDropdownStyle(
-      getDropdownPosition(
-        triggerRef.current.getBoundingClientRect(),
-        dropdownRef.current?.getBoundingClientRect(),
-        window,
-      ),
-    );
-  });
-
-  useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) closeDropdown(); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropdownStyle({
+      position: 'fixed',
+      top: `${rect.bottom + 4}px`,
+      left: `${rect.left}px`,
+      width: `${Math.max(rect.width, 168)}px`,
+      zIndex: 2000
+    });
   }, []);
 
-  useLayoutEffect(() => {
-    if (!open) {
-      return;
-    }
+  useEffect(() => {
+    const h = (e) => { 
+      // Close if click is outside both the button AND the portal dropdown
+      const isOutsideTrigger = ref.current && !ref.current.contains(e.target);
+      const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(e.target);
+      
+      if (isOutsideTrigger && isOutsideDropdown) {
+        closeDropdown(); 
+      }
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [closeDropdown]);
 
-    updateDropdownStyle();
-  }, [open]);
+  useLayoutEffect(() => {
+    if (open) updateDropdownStyle();
+  }, [open, updateDropdownStyle]);
 
   useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-
+    if (!open) return undefined;
     const handleViewportChange = () => updateDropdownStyle();
     window.addEventListener('resize', handleViewportChange);
     window.addEventListener('scroll', handleViewportChange, true);
-
     return () => {
       window.removeEventListener('resize', handleViewportChange);
       window.removeEventListener('scroll', handleViewportChange, true);
     };
-  }, [open]);
+  }, [open, updateDropdownStyle]);
 
   return (
     <div className="type-select icon-select" ref={ref}>
@@ -134,11 +134,8 @@ function IconSelect({ value, onChange }) {
         ref={triggerRef}
         className="type-select-trigger icon-select-trigger"
         onClick={() => {
-          if (open) {
-            closeDropdown();
-          } else {
-            setOpen(true);
-          }
+          if (open) closeDropdown();
+          else setOpen(true);
         }}
       >
         <CurrentIcon size={18} className="icon-select-icon" />
@@ -148,8 +145,8 @@ function IconSelect({ value, onChange }) {
       {open && createPortal(
         <div
           ref={dropdownRef}
-          className="type-select-dropdown icon-select-dropdown"
-          style={dropdownStyle || undefined}
+          className="type-select-dropdown"
+          style={dropdownStyle || { display: 'none' }}
         >
           {ICON_OPTIONS.map(opt => {
             const OptIcon = opt.Icon;
@@ -166,7 +163,7 @@ function IconSelect({ value, onChange }) {
             );
           })}
         </div>,
-        document.body,
+        document.body
       )}
     </div>
   );
@@ -598,6 +595,12 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const [hueRooms, setHueRooms] = useState([]);
   const [hueRoomsLoading, setHueRoomsLoading] = useState(false);
 
+  useEffect(() => {
+    setIp(config.knxIp || '');
+    setPort(config.knxPort || 3671);
+    setRooms(migrateRooms(config.rooms || []));
+    setHueBridgeIp(config.hue?.bridgeIp || '');
+  }, [config]);
   // Hue scene linking modal
   const [hueSceneModal, setHueSceneModal] = useState({ open: false, roomId: null, sceneId: null });
   const [hueSceneSearch, setHueSceneSearch] = useState('');
@@ -939,6 +942,20 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     }));
   };
 
+  const handleLoadDevConfig = async () => {
+    try {
+      const result = await loadDevConfig();
+      if (result.success && result.config) {
+        addToast("Dev Config loaded successfully", "success");
+        fetchConfig();
+      } else {
+        addToast(result.error || "Failed to load dev config", "error");
+      }
+    } catch (e) {
+      addToast("Failed to load dev config. Check backend connection.", "error");
+    }
+  };
+
   const roomIds = rooms.map(r => r.id);
   const filteredHueLamps = hueLamps.filter(lamp => lamp.name.toLowerCase().includes(hueLampSearch.trim().toLowerCase()));
   const filteredHueRooms = hueRooms.filter(room => room.name.toLowerCase().includes(hueRoomSearch.trim().toLowerCase()));
@@ -964,6 +981,9 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
           </div>
           <button className="btn-primary" onClick={handleSaveIp}>
             <Save size={16} /> Save
+          </button>
+          <button className="btn-secondary" onClick={handleLoadDevConfig} title="Load local dev config (config.dev.json)">
+            Load Dev Config
           </button>
         </div>
    

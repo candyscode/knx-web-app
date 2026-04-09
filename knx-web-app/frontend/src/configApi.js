@@ -14,6 +14,13 @@ export const updateConfig = async (data) => {
   return res.json();
 };
 
+export const loadDevConfig = async () => {
+  const res = await fetch(`${API_BASE}/dev/load-config`, {
+    method: 'POST'
+  });
+  return res.json();
+};
+
 export const triggerAction = async (actionData) => {
   const res = await fetch(`${API_BASE}/action`, {
     method: 'POST',

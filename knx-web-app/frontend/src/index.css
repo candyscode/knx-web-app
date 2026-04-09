@@ -809,16 +809,6 @@ body {
   flex-shrink: 0;
 }
 
-.icon-select-dropdown {
-  position: fixed;
-  left: 0;
-  right: auto;
-  top: 0;
-  width: 168px;
-  min-width: 168px;
-  z-index: 2000;
-}
-
 .icon-select-option {
   width: 100%;
   border: 0;
@@ -830,8 +820,13 @@ body {
   gap: 0.6rem;
 }
 
-.icon-select-option.active .icon-select-icon {
-  color: #fff;
+.icon-select-option .type-select-name,
+.type-select-option.active.icon-select-option .type-select-name {
+  color: #fff !important;
+}
+
+.icon-select-option .icon-select-icon {
+  color: #fff !important;
 }
 
 .icon-invert-card {

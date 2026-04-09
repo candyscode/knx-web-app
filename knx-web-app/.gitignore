@@ -38,3 +38,4 @@ frontend/coverage/
 
 # Runtime config (contains real IP addresses and Hue API keys — keep out of git)
 backend/config.json
+backend/config.dev.json
