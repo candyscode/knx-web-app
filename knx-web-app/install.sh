@@ -38,12 +38,25 @@ sudo apt-get install -y git curl build-essential
 
 # Node.js Check
 echo "=> Checking Node.js..."
-if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
-    echo "Node.js not found. Installing Node.js v20 LTS via NodeSource..."
+NODE_OK=0
+
+if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+    NODE_VERS=$(node -v | { grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' || echo "0"; })
+    NODE_MAJOR=$(echo "$NODE_VERS" | cut -d. -f1)
+    if [ "$NODE_MAJOR" -ge 20 ] 2>/dev/null; then
+        echo "Found Node.js v$NODE_VERS (compatible)"
+        NODE_OK=1
+    else
+        echo "Found Node.js v$NODE_VERS, but version 20+ is required."
+    fi
+else
+    echo "Node.js not found."
+fi
+
+if [ $NODE_OK -eq 0 ]; then
+    echo "Installing/Upgrading to Node.js v20 LTS via NodeSource..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt-get install -y nodejs
-else
-    echo "Found Node.js $(node -v)"
 fi
 
 # Clone or Update Repo
