@@ -22,23 +22,23 @@ A local web application for controlling a KNX smart home system via a KNX IP int
 
 ## Architecture Overview
 
-```
-┌────────────────────┐        HTTP / WebSocket        ┌─────────────────────┐
-│  Browser (React)   │ ◄────────────────────────────► │  Backend (Node.js)  │
-│  localhost:5173    │                                 │  localhost:3001     │
-└────────────────────┘                                 └──────────┬──────────┘
-                                                                  │
-                                               KNX IP (UDP 3671)  │  HTTP (local LAN)
-                                                         ┌────────┴────────┐
-                                                         │                 │
-                                                  ┌──────┴──────┐   ┌──────┴──────┐
-                                                  │  KNX IP     │   │  Philips    │
-                                                  │  Interface  │   │  Hue Bridge │
-                                                  └─────────────┘   └─────────────┘
+```text
+┌─────────────────────┐      HTTP / WebSocket      ┌─────────────────────┐
+│ Browser (React UI)  │ ◄────────────────────────► │ Backend (Node.js)   │
+│ Any device in WLAN  │                            │ Port 3001           │
+└─────────────────────┘                            └──────────┬──────────┘
+                                                              │
+                                            KNX IP (UDP 3671) │ HTTP (local LAN)
+                                                      ┌───────┴───────┐
+                                                      │               │
+                                              ┌───────┴───────┐ ┌─────┴───────┐
+                                              │ KNX IP        │ │ Philips     │
+                                              │ Interface     │ │ Hue Bridge  │
+                                              └───────────────┘ └─────────────┘
 ```
 
-- **Frontend**: React + Vite, served on `http://localhost:5173`
-- **Backend**: Express + Socket.IO, served on `http://localhost:3001`
+- **Frontend**: React + Vite UI (served automatically by the backend in production)
+- **Backend**: Express + Socket.IO (serves API, Websockets and the Frontend on Port 3001)
 - **KNX**: Communicates via UDP to the KNX IP interface on port 3671
 - **Hue**: Communicates via HTTP to the Philips Hue Bridge on the local LAN
 - **Persistence**: All configuration (rooms, functions, IP settings, Hue credentials) is stored in `backend/config.json`
@@ -69,7 +69,6 @@ Run the following command in your terminal to download and start the installatio
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/AI/main/knx-web-app/install.sh)
 ```
-*(Make sure to push your `install.sh` file to your GitHub repository `main` branch before running this!)*
 
 This script will explain what it's about to do and pause to let you confirm. Under the hood, it performs the following:
 * If no Node.js is detected, it automatically installs Node.js v20 LTS securely via NodeSource.
@@ -125,9 +124,9 @@ VITE v8.x.x  ready in xxx ms
 > pkill -f "vite"; pkill -f "node server.js"
 > ```
 
-### 3. Open in Browser
+### 3. Open in Browser (Development)
 
-Navigate to: **http://localhost:5173**
+Navigate to: **http://localhost:5173** (In production via the daemon, use `http://<Raspberry-IP>:3001`)
 
 ---
 
@@ -276,7 +275,7 @@ knx-web-app/
 
 ## API Reference
 
-All endpoints are on `http://localhost:3001`.
+All endpoints are provided by the backend service (default port `3001`).
 
 ### Config
 
