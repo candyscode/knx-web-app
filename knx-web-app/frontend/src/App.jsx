@@ -47,7 +47,6 @@ function App() {
     }
 
     const socket = io(socketUrl);
-    setSocket(socket);
 
     socket.on('knx_status', (status) => {
       setKnxStatus(status);
