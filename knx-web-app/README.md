@@ -67,7 +67,7 @@ We provide a script to securely install Node.js, npm, and the KNX Web App via a 
 Run the following command in your terminal to download and start the installation:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/dein-github-name/knx-web-app/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/AI/main/knx-web-app/install.sh)
 ```
 *(Make sure to push your `install.sh` file to your GitHub repository `main` branch before running this!)*
 

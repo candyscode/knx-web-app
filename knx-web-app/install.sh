@@ -4,7 +4,7 @@
 set -e
 
 # Configuration
-REPO_URL="https://github.com/YOUR_GITHUB_USERNAME/knx-web-app.git" # <-- UPDATE THIS
+REPO_URL="https://github.com/candyscode/AI.git"
 INSTALL_DIR="$HOME/.knx-web-app"
 SERVICE_NAME="knx-web-app.service"
 USER_NAME=$(whoami)
@@ -58,7 +58,7 @@ else
     git clone "$REPO_URL" "$INSTALL_DIR"
 fi
 
-cd "$INSTALL_DIR"
+cd "$INSTALL_DIR/knx-web-app"
 
 # Install Dependencies and Build
 echo "=> Installing Frontend dependencies and building..."
@@ -82,8 +82,8 @@ Description=KNX Web App Backend
 After=network.target
 
 [Service]
-ExecStart=$NODE_BIN $INSTALL_DIR/backend/server.js
-WorkingDirectory=$INSTALL_DIR/backend
+ExecStart=$NODE_BIN $INSTALL_DIR/knx-web-app/backend/server.js
+WorkingDirectory=$INSTALL_DIR/knx-web-app/backend
 Restart=always
 User=$USER_NAME
 Environment=NODE_ENV=production
