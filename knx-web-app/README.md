@@ -86,7 +86,14 @@ Because the app is registered on the OS level, you no longer need to keep a term
 * `knx-stop` - Stops the web app service.
 * `knx-restart` - Restarts the service.
 * `knx-log` - Displays the live logs (press `Ctrl-C` to close logs, the app will keep running).
-* `knx-uninstall` - Completely removes the app, the background services, and all associated configs.
+
+### Upgrading the App
+When a new version is pushed to GitHub, simply type:
+* `knx-update` - This automatically downloads the newest version, rebuilds the frontend, updates all Node.js dependencies, and restarts the background service. **Your configurations (rooms, IPs) will remain securely untouched!**
+
+### Uninstalling
+If you no longer wish to run the app on this device, simply type:
+* `knx-uninstall` - You will be prompted to confirm. If you type 'y', the process will completely remove the background services, delete the `~/.knx-web-app` installation folder, and erase all CLI shortcuts from your system effortlessly.
 
 **Autostart on boot**  
 The installation automatically enabled autostart. If you ever need to turn this off, you can manually disable the systemd feature using:

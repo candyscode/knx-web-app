@@ -112,6 +112,7 @@ create_cli_command "knx-start"   "sudo systemctl start $SERVICE_NAME"
 create_cli_command "knx-stop"    "sudo systemctl stop $SERVICE_NAME"
 create_cli_command "knx-restart" "sudo systemctl restart $SERVICE_NAME"
 create_cli_command "knx-log"     "sudo journalctl -u $SERVICE_NAME -f"
+create_cli_command "knx-update"  "bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/AI/main/knx-web-app/install.sh)"
 
 # Uninstall command
 sudo bash -c "cat > /usr/local/bin/knx-uninstall <<EOF
@@ -128,6 +129,7 @@ if [[ \\\$prompt =~ ^[Yy]$ ]]; then
     sudo rm /usr/local/bin/knx-stop
     sudo rm /usr/local/bin/knx-restart
     sudo rm /usr/local/bin/knx-log
+    sudo rm /usr/local/bin/knx-update
     sudo rm /usr/local/bin/knx-uninstall
     echo \"Uninstallation complete.\"
 else
@@ -149,6 +151,7 @@ echo "  knx-start    - Start the app"
 echo "  knx-stop     - Stop the app"
 echo "  knx-restart  - Restart the app"
 echo "  knx-log      - View live logs"
+echo "  knx-update   - Update to the latest version from GitHub"
 echo "  knx-uninstall - Remove the app completely"
 echo ""
 echo "You can access your dashboard safely at:"
