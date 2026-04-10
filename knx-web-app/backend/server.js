@@ -387,12 +387,25 @@ if (fs.existsSync(distPath)) {
   console.log(`Serving static frontend from ${distPath}`);
   app.use(express.static(distPath));
   // Catch-all to serve index.html for React Router
-  app.get('*', (req, res) => {
+  app.get(/.*/, (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
 const PORT = 3001;
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ ERROR: Port ${PORT} is already in use.`);
+    console.error(`This usually means the KNX Web App is already running in the background (e.g., via systemd or another terminal).`);
+    console.error(`Stop the other instance (e.g., 'knx-stop' or 'pkill node') before starting a new one.\n`);
+    process.exit(1);
+  } else {
+    console.error(`\n❌ ERROR: Failed to start the server:`, err.message);
+    process.exit(1);
+  }
+});
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend server running on http://0.0.0.0:${PORT}`);
 });
