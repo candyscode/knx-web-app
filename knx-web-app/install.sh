@@ -58,19 +58,18 @@ else
     git clone "$REPO_URL" "$INSTALL_DIR"
 fi
 
-cd "$INSTALL_DIR/knx-web-app"
+# Define the actual app path within the cloned repository
+APP_DIR="$INSTALL_DIR/knx-web-app"
 
 # Install Dependencies and Build
 echo "=> Installing Frontend dependencies and building..."
-cd frontend
+cd "$APP_DIR/frontend"
 npm ci || npm install
 npm run build
-cd ..
 
 echo "=> Installing Backend dependencies..."
-cd backend
+cd "$APP_DIR/backend"
 npm ci || npm install
-cd ..
 
 # Set up Systemd Service
 echo "=> Configuring Background Service (systemd)..."
@@ -82,8 +81,8 @@ Description=KNX Web App Backend
 After=network.target
 
 [Service]
-ExecStart=$NODE_BIN $INSTALL_DIR/knx-web-app/backend/server.js
-WorkingDirectory=$INSTALL_DIR/knx-web-app/backend
+ExecStart=$NODE_BIN $APP_DIR/backend/server.js
+WorkingDirectory=$APP_DIR/backend
 Restart=always
 User=$USER_NAME
 Environment=NODE_ENV=production
