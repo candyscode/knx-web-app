@@ -38,8 +38,16 @@ function App() {
   useEffect(() => {
     fetchConfig();
     
-    // Initialize socket inside effect to prevent missing early "initial_states" events
-    const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001');
+    // Determine socket URL based on environment
+    let socketUrl = 'http://localhost:3001';
+    if (import.meta.env.VITE_BACKEND_URL) {
+      socketUrl = import.meta.env.VITE_BACKEND_URL;
+    } else if (!import.meta.env.DEV) {
+      socketUrl = '/'; // Production static hosting via backend
+    }
+
+    const socket = io(socketUrl);
+    setSocket(socket);
 
     socket.on('knx_status', (status) => {
       setKnxStatus(status);

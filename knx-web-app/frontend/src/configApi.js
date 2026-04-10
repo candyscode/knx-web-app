@@ -1,4 +1,9 @@
-const API_BASE = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api`;
+const getApiBase = () => {
+  if (import.meta.env.VITE_BACKEND_URL) return `${import.meta.env.VITE_BACKEND_URL}/api`;
+  if (import.meta.env.DEV) return 'http://localhost:3001/api';
+  return '/api'; // Use relative path when statically served
+};
+const API_BASE = getApiBase();
 
 export const getConfig = async () => {
   const res = await fetch(`${API_BASE}/config`);

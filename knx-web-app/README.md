@@ -58,46 +58,62 @@ Before running this app, you need:
 
 ---
 
-## Installation
+## Installation & Deployment
 
-Clone the repository and install dependencies for both frontend and backend:
+## Installation & Upgrades
+
+We provide a script to securely install Node.js, npm, and the KNX Web App via a single command onto a Raspberry Pi, or any Debian-based Linux OS. This script can also be used to seamlessly upgrade an existing install when a new release is passed to the main branch.
+
+Run the following command in your terminal to download and start the installation:
 
 ```bash
-# Backend
-cd backend
-npm install
+bash <(curl -fsSL https://raw.githubusercontent.com/dein-github-name/knx-web-app/main/install.sh)
+```
+*(Make sure to push your `install.sh` file to your GitHub repository `main` branch before running this!)*
 
-# Frontend
-cd ../frontend
-npm install
+This script will explain what it's about to do and pause to let you confirm. Under the hood, it performs the following:
+* If no Node.js is detected, it automatically installs Node.js v20 LTS securely via NodeSource.
+* Clones (or updates) the application safely into a dedicated `~/.knx-web-app` home directory.
+* Compiles the React frontend into an optimized production-build bundle.
+* Automatically registers the application as a `systemd` background service so it will survive reboots and keep running effortlessly.
+
+---
+
+## 🛠️ Working with the background service (CLI)
+
+Because the app is registered on the OS level, you no longer need to keep a terminal running to keep your smart home alive. The installer also sets up several convenient global commands in your terminal:
+
+* `knx-start` - Starts the web app service in the background.
+* `knx-stop` - Stops the web app service.
+* `knx-restart` - Restarts the service.
+* `knx-log` - Displays the live logs (press `Ctrl-C` to close logs, the app will keep running).
+* `knx-uninstall` - Completely removes the app, the background services, and all associated configs.
+
+**Autostart on boot**  
+The installation automatically enabled autostart. If you ever need to turn this off, you can manually disable the systemd feature using:
+```bash
+sudo systemctl disable knx-web-app.service
 ```
 
 ---
 
-## Starting the App
+## Development / Manual Setup
 
-You need to start **two separate processes**: the backend server and the frontend dev server.
-
-### 1. Start the Backend
+If you prefer to run it manually or hack on the features, just clone the repo and launch the frontend and backend manually in two separate terminal tabs:
 
 ```bash
+# 1. Start the Backend
 cd backend
+npm install
 node server.js
-```
+# Runs on :3001
 
-Expected output:
-```
-Backend server running on http://localhost:3001
-```
-
-### 2. Start the Frontend
-
-```bash
-cd frontend
+# 2. Start the Frontend
+cd ../frontend
+npm install
 npm run dev
+# Vite runs on :5173
 ```
-
-Expected output:
 ```
 VITE v8.x.x  ready in xxx ms
 

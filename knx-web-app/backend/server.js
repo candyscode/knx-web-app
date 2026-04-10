@@ -381,7 +381,18 @@ io.on('connection', (socket) => {
   socket.emit('knx_initial_states', knxService.deviceStates);
 });
 
+// --- STATIC FRONTEND SERVING (PRODUCTION) ---
+const distPath = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(distPath)) {
+  console.log(`Serving static frontend from ${distPath}`);
+  app.use(express.static(distPath));
+  // Catch-all to serve index.html for React Router
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 const PORT = 3001;
-server.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend server running on http://0.0.0.0:${PORT}`);
 });
