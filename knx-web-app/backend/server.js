@@ -27,8 +27,35 @@ let config = {
   knxIp: '',
   knxPort: 3671,
   hue: { bridgeIp: '', apiKey: '' },
-  rooms: []
+  rooms: [],
+  importedGroupAddresses: [],
+  importedGroupAddressesFileName: ''
 };
+
+function normalizeImportedGroupAddresses(addresses) {
+  if (!Array.isArray(addresses)) return [];
+  return addresses
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      address: typeof entry.address === 'string' ? entry.address : '',
+      name: typeof entry.name === 'string' ? entry.name : '',
+      dpt: typeof entry.dpt === 'string' ? entry.dpt : '',
+      functionType: typeof entry.functionType === 'string' ? entry.functionType : '',
+      supported: entry.supported !== false,
+    }))
+    .filter((entry) => entry.address && entry.name);
+}
+
+function normalizeConfigShape(input) {
+  if (!input || typeof input !== 'object') return;
+  if (!input.knxPort) input.knxPort = 3671;
+  if (!input.hue) input.hue = { bridgeIp: '', apiKey: '' };
+  if (!Array.isArray(input.rooms)) input.rooms = [];
+  input.importedGroupAddresses = normalizeImportedGroupAddresses(input.importedGroupAddresses);
+  input.importedGroupAddressesFileName = typeof input.importedGroupAddressesFileName === 'string'
+    ? input.importedGroupAddressesFileName
+    : '';
+}
 
 function establishConnection() {
   if (config.knxIp) {
@@ -85,8 +112,7 @@ if (fs.existsSync(CONFIG_FILE)) {
   try {
     const data = fs.readFileSync(CONFIG_FILE, 'utf8');
     config = JSON.parse(data);
-    if (!config.knxPort) config.knxPort = 3671;
-    if (!config.hue) config.hue = { bridgeIp: '', apiKey: '' };
+    normalizeConfigShape(config);
     hueService.init(config.hue);
     establishConnection();
   } catch(e) {
@@ -95,6 +121,7 @@ if (fs.existsSync(CONFIG_FILE)) {
 }
 
 function saveConfig() {
+  normalizeConfigShape(config);
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
 }
 
@@ -109,7 +136,7 @@ app.get('/api/config', (req, res) => {
 });
 
 app.post('/api/config', (req, res) => {
-  const { knxIp, knxPort, rooms } = req.body;
+  const { knxIp, knxPort, rooms, importedGroupAddresses, importedGroupAddressesFileName } = req.body;
   
   let shouldReconnect = false;
 
@@ -129,6 +156,16 @@ app.post('/api/config', (req, res) => {
   
   if (rooms !== undefined) {
     config.rooms = rooms;
+  }
+
+  if (importedGroupAddresses !== undefined) {
+    config.importedGroupAddresses = normalizeImportedGroupAddresses(importedGroupAddresses);
+  }
+
+  if (importedGroupAddressesFileName !== undefined) {
+    config.importedGroupAddressesFileName = typeof importedGroupAddressesFileName === 'string'
+      ? importedGroupAddressesFileName
+      : '';
   }
   
   saveConfig();

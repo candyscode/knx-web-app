@@ -30,6 +30,8 @@ const BASE_CONFIG = {
   knxPort: 3671,
   hue: { bridgeIp: '', apiKey: '' },
   rooms: [],
+  importedGroupAddresses: [],
+  importedGroupAddressesFileName: '',
 };
 
 const CONFIG_WITH_ROOM = {
@@ -363,6 +365,58 @@ describe('Settings — ETS modal filtering', () => {
       });
 
       expect(addToast).toHaveBeenCalledWith('Added "Living Room - Blind Position" from ETS', 'success');
+    } finally {
+      window.FileReader = originalFileReader;
+    }
+  });
+
+  it('persists imported ETS addresses in config so they survive backend restarts', async () => {
+    const user = userEvent.setup();
+    renderSettings(CONFIG_WITH_ROOM);
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+      <KNX>
+        <GroupAddresses>
+          <GroupRange Name="House">
+            <GroupRange Name="Hallway">
+              <GroupAddress Id="ga-1" Address="1/0/1" Name="Hallway Light" DPTs="DPT 1.001" />
+            </GroupRange>
+          </GroupRange>
+        </GroupAddresses>
+      </KNX>`;
+
+    const originalFileReader = window.FileReader;
+    class MockFileReader {
+      constructor() {
+        this.onload = null;
+        this.onerror = null;
+      }
+      readAsText() {
+        this.onload?.({ target: { result: xml } });
+      }
+    }
+    window.FileReader = MockFileReader;
+
+    try {
+      await user.click(screen.getByRole('button', { name: /manage imported ets xml/i }));
+
+      const fileInput = document.querySelector('input[type="file"]');
+      expect(fileInput).not.toBeNull();
+      fireEvent.change(fileInput, { target: { files: [new File([xml], 'ets-export.xml', { type: 'text/xml' })] } });
+
+      expect(await screen.findByText(/imported 1 supported group addresses from ets-export.xml/i)).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+          importedGroupAddressesFileName: 'ets-export.xml',
+          importedGroupAddresses: [expect.objectContaining({
+            address: '1/0/1',
+            name: 'Hallway Light',
+            functionType: 'switch',
+            supported: true,
+          })],
+        }));
+      });
     } finally {
       window.FileReader = originalFileReader;
     }
