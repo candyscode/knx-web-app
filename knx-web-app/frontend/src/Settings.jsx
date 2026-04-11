@@ -600,6 +600,8 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     setPort(config.knxPort || 3671);
     setRooms(migrateRooms(config.rooms || []));
     setHueBridgeIp(config.hue?.bridgeIp || '');
+    setGroupAddressBook(Array.isArray(config.importedGroupAddresses) ? config.importedGroupAddresses : []);
+    setGroupAddressFileName(config.importedGroupAddressesFileName || '');
   }, [config]);
   // Hue scene linking modal
   const [hueSceneModal, setHueSceneModal] = useState({ open: false, roomId: null, sceneId: null });
@@ -829,16 +831,31 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     setGroupAddressModal({ open: false, roomId: null, title: 'Select Group Address', mode: 'any', target: null, allowUpload: false, helperText: '' });
   };
 
-  const importGroupAddresses = (addresses, fileName) => {
-    setGroupAddressBook(addresses);
-    setGroupAddressFileName(fileName);
-    addToast(`Imported ${addresses.length} group addresses`, 'success');
+  const importGroupAddresses = async (addresses, fileName) => {
+    try {
+      await updateConfig({
+        importedGroupAddresses: addresses,
+        importedGroupAddressesFileName: fileName,
+      });
+      setGroupAddressBook(addresses);
+      setGroupAddressFileName(fileName);
+      addToast(`Imported ${addresses.length} group addresses`, 'success');
+      fetchConfig();
+    } catch {
+      addToast('Failed to persist imported group addresses', 'error');
+    }
   };
 
-  const clearGroupAddresses = () => {
-    setGroupAddressBook([]);
-    setGroupAddressFileName('');
-    addToast('Imported group addresses cleared', 'success');
+  const clearGroupAddresses = async () => {
+    try {
+      await updateConfig({ importedGroupAddresses: [], importedGroupAddressesFileName: '' });
+      setGroupAddressBook([]);
+      setGroupAddressFileName('');
+      addToast('Imported group addresses cleared', 'success');
+      fetchConfig();
+    } catch {
+      addToast('Failed to clear imported group addresses', 'error');
+    }
   };
 
   const handleSelectGroupAddress = async (groupAddress) => {

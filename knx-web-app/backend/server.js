@@ -17,7 +17,15 @@ const io = new Server(server, {
 app.use(cors());
 app.use(bodyParser.json());
 
-const CONFIG_FILE = path.join(__dirname, 'config.json');
+const DEFAULT_PORT = 3001;
+const PORT = parseInt(process.env.PORT, 10) || DEFAULT_PORT;
+const HOST = process.env.HOST || '0.0.0.0';
+const configDir = process.env.KNX_CONFIG_DIR
+  ? path.resolve(process.env.KNX_CONFIG_DIR)
+  : __dirname;
+const CONFIG_FILE = process.env.KNX_CONFIG_FILE
+  ? path.resolve(process.env.KNX_CONFIG_FILE)
+  : path.join(configDir, 'config.json');
 
 const knxService = new KnxService(io);
 const hueService = new HueService();
@@ -27,8 +35,35 @@ let config = {
   knxIp: '',
   knxPort: 3671,
   hue: { bridgeIp: '', apiKey: '' },
-  rooms: []
+  rooms: [],
+  importedGroupAddresses: [],
+  importedGroupAddressesFileName: ''
 };
+
+function normalizeImportedGroupAddresses(addresses) {
+  if (!Array.isArray(addresses)) return [];
+  return addresses
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      address: typeof entry.address === 'string' ? entry.address : '',
+      name: typeof entry.name === 'string' ? entry.name : '',
+      dpt: typeof entry.dpt === 'string' ? entry.dpt : '',
+      functionType: typeof entry.functionType === 'string' ? entry.functionType : '',
+      supported: entry.supported !== false,
+    }))
+    .filter((entry) => entry.address && entry.name);
+}
+
+function normalizeConfigShape(input) {
+  if (!input || typeof input !== 'object') return;
+  if (!input.knxPort) input.knxPort = 3671;
+  if (!input.hue) input.hue = { bridgeIp: '', apiKey: '' };
+  if (!Array.isArray(input.rooms)) input.rooms = [];
+  input.importedGroupAddresses = normalizeImportedGroupAddresses(input.importedGroupAddresses);
+  input.importedGroupAddressesFileName = typeof input.importedGroupAddressesFileName === 'string'
+    ? input.importedGroupAddressesFileName
+    : '';
+}
 
 function establishConnection() {
   if (config.knxIp) {
@@ -80,13 +115,16 @@ async function handleExternalSceneTrigger(groupAddress, sceneNumber) {
   await triggerLinkedHueScene(groupAddress, sceneNumber);
 }
 
+function ensureConfigDir() {
+  fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true });
+}
+
 // Load config
 if (fs.existsSync(CONFIG_FILE)) {
   try {
     const data = fs.readFileSync(CONFIG_FILE, 'utf8');
     config = JSON.parse(data);
-    if (!config.knxPort) config.knxPort = 3671;
-    if (!config.hue) config.hue = { bridgeIp: '', apiKey: '' };
+    normalizeConfigShape(config);
     hueService.init(config.hue);
     establishConnection();
   } catch(e) {
@@ -95,7 +133,10 @@ if (fs.existsSync(CONFIG_FILE)) {
 }
 
 function saveConfig() {
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+  ensureConfigDir();
+  const tempFile = `${CONFIG_FILE}.tmp`;
+  fs.writeFileSync(tempFile, JSON.stringify(config, null, 2));
+  fs.renameSync(tempFile, CONFIG_FILE);
 }
 
 // Ensure the local file exists right away
@@ -130,7 +171,18 @@ app.post('/api/config', (req, res) => {
   if (rooms !== undefined) {
     config.rooms = rooms;
   }
+
+  if (req.body.importedGroupAddresses !== undefined) {
+    config.importedGroupAddresses = normalizeImportedGroupAddresses(req.body.importedGroupAddresses);
+  }
+
+  if (req.body.importedGroupAddressesFileName !== undefined) {
+    config.importedGroupAddressesFileName = typeof req.body.importedGroupAddressesFileName === 'string'
+      ? req.body.importedGroupAddressesFileName
+      : '';
+  }
   
+  normalizeConfigShape(config);
   saveConfig();
   res.json({ success: true, config });
 });
@@ -142,6 +194,7 @@ app.post('/api/dev/load-config', (req, res) => {
     try {
       const data = fs.readFileSync(DEV_CONFIG_FILE, 'utf8');
       config = JSON.parse(data);
+      normalizeConfigShape(config);
       saveConfig();
       if (config.knxIp) {
         establishConnection();
@@ -392,20 +445,18 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-const PORT = 3001;
-
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`\n❌ ERROR: Port ${PORT} is already in use.`);
-    console.error(`This usually means the KNX Web App is already running in the background (e.g., via systemd or another terminal).`);
-    console.error(`Stop the other instance (e.g., 'knx-stop' or 'pkill node') before starting a new one.\n`);
-    process.exit(1);
-  } else {
-    console.error(`\n❌ ERROR: Failed to start the server:`, err.message);
+    console.error(`This usually means the KNX Web App is already running in the background.`);
     process.exit(1);
   }
+
+  console.error(`\n❌ ERROR: Failed to start the server:`, err.message);
+  process.exit(1);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend server running on http://0.0.0.0:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`Backend server running on http://${HOST}:${PORT}`);
+  console.log(`Using config file at ${CONFIG_FILE}`);
 });
