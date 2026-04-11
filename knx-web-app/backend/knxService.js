@@ -8,6 +8,10 @@ class KnxService {
     this.deviceStates = {};
     this.gaToType = {};
     this.sceneTriggerCallback = null;
+    this._reconnecting = false;
+    this._manualDisconnect = false;
+    this._reconnectTimer = null;
+    this._lastConnectArgs = null;
   }
 
   setGaToType(map) {
@@ -23,9 +27,16 @@ class KnxService {
   }
 
   connect(ipAddress, port = 3671, onConnectCallback = null) {
+    this._lastConnectArgs = { ipAddress, port, onConnectCallback };
+    if (this._reconnectTimer) {
+      clearTimeout(this._reconnectTimer);
+      this._reconnectTimer = null;
+    }
+
     // Disconnect existing connection first, then wait for it to close
     if (this.connection) {
       this._reconnecting = true; // suppress stale 'disconnected' event
+      this._manualDisconnect = true;
       try {
         this.connection.Disconnect();
       } catch (e) {
@@ -38,6 +49,7 @@ class KnxService {
     if (!ipAddress) {
       console.log('No KNX IP address provided in config');
       this._reconnecting = false;
+      this._manualDisconnect = false;
       return;
     }
 
@@ -54,6 +66,7 @@ class KnxService {
             connected: () => {
               console.log('Connected to KNX system at', ipAddress);
               this._reconnecting = false;
+              this._manualDisconnect = false;
               this.isConnected = true;
               this.io.emit('knx_status', { connected: true, msg: 'Connected successfully to bus' });
               if (onConnectCallback) onConnectCallback();
@@ -93,6 +106,7 @@ class KnxService {
               this.isConnected = false;
               this.io.emit('knx_error', { msg: `Bus access failed: ${connstatus}. Check IP interface.` });
               this.io.emit('knx_status', { connected: false, msg: 'Disconnected from bus' });
+              this.scheduleReconnect('error');
             },
             disconnected: () => {
               console.log('KNX Disconnected');
@@ -100,6 +114,9 @@ class KnxService {
               // Don't broadcast offline if we're intentionally reconnecting to a new IP
               if (!this._reconnecting) {
                 this.io.emit('knx_status', { connected: false, msg: 'Disconnected from bus' });
+              }
+              if (!this._manualDisconnect) {
+                this.scheduleReconnect('disconnected');
               }
             }
           }
@@ -111,6 +128,25 @@ class KnxService {
         this.io.emit('knx_status', { connected: false, msg: 'Disconnected (Invalid IP)' });
       }
     }, 500);
+  }
+
+  scheduleReconnect(reason) {
+    if (this._manualDisconnect || this._reconnecting || this._reconnectTimer || !this._lastConnectArgs?.ipAddress) {
+      return;
+    }
+
+    console.log(`Scheduling KNX reconnect after ${reason}`);
+    this.io.emit('knx_status', { connected: false, msg: 'Connection lost — retrying shortly...' });
+    this._reconnectTimer = setTimeout(() => {
+      this._reconnectTimer = null;
+      if (!this._manualDisconnect && this._lastConnectArgs?.ipAddress) {
+        this.connect(
+          this._lastConnectArgs.ipAddress,
+          this._lastConnectArgs.port,
+          this._lastConnectArgs.onConnectCallback,
+        );
+      }
+    }, 1500);
   }
 
   readStatus(groupAddress) {

@@ -114,6 +114,37 @@ describe('KnxService — unit', () => {
       jest.useRealTimers();
     });
 
+    it('schedules an automatic reconnect after an unexpected disconnect', () => {
+      jest.useFakeTimers();
+      const { capturedHandlers } = setupKnxMock();
+      service.connect('192.168.1.85', 3671);
+      jest.runAllTimers();
+      capturedHandlers.connected();
+
+      knx.Connection.mockClear();
+      capturedHandlers.disconnected();
+      jest.advanceTimersByTime(1500);
+      jest.advanceTimersByTime(500);
+
+      expect(knx.Connection).toHaveBeenCalledTimes(1);
+      jest.useRealTimers();
+    });
+
+    it('schedules an automatic reconnect after a connection error', () => {
+      jest.useFakeTimers();
+      const { capturedHandlers } = setupKnxMock();
+      service.connect('192.168.1.85', 3671);
+      jest.runAllTimers();
+
+      knx.Connection.mockClear();
+      capturedHandlers.error('ECONNRESET');
+      jest.advanceTimersByTime(1500);
+      jest.advanceTimersByTime(500);
+
+      expect(knx.Connection).toHaveBeenCalledTimes(1);
+      jest.useRealTimers();
+    });
+
     it('calls onConnectCallback when connection establishes', () => {
       jest.useFakeTimers();
       const { capturedHandlers } = setupKnxMock();
