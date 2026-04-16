@@ -4,13 +4,12 @@ name: KNX Web App — Tests
 # This avoids double-running on pushes to branches that already have an open PR,
 # and skips CI entirely for branches without a PR.
 #
-# Path filter: only fires when knx-web-app/ files are changed,
-# so unrelated commits elsewhere in the monorepo are ignored.
+# Path filter: fires on any file change at repo root.
 
 on:
   pull_request:
     paths:
-      - 'knx-web-app/**'
+      - '**'
 
 jobs:
   backend-tests:
@@ -26,15 +25,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: knx-web-app/backend/package-lock.json
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install backend dependencies
         run: npm ci
-        working-directory: knx-web-app/backend
+        working-directory: backend
 
       - name: Run backend tests
         run: npm test
-        working-directory: knx-web-app/backend
+        working-directory: backend
 
   frontend-tests:
     name: Frontend Tests (Vitest)
@@ -49,12 +48,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: knx-web-app/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies
         run: npm ci
-        working-directory: knx-web-app/frontend
+        working-directory: frontend
 
       - name: Run frontend tests
         run: npm test
-        working-directory: knx-web-app/frontend
+        working-directory: frontend

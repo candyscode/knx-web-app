@@ -4,7 +4,7 @@
 set -e
 
 # Configuration
-REPO_URL="https://github.com/candyscode/AI.git"
+REPO_URL="https://github.com/candyscode/knx-web-app.git"
 INSTALL_DIR="$HOME/.knx-web-app"
 SERVICE_NAME="knx-web-app.service"
 USER_NAME=$(whoami)
@@ -71,8 +71,8 @@ else
     git clone "$REPO_URL" "$INSTALL_DIR"
 fi
 
-# Define the actual app path within the cloned repository
-APP_DIR="$INSTALL_DIR/knx-web-app"
+# The repo root IS the app — no nested knx-web-app/ subfolder
+APP_DIR="$INSTALL_DIR"
 
 # Install Dependencies and Build
 echo "=> Installing Frontend dependencies and building..."
@@ -125,7 +125,7 @@ create_cli_command "knx-start"   "sudo systemctl start $SERVICE_NAME"
 create_cli_command "knx-stop"    "sudo systemctl stop $SERVICE_NAME"
 create_cli_command "knx-restart" "sudo systemctl restart $SERVICE_NAME"
 create_cli_command "knx-log"     "sudo journalctl -u $SERVICE_NAME -f"
-create_cli_command "knx-update"  "bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/AI/main/knx-web-app/install.sh)"
+create_cli_command "knx-update"  "bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/knx-web-app/main/install.sh)"
 
 # Uninstall command
 sudo bash -c "cat > /usr/local/bin/knx-uninstall <<EOF

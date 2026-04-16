@@ -67,7 +67,7 @@ We provide a script to securely install Node.js, npm, and the KNX Web App via a 
 Run the following command in your terminal to download and start the installation:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/AI/main/knx-web-app/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/knx-web-app/main/install.sh)
 ```
 
 This script will explain what it's about to do and pause to let you confirm. Under the hood, it performs the following:
@@ -258,7 +258,8 @@ Each room card contains:
 ## Project Structure
 
 ```
-knx-web-app/
+knx-web-app/  (repo root)
+├── install.sh
 ├── backend/
 │   ├── server.js          # Express API + Socket.IO server (port 3001)
 │   ├── knxService.js      # KNX IP connection & group address handling
