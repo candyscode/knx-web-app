@@ -96,11 +96,13 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     saveFloors(updated);
   };
 
-  const handleDeleteFloor = async (floorId) => {
+  const handleDeleteFloor = (floorId) => {
     const floor = floors.find(f => f.id === floorId);
+    let msg = `Are you sure you want to delete the floor "${floor?.name || 'Unknown'}"?`;
     if (floor && floor.rooms.length > 0) {
-      if (!window.confirm(`"${floor.name}" has ${floor.rooms.length} room(s). Delete anyway?`)) return;
+      msg = `"${floor.name}" contains ${floor.rooms.length} room(s). Delete everything?`;
     }
+    if (!window.confirm(msg)) return;
     const updated = floors.filter(f => f.id !== floorId);
     setFloors(updated);
     if (activeFloorId === floorId) setActiveFloorId(updated[0]?.id || null);
@@ -131,6 +133,9 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   };
 
   const handleDeleteRoom = async (floorId, roomId) => {
+    const floor = floors.find(f => f.id === floorId);
+    const room = floor?.rooms.find(r => r.id === roomId);
+    if (!window.confirm(`Are you sure you want to delete the room "${room?.name || 'Unknown'}"?`)) return;
     const updated = updateFloorRooms(floorId, rooms => rooms.filter(r => r.id !== roomId));
     try { await saveFloors(updated); addToast('Room deleted', 'success'); fetchConfig(); }
     catch { addToast('Failed to delete room', 'error'); }

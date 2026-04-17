@@ -75,7 +75,7 @@ function App() {
 
       <main>
         {activeTab === 'dashboard' && (
-          <Dashboard config={config} deviceStates={deviceStates} setDeviceStates={setDeviceStates}
+          <Dashboard config={config} fetchConfig={fetchConfig} deviceStates={deviceStates} setDeviceStates={setDeviceStates}
             hueStates={hueStates} setHueStates={setHueStates} addToast={addToast} />
         )}
         {activeTab === 'settings' && (

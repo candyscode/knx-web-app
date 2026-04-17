@@ -137,6 +137,7 @@ describe('Settings — Room management', () => {
   });
 
   it('deletes room when Delete Room button is clicked', async () => {
+    vi.spyOn(window, 'confirm').mockImplementation(() => true);
     const user = userEvent.setup();
     renderSettings(CONFIG_WITH_ROOM);
 

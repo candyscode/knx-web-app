@@ -146,7 +146,7 @@ function RoomCard({ room, deviceStates, hueStates, setDeviceStates, setHueStates
 }
 
 // ── Dashboard ─────────────────────────────────────────────
-export default function Dashboard({ config, deviceStates = {}, hueStates = {}, setDeviceStates, setHueStates, addToast }) {
+export default function Dashboard({ config, fetchConfig, deviceStates = {}, hueStates = {}, setDeviceStates, setHueStates, addToast }) {
   // Derive floors from config — support both legacy rooms[] and new floors[]
   const floors = React.useMemo(() => {
     if (config.floors && config.floors.length > 0) return config.floors;
@@ -167,12 +167,6 @@ export default function Dashboard({ config, deviceStates = {}, hueStates = {}, s
       setActiveFloorId(localFloors[0].id);
     }
   }, [localFloors]);
-
-  const handleReorderFloors = async (reordered) => {
-    setLocalFloors(reordered);
-    try { await updateConfig({ floors: reordered }); }
-    catch { /* non-critical */ }
-  };
 
   const activeFloor = localFloors.find(f => f.id === activeFloorId) || localFloors[0];
   const activeRooms = activeFloor?.rooms || [];
@@ -236,8 +230,9 @@ export default function Dashboard({ config, deviceStates = {}, hueStates = {}, s
           floors={localFloors}
           activeFloorId={activeFloor?.id}
           onSelectFloor={setActiveFloorId}
-          onReorderFloors={handleReorderFloors}
           showAddButton={false}
+          showRoomCount={false}
+          largeTabs={true}
         />
       )}
 

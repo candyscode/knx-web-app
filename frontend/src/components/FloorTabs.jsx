@@ -16,7 +16,7 @@ const restrictToHorizontalAxis = ({ transform }) => ({
   y: 0,
 });
 
-function SortableFloorTab({ floor, isActive, onClick, onDelete, canDelete, onReorderFloors, onRename }) {
+function SortableFloorTab({ floor, isActive, onClick, onDelete, canDelete, onReorderFloors, onRename, showRoomCount }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: floor.id });
   const style = {
@@ -46,7 +46,14 @@ function SortableFloorTab({ floor, isActive, onClick, onDelete, canDelete, onReo
   const cancelEdit = () => { setDraft(floor.name); setEditing(false); };
 
   return (
-    <div ref={setNodeRef} style={style} className={`floor-tab ${isActive ? 'active' : ''}`}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`floor-tab ${isActive ? 'active' : ''}`}
+      onClick={!editing ? onClick : undefined}
+      onDoubleClick={(!editing && onRename) ? startEdit : undefined}
+      title={(!editing && onRename) ? "Double-click to rename" : undefined}
+    >
       {onReorderFloors && (
         <span
           className="floor-tab-grip"
@@ -72,17 +79,14 @@ function SortableFloorTab({ floor, isActive, onClick, onDelete, canDelete, onReo
           onClick={e => e.stopPropagation()}
         />
       ) : (
-        <button
-          className="floor-tab-label"
-          onClick={onClick}
-          onDoubleClick={startEdit}
-          title="Double-click to rename"
-        >
+        <span className="floor-tab-label">
           {floor.name}
-          {floor.rooms && floor.rooms.length > 0 && (
-            <span className="floor-tab-count">{floor.rooms.length}</span>
+          {showRoomCount && (
+            <span className="floor-tab-count">
+              {floor.rooms?.length || 0}
+            </span>
           )}
-        </button>
+        </span>
       )}
 
       {!editing && canDelete && (
@@ -107,6 +111,8 @@ export default function FloorTabs({
   onDeleteFloor,
   onRenameFloor = null,
   showAddButton = true,
+  showRoomCount = true,
+  largeTabs = false,
   extraTab = null,
 }) {
   const [adding, setAdding] = useState(false);
@@ -144,7 +150,7 @@ export default function FloorTabs({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={floorIds} strategy={horizontalListSortingStrategy}>
-          <div className="floor-tabs-strip">
+          <div className={`floor-tabs-strip ${largeTabs ? 'large-tabs' : ''}`}>
             {extraTab}
             {floors.map(floor => (
               <SortableFloorTab
@@ -153,9 +159,10 @@ export default function FloorTabs({
                 isActive={floor.id === activeFloorId}
                 onClick={() => onSelectFloor(floor.id)}
                 onDelete={onDeleteFloor}
-                canDelete={floors.length > 1}
+                canDelete={!!onDeleteFloor && floors.length > 1}
                 onReorderFloors={onReorderFloors}
                 onRename={onRenameFloor}
+                showRoomCount={showRoomCount}
               />
             ))}
             {showAddButton && !adding && (
