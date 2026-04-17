@@ -1,4 +1,5 @@
 const knx = require('knx');
+const DPTLib = require('knx/src/dptlib');
 
 class KnxService {
   constructor(io) {
@@ -7,11 +8,16 @@ class KnxService {
     this.isConnected = false;
     this.deviceStates = {};
     this.gaToType = {};
+    this.gaToDpt = {};
     this.sceneTriggerCallback = null;
   }
 
   setGaToType(map) {
     this.gaToType = map;
+  }
+
+  setGaToDpt(map) {
+    this.gaToDpt = map;
   }
 
   /**
@@ -61,13 +67,25 @@ class KnxService {
             event: (evt, src, dest, value) => {
               let parsedValue = value;
               const type = this.gaToType[dest];
+              const dptString = this.gaToDpt[dest];
 
-              if (Buffer.isBuffer(value) && value.length === 1) {
-                if (type === 'percentage') {
-                  parsedValue = Math.round((value[0] / 255) * 100);
-                } else {
-                  if (value[0] === 1) parsedValue = true;
-                  else if (value[0] === 0) parsedValue = false;
+              if (Buffer.isBuffer(value)) {
+                if (dptString) {
+                  try {
+                    const dpt = DPTLib.resolve(dptString);
+                    if (dpt) {
+                      parsedValue = DPTLib.fromBuffer(value, dpt);
+                    }
+                  } catch (e) {
+                    console.error(`Failed to parse DPT ${dptString} for ${dest}:`, e.message);
+                  }
+                } else if (value.length === 1) {
+                  if (type === 'percentage') {
+                    parsedValue = Math.round((value[0] / 255) * 100);
+                  } else {
+                    if (value[0] === 1) parsedValue = true;
+                    else if (value[0] === 0) parsedValue = false;
+                  }
                 }
               }
 

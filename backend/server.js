@@ -28,6 +28,8 @@ let config = {
   knxPort: 3671,
   hue: { bridgeIp: '', apiKey: '' },
   rooms: [],
+  floors: [],
+  globals: [],
   importedGroupAddresses: [],
   importedGroupAddressesFileName: ''
 };
@@ -52,6 +54,7 @@ function normalizeConfigShape(input) {
   if (!input.hue) input.hue = { bridgeIp: '', apiKey: '' };
   if (!Array.isArray(input.rooms)) input.rooms = [];
   if (!Array.isArray(input.floors)) input.floors = [];
+  if (!Array.isArray(input.globals)) input.globals = [];
   input.importedGroupAddresses = normalizeImportedGroupAddresses(input.importedGroupAddresses);
   input.importedGroupAddressesFileName = typeof input.importedGroupAddressesFileName === 'string'
     ? input.importedGroupAddressesFileName
@@ -72,6 +75,17 @@ function establishConnection() {
       console.log('Orchestrating read requests for status GAs...');
       const statusGAs = new Set();
       const gaToType = {};
+      const gaToDpt = {};
+      
+      if (Array.isArray(config.globals)) {
+        config.globals.forEach(g => {
+          if (g.statusGroupAddress) {
+            statusGAs.add(g.statusGroupAddress);
+            gaToType[g.statusGroupAddress] = g.type === 'alarm' ? 'alarm' : 'info';
+            if (g.dpt) gaToDpt[g.statusGroupAddress] = g.dpt;
+          }
+        });
+      }
       
       allRooms().forEach(room => {
         if (!room.functions) return;
@@ -96,6 +110,7 @@ function establishConnection() {
       });
       
       knxService.setGaToType(gaToType);
+      knxService.setGaToDpt(gaToDpt);
       knxService.setSceneTriggerCallback(handleExternalSceneTrigger);
       
       let delay = 0;

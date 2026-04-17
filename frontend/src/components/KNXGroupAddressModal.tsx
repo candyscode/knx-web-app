@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { Search, Upload, X, FileText, Trash2, Check } from 'lucide-react';
 import { parseKNXGroupAddressXML } from '../knx-xml-parser';
 
-function isAddressAllowedForMode(address, mode) {
+function isAddressAllowedForMode(address, mode, dptFilter) {
   if (!address.supported) return false;
+  if (dptFilter && (!address.dpt || !address.dpt.startsWith(dptFilter))) return false;
   if (mode === 'any') return true;
   if (mode === 'scene') return address.functionType === 'scene';
   if (mode === 'switch') return address.functionType === 'switch';
@@ -12,11 +13,18 @@ function isAddressAllowedForMode(address, mode) {
   return true;
 }
 
-function getModeBadgeLabel(mode) {
-  if (mode === 'scene') return 'Filtered list: scene group addresses only';
-  if (mode === 'switch') return 'Filtered list: switch/status group addresses only';
-  if (mode === 'percentage') return 'Filtered list: blind/percentage group addresses only';
-  return '';
+function getModeBadgeLabel(mode, dptFilter) {
+  let lbl = '';
+  if (mode === 'scene') lbl = 'Filtered list: scene group addresses only';
+  else if (mode === 'switch') lbl = 'Filtered list: switch/status group addresses only';
+  else if (mode === 'percentage') lbl = 'Filtered list: blind/percentage group addresses only';
+  
+  if (dptFilter) {
+    const dptStr = `DPT ${dptFilter}x`;
+    if (lbl) lbl += ` (matching ${dptStr})`;
+    else lbl = `Filtered list: matching DPT ${dptFilter}x only`;
+  }
+  return lbl;
 }
 
 export function KNXGroupAddressModal({
@@ -29,6 +37,7 @@ export function KNXGroupAddressModal({
   onImport,
   onClear,
   mode = 'any',
+  dptFilter = null,
   allowUpload = false,
   helperText,
 }) {
@@ -45,8 +54,8 @@ export function KNXGroupAddressModal({
   const unsupportedCount = addresses.length - supportedAddresses.length;
 
   const visibleAddresses = useMemo(
-    () => supportedAddresses.filter((address) => isAddressAllowedForMode(address, mode)),
-    [supportedAddresses, mode]
+    () => supportedAddresses.filter((address) => isAddressAllowedForMode(address, mode, dptFilter)),
+    [supportedAddresses, mode, dptFilter]
   );
 
   const filteredAddresses = visibleAddresses.filter((address) => {
@@ -63,7 +72,7 @@ export function KNXGroupAddressModal({
 
   if (!isOpen) return null;
 
-  const modeBadgeLabel = getModeBadgeLabel(mode);
+  const modeBadgeLabel = getModeBadgeLabel(mode, dptFilter);
 
   const handleClose = () => {
     setSearchQuery('');

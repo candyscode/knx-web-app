@@ -10,10 +10,17 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/tests/**/*.test.js"],
-    "collectCoverageFrom": ["*.js", "!node_modules/**"],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "*.js",
+      "!node_modules/**"
+    ],
     "coverageThreshold": {
-      "global": { "lines": 75 }
+      "global": {
+        "lines": 75
+      }
     }
   },
   "keywords": [],

@@ -11,7 +11,8 @@ import { updateConfig, getHueLights, getHueRooms, getHueScenes, linkHueRoom, unl
 import { KNXGroupAddressModal } from './components/KNXGroupAddressModal';
 import FloorTabs from './components/FloorTabs';
 import CollapsibleRoomCard from './components/CollapsibleRoomCard';
-import { Plus, Search, Lightbulb, Sparkles } from 'lucide-react';
+import GlobalsConfig from './components/GlobalsConfig';
+import { Plus, Search, Lightbulb, Sparkles, Settings as SettingsIcon } from 'lucide-react';
 
 // ── Migration ─────────────────────────────────────────────
 function migrateRooms(inputRooms) {
@@ -42,10 +43,12 @@ function migrateConfig(config) {
 // ── Main Settings ─────────────────────────────────────────
 export default function Settings({ config, fetchConfig, addToast, hueStatus, setHueStatus }) {
   const [floors, setFloors] = useState(() => migrateConfig(config));
+  const [globals, setGlobals] = useState(() => Array.isArray(config.globals) ? config.globals : []);
   const [activeFloorId, setActiveFloorId] = useState(() => {
     const f = migrateConfig(config);
     return f[0]?.id || null;
   });
+  const [activeTab, setActiveTab] = useState('rooms');
   const [newRoomName, setNewRoomName] = useState('');
 
   // Hue modals
@@ -245,6 +248,17 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     await fetchConfig(); // awaited so App.jsx config is fresh before any navigation
   };
 
+  const saveGlobals = async (g = globals) => {
+    setGlobals(g);
+    try {
+      await updateConfig({ globals: g });
+      addToast('Globals saved', 'success');
+      fetchConfig();
+    } catch {
+      addToast('Failed to save globals', 'error');
+    }
+  };
+
   const handleSave = () => {
     saveFloors().then(() => addToast('Settings saved', 'success')).catch(() => addToast('Failed to save', 'error'));
   };
@@ -404,6 +418,11 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
 
   const handleSelectGroupAddress = async (groupAddress) => {
     const { roomId, floorId, target } = groupAddressModal;
+    if (target?.kind === 'global') {
+      const updatedGlobals = globals.map(g => g.id === target.id ? { ...g, statusGroupAddress: groupAddress.address, dpt: groupAddress.dpt || '' } : g);
+      saveGlobals(updatedGlobals);
+      addToast(`Selected global GA "${groupAddress.name}"`, 'success'); closeGroupAddressModal(); return;
+    }
     if (!roomId) return;
     if (target?.kind === 'field') {
       handleUpdateFunction(roomId, target.functionId, target.field, groupAddress.address);
@@ -429,21 +448,48 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
 
   return (
     <div className="glass-panel settings-panel">
-      {/* Floor Tabs */}
+      
+      {/* Header bar that holds either FloorTabs or Title, and the Globals toggle button */}
       <div className="settings-floors-header">
-        <FloorTabs
-          floors={floors}
-          activeFloorId={activeFloor?.id}
-          onSelectFloor={setActiveFloorId}
-          onReorderFloors={handleReorderFloors}
-          onAddFloor={handleAddFloor}
-          onDeleteFloor={handleDeleteFloor}
-          onRenameFloor={handleRenameFloor}
-        />
+        {activeTab === 'rooms' ? (
+          <FloorTabs
+            floors={floors}
+            activeFloorId={activeFloor?.id}
+            onSelectFloor={setActiveFloorId}
+            onReorderFloors={handleReorderFloors}
+            onAddFloor={handleAddFloor}
+            onDeleteFloor={handleDeleteFloor}
+            onRenameFloor={handleRenameFloor}
+          />
+        ) : (
+          <div style={{ padding: '1rem 1.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+            Global Information & Alarms
+          </div>
+        )}
+
+        {/* The Toggle Button on the absolute right */}
+        <button 
+          className={`btn-secondary-sm settings-global-toggle ${activeTab === 'globals' ? 'active' : ''}`}
+          onClick={() => setActiveTab(activeTab === 'rooms' ? 'globals' : 'rooms')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: activeTab === 'globals' ? 'var(--accent-color)' : '', color: activeTab === 'globals' ? 'white' : '' }}
+        >
+          <SettingsIcon size={14} />
+          {activeTab === 'rooms' ? 'Global Info & Alarms' : 'Back to Rooms'}
+        </button>
       </div>
 
-      {/* Add Room bar */}
-      <div className="settings-add-room-bar">
+      {activeTab === 'globals' ? (
+        <div style={{ padding: '1.5rem' }}>
+          <GlobalsConfig
+            globals={globals}
+            saveGlobals={saveGlobals}
+            openGroupAddressModal={openGroupAddressModal}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Add Room bar */}
+          <div className="settings-add-room-bar">
         <div className="settings-field" style={{ flex: 1 }}>
           <input
             className="form-input"
@@ -500,6 +546,8 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
           </DndContext>
         )}
       </div>
+      </>
+      )}
 
       {/* ── Hue Lamp Modal ── */}
       {hueLampModal.open && createPortal(

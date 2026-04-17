@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { triggerAction, triggerHueAction, updateConfig } from './configApi';
 import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen } from 'lucide-react';
 import FloorTabs from './components/FloorTabs';
+import GlobalInfoWidget from './components/GlobalInfoWidget';
 
 // ── Blinds Card ───────────────────────────────────────────
 const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
@@ -225,6 +226,8 @@ export default function Dashboard({ config, fetchConfig, deviceStates = {}, hueS
 
   return (
     <div>
+      <GlobalInfoWidget globals={config.globals} deviceStates={deviceStates} />
+
       {multiFloor && (
         <FloorTabs
           floors={localFloors}
