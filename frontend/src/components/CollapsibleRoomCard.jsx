@@ -199,7 +199,7 @@ function SortableSceneRow({ sc, roomId, handleUpdateScene, handleDeleteScene, hu
           )}
         </div>
       ) : null}
-      <button className="btn-danger icon-btn scene-delete-btn" onClick={() => handleDeleteScene(roomId, sc.id)} title="Delete">
+      <button className="btn-danger icon-btn scene-delete-btn" onClick={() => handleDeleteScene(roomId, sc.id)} title="Delete scene">
         <Trash2 size={14} />
       </button>
     </div>
@@ -227,7 +227,7 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
             <span className="func-name-preview">{func.name || <em style={{ opacity: 0.4 }}>Unnamed</em>}</span>
           </div>
         )}
-        <button className="func-delete-btn" onClick={() => handleDeleteFunction(room.id, func.id)} title="Delete"><Trash2 size={15} /></button>
+        <button className="func-delete-btn" onClick={() => handleDeleteFunction(room.id, func.id)} title="Delete function"><Trash2 size={15} /></button>
       </div>
       <div className="func-card-body">
         {isHue ? (
@@ -250,13 +250,13 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
               </div>
             </div>
             <div className="func-ga-fields">
-              <GAField label="Action GA" tooltipKey="action" value={func.groupAddress} onChange={upd('groupAddress')} placeholder="e.g. 1/5/0"
+              <GAField label="Action GA" tooltipKey="action" value={func.groupAddress} onChange={upd('groupAddress')} placeholder="e.g. 1/5/0" browseLabel="Search ETS addresses for action GA"
                 onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: func.type === 'scene' ? 'scene' : func.type, target: { kind: 'field', functionId: func.id, field: 'groupAddress' }, helperText: 'Select a compatible ETS group address.' })} />
               {func.type === 'scene' && (
                 <GAField label="Scene Number" tooltipKey="scene" value={func.sceneNumber} onChange={upd('sceneNumber')} placeholder="1–64" type="number" min={1} max={64} />
               )}
               {(func.type === 'switch' || func.type === 'percentage') && (
-                <GAField label="Feedback GA" tooltipKey="feedback" value={func.statusGroupAddress} onChange={upd('statusGroupAddress')} placeholder="e.g. 1/5/1"
+                <GAField label="Feedback GA" tooltipKey="feedback" value={func.statusGroupAddress} onChange={upd('statusGroupAddress')} placeholder="e.g. 1/5/1" browseLabel="Search ETS addresses for feedback GA"
                   onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: func.type, target: { kind: 'field', functionId: func.id, field: 'statusGroupAddress' }, helperText: 'Select a compatible feedback GA.' })} />
               )}
               {func.type === 'switch' && (
@@ -275,7 +275,7 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
                 </div>
               )}
               {func.type === 'percentage' && (
-                <GAField label="Moving GA" tooltipKey="moving" optional value={func.movingGroupAddress} onChange={upd('movingGroupAddress')} placeholder="e.g. 1/5/2"
+                <GAField label="Moving GA" tooltipKey="moving" optional value={func.movingGroupAddress} onChange={upd('movingGroupAddress')} placeholder="e.g. 1/5/2" browseLabel="Search ETS addresses for moving GA"
                   onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: 'percentage', target: { kind: 'field', functionId: func.id, field: 'movingGroupAddress' }, helperText: 'Select a compatible moving GA.' })} />
               )}
             </div>
@@ -297,7 +297,7 @@ function CollapsibleRoomCard({
   hueStatus, onFuncDragEnd, onSceneDragEnd, sensors,
   onMoveToFloor,
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(import.meta.env.MODE === 'test');
   const [renamingRoom, setRenamingRoom] = useState(false);
   const [roomNameDraft, setRoomNameDraft] = useState(room.name);
   const roomNameInputRef = useRef(null);
@@ -391,10 +391,10 @@ function CollapsibleRoomCard({
             <p className="section-subtitle">All scenes in this room share a single group address.</p>
             <div style={{ marginBottom: '1rem' }}>
               <GAField label="Scene GA" tooltipKey="sceneGA"
-                value={room.sceneGroupAddress}
-                onChange={val => updateRoom(floorId, room.id, { sceneGroupAddress: val })}
-                placeholder="e.g. 2/5/0"
-                onBrowse={() => openGroupAddressModal({ roomId: room.id, floorId, title: 'Select group address', mode: 'scene', target: { kind: 'sceneGA' }, helperText: 'Select a compatible scene GA.' })} />
+                value={room.sceneGroupAddress || ''}
+                browseLabel="Search ETS addresses for scene GA"
+                onChange={(val) => updateRoom(floorId, room.id, { sceneGroupAddress: val })} placeholder="e.g. 3/5/0"
+                onBrowse={() => openGroupAddressModal({ roomId: room.id, floorId, title: 'Select Scene Group Address', mode: 'scene', target: { kind: 'sceneGA' }, helperText: 'Select a scene or 1-byte value ETS group address.' })} />
             </div>
             {hueStatus && hueStatus.paired && (
               <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

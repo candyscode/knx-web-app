@@ -205,7 +205,7 @@ export function KNXGroupAddressModal({
         ) : (
           <div className="hue-lamp-list" style={{ maxHeight: '42vh' }}>
             {filteredAddresses.map((address) => (
-              <button key={address.id} className="hue-lamp-item" onClick={() => onSelect(address)}>
+              <button key={address.id || address.address} className="hue-lamp-item" onClick={() => onSelect(address)}>
                 <FileText size={18} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
                 <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{address.name}</div>

@@ -57,17 +57,17 @@ describe('App — rendering', () => {
     const user = userEvent.setup();
     await act(async () => { render(<App />); });
 
-    const settingsBtn = screen.getByRole('button', { name: /settings/i });
+    const settingsBtn = screen.getByRole('button', { name: /rooms/i });
     await user.click(settingsBtn);
 
-    expect(screen.getByText(/KNX Interface/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Add room to/i)).toBeInTheDocument();
   });
 
   it('navigates back to Dashboard from Settings', async () => {
     const user = userEvent.setup();
     await act(async () => { render(<App />); });
 
-    await user.click(screen.getByRole('button', { name: /settings/i }));
+    await user.click(screen.getByRole('button', { name: /rooms/i }));
     await user.click(screen.getByRole('button', { name: /dashboard/i }));
 
     expect(screen.getByText(/No rooms configured/i)).toBeInTheDocument();
