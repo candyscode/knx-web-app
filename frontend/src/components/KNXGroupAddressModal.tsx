@@ -205,7 +205,9 @@ export function KNXGroupAddressModal({
 
         {visibleAddresses.length === 0 ? (
           <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem 1rem' }}>
-            {addresses.length === 0 ? 'No XML data loaded yet.' : 'No supported group addresses available for this selection.'}
+            {addresses.length === 0
+              ? (allowUpload ? 'No XML data loaded yet.' : 'No imported ETS group addresses available yet.')
+              : 'No supported group addresses available for this selection.'}
           </div>
         ) : filteredAddresses.length === 0 ? (
           <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem 1rem' }}>
@@ -231,7 +233,9 @@ export function KNXGroupAddressModal({
         )}
 
         <div style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-          {visibleAddresses.length > 0 ? `Showing ${filteredAddresses.length} of ${visibleAddresses.length} supported addresses.` : 'Import an ETS XML file to start.'}
+          {visibleAddresses.length > 0
+            ? `Showing ${filteredAddresses.length} of ${visibleAddresses.length} supported addresses.`
+            : (allowUpload ? 'Import an ETS XML file to start.' : 'Import ETS group addresses in Connections to use this picker.')}
         </div>
       </div>
     </div>,

@@ -30,6 +30,7 @@ const BASE_CONFIG = {
   knxPort: 3671,
   hue: { bridgeIp: '', apiKey: '' },
   rooms: [],
+  globals: [],
   importedGroupAddresses: [],
   importedGroupAddressesFileName: '',
 };
@@ -249,6 +250,48 @@ describe('Settings — Function management', () => {
     await user.click(screen.getByRole('button', { name: /add function/i }));
 
     expect(await screen.findByRole('button', { name: /search ets addresses for action ga/i })).toBeInTheDocument();
+  });
+});
+
+describe('Settings — Global information & alarms', () => {
+  it('saves the GA field on blur without showing a generic success toast for each keystroke', async () => {
+    const user = userEvent.setup();
+    renderSettings({
+      ...BASE_CONFIG,
+      globals: [
+        {
+          id: 'global_1',
+          name: 'Outside Temperature',
+          type: 'info',
+          category: 'temperature',
+          statusGroupAddress: '1/2/3',
+          dpt: 'DPT9.001',
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /global info & alarms/i }));
+
+    const gaInput = screen.getByDisplayValue('1/2/3');
+    await user.clear(gaInput);
+    await user.type(gaInput, '1/2/30');
+
+    expect(api.updateConfig).not.toHaveBeenCalled();
+    expect(addToast).not.toHaveBeenCalledWith('Globals saved', 'success');
+
+    await user.tab();
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith({
+        globals: [
+          expect.objectContaining({
+            id: 'global_1',
+            statusGroupAddress: '1/2/30',
+          }),
+        ],
+      });
+    });
+    expect(addToast).not.toHaveBeenCalledWith('Globals saved', 'success');
   });
 });
 

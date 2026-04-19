@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Search, Trash2, Check, X, AlertTriangle, Info, Thermometer, Wind, Sun } from 'lucide-react';
+import { Plus, Search, Check, X, AlertTriangle, Info, Thermometer, Wind, Sun } from 'lucide-react';
 
-export default function GlobalsConfig({ globals, saveGlobals, openGroupAddressModal }) {
+export default function GlobalsConfig({ globals, setGlobals, saveGlobals, openGroupAddressModal }) {
   const [addingType, setAddingType] = useState(null); // 'info' or 'alarm' or null
   const [draft, setDraft] = useState({ name: '', category: 'temperature', statusGroupAddress: '' });
 
@@ -34,7 +34,7 @@ export default function GlobalsConfig({ globals, saveGlobals, openGroupAddressMo
   };
 
   const updateItem = (id, key, val) => {
-    saveGlobals(globals.map(g => g.id === id ? { ...g, [key]: val } : g));
+    setGlobals(globals.map(g => g.id === id ? { ...g, [key]: val } : g));
   };
 
   const openGAModal = (id, currentType) => {
@@ -44,8 +44,8 @@ export default function GlobalsConfig({ globals, saveGlobals, openGroupAddressMo
       mode: 'any',
       dptFilter: dptFilter,
       target: { kind: 'global', id },
-      allowUpload: true,
-      helperText: `Pick an address matching DPT ${dptFilter}x`
+      allowUpload: false,
+      helperText: `Select a compatible imported ETS group address matching DPT ${dptFilter}x.`
     });
   };
 
@@ -82,14 +82,15 @@ export default function GlobalsConfig({ globals, saveGlobals, openGroupAddressMo
                 className="form-input"
                 value={g.name}
                 onChange={e => updateItem(g.id, 'name', e.target.value)}
+                onBlur={() => saveGlobals(globals)}
                 placeholder={g.type === 'alarm' ? 'e.g. Rain Alarm' : 'e.g. Outside Temperature'}
               />
             </div>
 
             {g.type === 'info' && (
-              <div className="settings-field" style={{ width: '150px' }}>
+              <div className="settings-field" style={{ width: '220px' }}>
                 <label className="settings-field-label">Category</label>
-                <select className="form-select" value={g.category} onChange={e => updateItem(g.id, 'category', e.target.value)}>
+                <select className="form-select" value={g.category} onChange={e => saveGlobals(globals.map(item => item.id === g.id ? { ...item, category: e.target.value } : item))}>
                   <option value="temperature">Temperature (°C)</option>
                   <option value="wind">Wind (m/s)</option>
                   <option value="lux">Brightness (Lux)</option>
@@ -104,6 +105,7 @@ export default function GlobalsConfig({ globals, saveGlobals, openGroupAddressMo
                   className="form-input"
                   value={g.statusGroupAddress || ''}
                   onChange={e => updateItem(g.id, 'statusGroupAddress', e.target.value)}
+                  onBlur={() => saveGlobals(globals)}
                   placeholder="e.g. 1/1/1"
                 />
                 <button
@@ -134,8 +136,8 @@ export default function GlobalsConfig({ globals, saveGlobals, openGroupAddressMo
         </div>
       ) : (
         <div style={{ marginTop: '1rem', background: 'var(--glass-bg)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-          <h4 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {addingType === 'alarm' ? <><AlertTriangle size={16} /> New Alarm</> : <><Info size={16} /> New Information</>}
+          <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {addingType === 'alarm' ? <><AlertTriangle size={16} /> New Alarm</> : <><Info size={16} /> New Global Information</>}
           </h4>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <input
@@ -151,7 +153,7 @@ export default function GlobalsConfig({ globals, saveGlobals, openGroupAddressMo
                 className="form-select"
                 value={draft.category}
                 onChange={e => setDraft({ ...draft, category: e.target.value })}
-                style={{ width: '160px' }}
+                style={{ width: '220px', minWidth: '220px' }}
               >
                 <option value="temperature">Temperature (°C)</option>
                 <option value="wind">Wind (m/s)</option>

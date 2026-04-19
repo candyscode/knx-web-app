@@ -60,7 +60,7 @@ const ROOM_WITH_BLIND = {
 function renderDashboard(props = {}) {
   return render(
     <Dashboard
-      config={{ rooms: props.rooms || [] }}
+      config={{ rooms: props.rooms || [], floors: props.floors || [], globals: props.globals || [] }}
       deviceStates={props.deviceStates || {}}
       hueStates={props.hueStates || {}}
       setDeviceStates={props.setDeviceStates || vi.fn()}
@@ -95,6 +95,27 @@ describe('Dashboard — room card', () => {
     const emptyRoom = { id: 'empty', name: 'Garage', scenes: [], functions: [], sceneGroupAddress: '' };
     renderDashboard({ rooms: [emptyRoom] });
     expect(screen.getByText(/No functions available/i)).toBeInTheDocument();
+  });
+});
+
+describe('Dashboard — globals widget', () => {
+  it('renders global info values and active alarms from config.globals', () => {
+    renderDashboard({
+      rooms: [ROOM_WITH_SCENES],
+      globals: [
+        { id: 'g1', name: 'Outside Temperature', type: 'info', category: 'temperature', statusGroupAddress: '9/1/1' },
+        { id: 'g2', name: 'Rain Alarm', type: 'alarm', category: 'alarm', statusGroupAddress: '1/7/1' },
+      ],
+      deviceStates: {
+        '9/1/1': 21.4,
+        '1/7/1': true,
+      },
+    });
+
+    expect(screen.getByText('Outside Temperature')).toBeInTheDocument();
+    expect(screen.getByText('21.4 °C')).toBeInTheDocument();
+    expect(screen.getByText('Active Alarms')).toBeInTheDocument();
+    expect(screen.getAllByText((_, node) => node?.textContent?.includes('Rain Alarm') ?? false).length).toBeGreaterThan(0);
   });
 });
 

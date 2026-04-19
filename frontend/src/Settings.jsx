@@ -77,6 +77,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     // Resetting floors on every config change caused a flicker/wipe bug:
     // saveFloors → fetchConfig → setConfig → this effect → setFloors(old data).
     // On next mount (navigate away + back) useState re-initialises from the latest config.
+    setGlobals(Array.isArray(config.globals) ? config.globals : []);
     setGroupAddressBook(Array.isArray(config.importedGroupAddresses) ? config.importedGroupAddresses : []);
     setGroupAddressFileName(config.importedGroupAddressesFileName || '');
   }, [config]);
@@ -252,10 +253,11 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     setGlobals(g);
     try {
       await updateConfig({ globals: g });
-      addToast('Globals saved', 'success');
-      fetchConfig();
+      await fetchConfig();
+      return true;
     } catch {
       addToast('Failed to save globals', 'error');
+      return false;
     }
   };
 
@@ -420,8 +422,10 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     const { roomId, floorId, target } = groupAddressModal;
     if (target?.kind === 'global') {
       const updatedGlobals = globals.map(g => g.id === target.id ? { ...g, statusGroupAddress: groupAddress.address, dpt: groupAddress.dpt || '' } : g);
-      saveGlobals(updatedGlobals);
-      addToast(`Selected global GA "${groupAddress.name}"`, 'success'); closeGroupAddressModal(); return;
+      const saved = await saveGlobals(updatedGlobals);
+      if (saved) addToast(`Selected global GA "${groupAddress.name}"`, 'success');
+      closeGroupAddressModal();
+      return;
     }
     if (!roomId) return;
     if (target?.kind === 'field') {
@@ -482,6 +486,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         <div style={{ padding: '1.5rem' }}>
           <GlobalsConfig
             globals={globals}
+            setGlobals={setGlobals}
             saveGlobals={saveGlobals}
             openGroupAddressModal={openGroupAddressModal}
           />
