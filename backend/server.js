@@ -69,55 +69,63 @@ function allRooms() {
   return config.rooms || [];
 }
 
+function buildKnxTrackingMaps() {
+  const statusGAs = new Set();
+  const gaToType = {};
+  const gaToDpt = {};
+
+  if (Array.isArray(config.globals)) {
+    config.globals.forEach(g => {
+      if (!g?.statusGroupAddress) return;
+      statusGAs.add(g.statusGroupAddress);
+      gaToType[g.statusGroupAddress] = g.type === 'alarm' ? 'alarm' : 'info';
+      if (g.dpt) gaToDpt[g.statusGroupAddress] = g.dpt;
+    });
+  }
+
+  allRooms().forEach(room => {
+    if (!room.functions) return;
+    room.functions.forEach(func => {
+      if (func.statusGroupAddress) {
+        statusGAs.add(func.statusGroupAddress);
+        gaToType[func.statusGroupAddress] = func.type;
+      }
+      if (func.groupAddress) {
+        gaToType[func.groupAddress] = func.type;
+      }
+      if (func.movingGroupAddress) {
+        gaToType[func.movingGroupAddress] = 'moving';
+      }
+    });
+
+    if (room.sceneGroupAddress) {
+      gaToType[room.sceneGroupAddress] = 'scene';
+    }
+  });
+
+  return { statusGAs, gaToType, gaToDpt };
+}
+
+function refreshKnxSubscriptions({ requestReads = false } = {}) {
+  const { statusGAs, gaToType, gaToDpt } = buildKnxTrackingMaps();
+  knxService.setGaToType(gaToType);
+  knxService.setGaToDpt(gaToDpt);
+  knxService.setSceneTriggerCallback(handleExternalSceneTrigger);
+
+  if (!requestReads || !knxService.isConnected) return;
+
+  let delay = 0;
+  statusGAs.forEach(ga => {
+    setTimeout(() => knxService.readStatus(ga), delay);
+    delay += 50;
+  });
+}
+
 function establishConnection() {
   if (config.knxIp) {
     knxService.connect(config.knxIp, config.knxPort, () => {
       console.log('Orchestrating read requests for status GAs...');
-      const statusGAs = new Set();
-      const gaToType = {};
-      const gaToDpt = {};
-      
-      if (Array.isArray(config.globals)) {
-        config.globals.forEach(g => {
-          if (g.statusGroupAddress) {
-            statusGAs.add(g.statusGroupAddress);
-            gaToType[g.statusGroupAddress] = g.type === 'alarm' ? 'alarm' : 'info';
-            if (g.dpt) gaToDpt[g.statusGroupAddress] = g.dpt;
-          }
-        });
-      }
-      
-      allRooms().forEach(room => {
-        if (!room.functions) return;
-        room.functions.forEach(func => {
-          if (func.statusGroupAddress) {
-            statusGAs.add(func.statusGroupAddress);
-            gaToType[func.statusGroupAddress] = func.type;
-          }
-          if (func.groupAddress) {
-            gaToType[func.groupAddress] = func.type;
-          }
-          // Register the "is moving" GA as a 1-bit type
-          if (func.movingGroupAddress) {
-            gaToType[func.movingGroupAddress] = 'moving';
-          }
-        });
-
-        // Register room scene GA as 'scene' type for bus listener
-        if (room.sceneGroupAddress) {
-          gaToType[room.sceneGroupAddress] = 'scene';
-        }
-      });
-      
-      knxService.setGaToType(gaToType);
-      knxService.setGaToDpt(gaToDpt);
-      knxService.setSceneTriggerCallback(handleExternalSceneTrigger);
-      
-      let delay = 0;
-      statusGAs.forEach(ga => {
-        setTimeout(() => knxService.readStatus(ga), delay);
-        delay += 50; // Delay reads to prevent bus flooding
-      });
+      refreshKnxSubscriptions({ requestReads: true });
     });
   }
 }
@@ -160,9 +168,10 @@ app.get('/api/config', (req, res) => {
 });
 
 app.post('/api/config', (req, res) => {
-  const { knxIp, knxPort, rooms, floors, importedGroupAddresses, importedGroupAddressesFileName } = req.body;
+  const { knxIp, knxPort, rooms, floors, globals, importedGroupAddresses, importedGroupAddressesFileName } = req.body;
   
   let shouldReconnect = false;
+  let shouldRefreshSubscriptions = false;
 
   if (knxIp !== undefined && config.knxIp !== knxIp) {
     config.knxIp = knxIp;
@@ -173,18 +182,21 @@ app.post('/api/config', (req, res) => {
     config.knxPort = parseInt(knxPort) || 3671;
     shouldReconnect = true;
   }
-
-  if (shouldReconnect && config.knxIp) {
-    establishConnection();
-  }
   
   // Support both legacy rooms[] and new floors[]
   if (floors !== undefined) {
     config.floors = floors;
     // Keep legacy rooms[] in sync for backwards compatibility
     config.rooms = floors.flatMap(f => f.rooms || []);
+    shouldRefreshSubscriptions = true;
   } else if (rooms !== undefined) {
     config.rooms = rooms;
+    shouldRefreshSubscriptions = true;
+  }
+
+  if (globals !== undefined) {
+    config.globals = Array.isArray(globals) ? globals : [];
+    shouldRefreshSubscriptions = true;
   }
 
   if (importedGroupAddresses !== undefined) {
@@ -198,6 +210,13 @@ app.post('/api/config', (req, res) => {
   }
   
   saveConfig();
+
+  if (shouldReconnect && config.knxIp) {
+    establishConnection();
+  } else if (shouldRefreshSubscriptions) {
+    refreshKnxSubscriptions({ requestReads: true });
+  }
+
   res.json({ success: true, config });
 });
 

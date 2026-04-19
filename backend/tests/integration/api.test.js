@@ -58,7 +58,7 @@ function buildApp(configPath) {
   app.use(require('cors')());
   app.use(bodyParser.json());
 
-  let config = { knxIp: '', knxPort: 3671, hue: { bridgeIp: '', apiKey: '' }, rooms: [] };
+  let config = { knxIp: '', knxPort: 3671, hue: { bridgeIp: '', apiKey: '' }, rooms: [], globals: [] };
 
   if (fs.existsSync(configPath)) {
     try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
@@ -74,10 +74,11 @@ function buildApp(configPath) {
   app.get('/api/config', (req, res) => res.json(config));
 
   app.post('/api/config', (req, res) => {
-    const { knxIp, knxPort, rooms } = req.body;
+    const { knxIp, knxPort, rooms, globals } = req.body;
     if (knxIp  !== undefined) config.knxIp  = knxIp;
     if (knxPort !== undefined) config.knxPort = parseInt(knxPort) || 3671;
     if (rooms   !== undefined) config.rooms  = rooms;
+    if (globals !== undefined) config.globals = globals;
     saveConfig();
     res.json({ success: true, config });
   });
@@ -210,6 +211,7 @@ beforeEach(() => {
     knxPort: 3671,
     hue: { bridgeIp: bridgeHost, apiKey: bridge.apiKey },
     rooms: [JSON.parse(JSON.stringify(ROOM))], // deep clone
+    globals: [],
   }));
 
   const built = buildApp(configPath);
@@ -253,6 +255,15 @@ describe('POST /api/config', () => {
     expect(res.status).toBe(200);
     expect(res.body.config.rooms).toHaveLength(1);
     expect(res.body.config.rooms[0].name).toBe('Küche');
+  });
+
+  it('updates globals in config', async () => {
+    const newGlobals = [{ id: 'g1', name: 'Outside Temperature', type: 'info', category: 'temperature', statusGroupAddress: '9/1/1', dpt: 'DPT9.001' }];
+    const res = await request(app).post('/api/config').send({ globals: newGlobals });
+    expect(res.status).toBe(200);
+    expect(res.body.config.globals).toEqual(newGlobals);
+    const persisted = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    expect(persisted.globals).toEqual(newGlobals);
   });
 });
 
