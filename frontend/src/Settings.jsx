@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   DndContext, closestCenter, PointerSensor, TouchSensor,
@@ -12,6 +12,7 @@ import { KNXGroupAddressModal } from './components/KNXGroupAddressModal';
 import FloorTabs from './components/FloorTabs';
 import CollapsibleRoomCard from './components/CollapsibleRoomCard';
 import GlobalsConfig from './components/GlobalsConfig';
+import ConfirmDialog from './components/ConfirmDialog';
 import { Plus, Search, Lightbulb, Sparkles, Settings as SettingsIcon } from 'lucide-react';
 
 // ── Migration ─────────────────────────────────────────────
@@ -79,6 +80,18 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
   const [apartmentGroupAddressFileName, setApartmentGroupAddressFileName] = useState('');
   const [sharedGroupAddressBook, setSharedGroupAddressBook] = useState([]);
   const [sharedGroupAddressFileName, setSharedGroupAddressFileName] = useState('');
+  const [addAreaModalOpen, setAddAreaModalOpen] = useState(false);
+  const [newAreaName, setNewAreaName] = useState('');
+  const [newAreaIsShared, setNewAreaIsShared] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Confirm',
+    cancelLabel: 'Cancel',
+    danger: false,
+  });
+  const confirmResolverRef = useRef(null);
 
   useEffect(() => {
     setFloors(migrateConfig(config));
@@ -147,6 +160,29 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
     else await fetchConfig();
   };
 
+  const closeConfirmDialog = (confirmed = false) => {
+    setConfirmDialog((prev) => ({ ...prev, open: false }));
+    if (confirmResolverRef.current) {
+      confirmResolverRef.current(confirmed);
+      confirmResolverRef.current = null;
+    }
+  };
+
+  const requestConfirm = ({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false }) => {
+    setConfirmDialog({
+      open: true,
+      title,
+      message,
+      confirmLabel,
+      cancelLabel,
+      danger,
+    });
+
+    return new Promise((resolve) => {
+      confirmResolverRef.current = resolve;
+    });
+  };
+
   const handleAddFloor = (name, scope = 'apartment') => {
     const newFloor = { id: `floor_${Date.now()}`, name, rooms: [], isShared: scope === 'shared' };
     const updated = [...floors, newFloor];
@@ -155,13 +191,38 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
     saveFloors(updated);
   };
 
-  const handleDeleteFloor = (floorId) => {
+  const openAddAreaModal = () => {
+    setNewAreaName('');
+    setNewAreaIsShared(false);
+    setAddAreaModalOpen(true);
+  };
+
+  const closeAddAreaModal = () => {
+    setAddAreaModalOpen(false);
+    setNewAreaName('');
+    setNewAreaIsShared(false);
+  };
+
+  const handleCreateArea = () => {
+    const trimmedName = newAreaName.trim();
+    if (!trimmedName) return;
+    handleAddFloor(trimmedName, newAreaIsShared ? 'shared' : 'apartment');
+    closeAddAreaModal();
+  };
+
+  const handleDeleteFloor = async (floorId) => {
     const floor = floors.find(f => f.id === floorId);
     let msg = `Are you sure you want to delete the floor "${floor?.name || 'Unknown'}"?`;
     if (floor && floor.rooms.length > 0) {
       msg = `"${floor.name}" contains ${floor.rooms.length} room(s). Delete everything?`;
     }
-    if (!window.confirm(msg)) return;
+    const confirmed = await requestConfirm({
+      title: 'Delete Area',
+      message: msg,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!confirmed) return;
     const updated = floors.filter(f => f.id !== floorId);
     setFloors(updated);
     if (activeFloorId === floorId) setActiveFloorId(updated[0]?.id || null);
@@ -194,7 +255,13 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
   const handleDeleteRoom = async (floorId, roomId) => {
     const floor = floors.find(f => f.id === floorId);
     const room = floor?.rooms.find(r => r.id === roomId);
-    if (!window.confirm(`Are you sure you want to delete the room "${room?.name || 'Unknown'}"?`)) return;
+    const confirmed = await requestConfirm({
+      title: 'Delete Room',
+      message: `Are you sure you want to delete the room "${room?.name || 'Unknown'}"?`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!confirmed) return;
     const updated = updateFloorRooms(floorId, rooms => rooms.filter(r => r.id !== roomId));
     try { await saveFloors(updated); addToast('Room deleted', 'success'); fetchConfig(); }
     catch { addToast('Failed to delete room', 'error'); }
@@ -602,18 +669,11 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
               activeFloorId={activeFloor?.id}
               onSelectFloor={setActiveFloorId}
               onReorderFloors={handleReorderFloors}
+              onAddButtonClick={openAddAreaModal}
               onDeleteFloor={handleDeleteFloor}
               onRenameFloor={handleRenameFloor}
-              showAddButton={false}
+              addButtonLabel="Add Area"
             />
-            <div className="settings-area-actions">
-              <button className="btn-secondary-sm" onClick={() => handleAddFloor(`Area ${floors.length + 1}`, 'apartment')}>
-                <Plus size={14} /> Add Private Area
-              </button>
-              <button className="btn-secondary-sm" onClick={() => handleAddFloor(`Shared Area ${floors.filter((floor) => floor.isShared).length + 1}`, 'shared')}>
-                <Plus size={14} /> Add Shared Area
-              </button>
-            </div>
           </>
         ) : (
           <div style={{ padding: '1rem 1.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -642,6 +702,7 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
             saveSharedInfos={saveSharedInfos}
             saveApartmentAlarms={saveAlarms}
             openGroupAddressModal={openGroupAddressModal}
+            requestConfirm={requestConfirm}
           />
         </div>
       ) : (
@@ -819,6 +880,54 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
         allowUpload={groupAddressModal.allowUpload}
         helperText={groupAddressModal.helperText}
       />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.confirmLabel}
+        cancelLabel={confirmDialog.cancelLabel}
+        danger={confirmDialog.danger}
+        onConfirm={() => closeConfirmDialog(true)}
+        onCancel={() => closeConfirmDialog(false)}
+      />
+
+      {addAreaModalOpen && createPortal(
+        <div className="modal-overlay" onClick={closeAddAreaModal}>
+          <div className="modal-content settings-add-area-modal" onClick={(event) => event.stopPropagation()}>
+            <h3 style={{ margin: '0 0 1rem 0' }}>Add Area</h3>
+            <div className="settings-field" style={{ marginBottom: '1rem' }}>
+              <label className="settings-field-label">Area Name</label>
+              <input
+                autoFocus
+                className="form-input"
+                value={newAreaName}
+                onChange={(event) => setNewAreaName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') handleCreateArea();
+                  if (event.key === 'Escape') closeAddAreaModal();
+                }}
+                placeholder="e.g. Garden"
+              />
+            </div>
+            <label className="settings-add-area-checkbox">
+              <input
+                type="checkbox"
+                checked={newAreaIsShared}
+                onChange={(event) => setNewAreaIsShared(event.target.checked)}
+              />
+              <span>Shared with all apartments</span>
+            </label>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <button className="btn-secondary" onClick={closeAddAreaModal}>Cancel</button>
+              <button className="btn-primary" onClick={handleCreateArea} disabled={!newAreaName.trim()}>
+                <Plus size={16} /> Create Area
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

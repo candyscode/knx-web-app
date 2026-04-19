@@ -12,6 +12,35 @@ import {
   Save, Plus, Lightbulb, FileText, Plug, Building2, Home as HomeIcon
 } from 'lucide-react';
 
+function StatusPill({ connected, label }) {
+  return (
+    <div className={`status-badge ${connected ? 'status-connected' : 'status-disconnected'}`}>
+      <Plug size={14} />
+      <div className="status-dot" />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function SetupCard({ icon, title, description, children, tone = 'knx-icon' }) {
+  return (
+    <section className="connections-card">
+      <div className="connections-section-header">
+        <div className={`connections-section-icon ${tone}`}>
+          {icon}
+        </div>
+        <div>
+          <h3 className="connections-card-title">{title}</h3>
+          <p className="connections-card-copy">{description}</p>
+        </div>
+      </div>
+      <div className="connections-card-body">
+        {children}
+      </div>
+    </section>
+  );
+}
+
 export default function Connections({
   fullConfig,
   apartment,
@@ -28,11 +57,10 @@ export default function Connections({
   const [apartmentSlug, setApartmentSlug] = useState(apartment.slug);
   const [ip, setIp] = useState(config.knxIp || '');
   const [port, setPort] = useState(config.knxPort || 3671);
-
   const [hueBridgeIp, setHueBridgeIp] = useState(config.hue?.bridgeIp || '');
   const [hueError, setHueError] = useState('');
-
   const [sharedAccessApartmentId, setSharedAccessApartmentId] = useState(config.sharedAccessApartmentId || apartment.id);
+  const [newApartmentName, setNewApartmentName] = useState('');
 
   const [groupAddressModal, setGroupAddressModal] = useState({
     open: false,
@@ -55,8 +83,6 @@ export default function Connections({
   const [sharedGroupAddressFileName, setSharedGroupAddressFileName] = useState(
     config.sharedImportedGroupAddressesFileName || ''
   );
-
-  const [newApartmentName, setNewApartmentName] = useState('');
 
   useEffect(() => {
     setApartmentName(apartment.name);
@@ -116,9 +142,9 @@ export default function Connections({
   const handleSaveSharedSettings = async () => {
     try {
       await persistConfig(buildNextConfig({ sharedAccessApartmentId }));
-      addToast('Shared access settings saved', 'success');
+      addToast('Shared building settings saved', 'success');
     } catch {
-      addToast('Failed to save shared access settings', 'error');
+      addToast('Failed to save shared building settings', 'error');
     }
   };
 
@@ -137,7 +163,6 @@ export default function Connections({
   };
 
   const handleHueDiscover = async () => {
-    setHueStep('discovering');
     setHueError('');
     try {
       const res = await discoverHueBridge(apartment.id);
@@ -238,236 +263,257 @@ export default function Connections({
   const sharedSupportedCount = sharedGroupAddressBook.filter((entry) => entry.supported).length;
   const modalAddressBook = groupAddressModal.scope === 'shared' ? sharedGroupAddressBook : apartmentGroupAddressBook;
   const modalFileName = groupAddressModal.scope === 'shared' ? sharedGroupAddressFileName : apartmentGroupAddressFileName;
+  const sharedAccessApartmentName = fullConfig.apartments.find((entry) => entry.id === sharedAccessApartmentId)?.name || apartment.name;
 
   return (
     <div className="glass-panel settings-panel connections-page">
-      <div className="connections-section" style={{ borderTop: 'none', marginTop: 0, paddingTop: '1.5rem' }}>
-        <div className="connections-section-header">
-          <div className="connections-section-icon knx-icon">
-            <HomeIcon size={20} />
-          </div>
-          <div>
-            <h2 style={{ margin: 0 }}>Current Apartment</h2>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-              Manage this apartment's URL, KNX gateway, Hue bridge and ETS import.
-            </p>
-          </div>
+      <div className="connections-hero">
+        <div>
+          <div className="connections-eyebrow">Setup</div>
+          <h2 className="connections-page-title">Building Setup</h2>
+          <p className="connections-page-copy">
+            Everything for the current apartment, the shared building scope and apartment management in one place.
+          </p>
         </div>
-
-        <div className="connections-grid">
-          <div className="settings-field">
-            <label className="settings-field-label">Apartment Name</label>
-            <input className="form-input" value={apartmentName} onChange={(event) => setApartmentName(event.target.value)} />
-          </div>
-          <div className="settings-field">
-            <label className="settings-field-label">URL Slug</label>
-            <input className="form-input" value={apartmentSlug} onChange={(event) => setApartmentSlug(event.target.value)} />
-          </div>
-          <div className="settings-field">
-            <label className="settings-field-label">KNX IP Address</label>
-            <input className="form-input" value={ip} placeholder="192.168.1.50" onChange={(event) => setIp(event.target.value)} />
-          </div>
-          <div className="settings-field">
-            <label className="settings-field-label">KNX Port</label>
-            <input className="form-input" type="number" value={port} placeholder="3671" onChange={(event) => setPort(event.target.value)} />
-          </div>
-        </div>
-
-        <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button className="btn-primary" onClick={handleSaveApartment}>
-            <Save size={16} /> Save Apartment
-          </button>
-          <button className="btn-secondary" onClick={handleLoadDevConfig}>Load Dev Config</button>
-          <div className={`status-badge ${knxStatus.connected ? 'status-connected' : 'status-disconnected'}`}>
-            <Plug size={14} />
-            <div className="status-dot" />
-            <span>{knxStatus.connected ? 'KNX connected' : 'KNX offline'}</span>
-          </div>
+        <div className="connections-hero-statuses">
+          <StatusPill connected={knxStatus.connected} label={`${apartment.name} ${knxStatus.connected ? 'connected' : 'offline'}`} />
+          <StatusPill connected={sharedKnxStatus.connected} label={`Shared KNX line via ${sharedAccessApartmentName} ${sharedKnxStatus.connected ? 'connected' : 'offline'}`} />
         </div>
       </div>
 
-      <div className="connections-section">
-        <div className="connections-section-header">
-          <div className="connections-section-icon ets-icon">
-            <FileText size={20} />
-          </div>
+      <div className="connections-group">
+        <div className="connections-group-header">
           <div>
-            <h2 style={{ margin: 0 }}>Apartment ETS XML</h2>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-              Import the ETS XML for this apartment's own KNX line.
-            </p>
+            <div className="connections-group-label">Current Apartment</div>
+            <h3 className="connections-group-title">{apartment.name}</h3>
+            <p className="connections-group-copy">Everything that belongs only to this apartment stays together here.</p>
           </div>
         </div>
 
-        <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <button
-            className="btn-secondary"
-            onClick={() => setGroupAddressModal({
-              open: true,
-              title: 'Apartment ETS XML import',
-              allowUpload: true,
-              mode: 'any',
-              helperText: 'Upload the ETS XML for this apartment.',
-              scope: 'apartment',
-            })}
+        <div className="connections-card-grid">
+          <SetupCard
+            icon={<HomeIcon size={20} />}
+            title="Identity & KNX Gateway"
+            description="Name, bookmarkable URL and the KNX gateway for this apartment."
+            tone="knx-icon"
           >
-            <FileText size={15} /> Manage Apartment ETS XML
-          </button>
-
-          {apartmentGroupAddressFileName && apartmentGroupAddressBook.length > 0 && (
-            <div className="ets-status-badge">
-              <div className="ets-status-dot" />
-              <span>
-                <strong>{apartmentGroupAddressFileName}</strong>
-                {' · '}
-                <span style={{ color: 'var(--text-secondary)' }}>{apartmentSupportedCount} supported addresses</span>
-              </span>
+            <div className="connections-grid">
+              <div className="settings-field">
+                <label className="settings-field-label">Apartment Name</label>
+                <input className="form-input" value={apartmentName} onChange={(event) => setApartmentName(event.target.value)} />
+              </div>
+              <div className="settings-field">
+                <label className="settings-field-label">URL Slug</label>
+                <input className="form-input" value={apartmentSlug} onChange={(event) => setApartmentSlug(event.target.value)} />
+              </div>
+              <div className="settings-field">
+                <label className="settings-field-label">KNX IP Address</label>
+                <input className="form-input" value={ip} placeholder="192.168.1.50" onChange={(event) => setIp(event.target.value)} />
+              </div>
+              <div className="settings-field">
+                <label className="settings-field-label">KNX Port</label>
+                <input className="form-input" type="number" value={port} placeholder="3671" onChange={(event) => setPort(event.target.value)} />
+              </div>
             </div>
-          )}
+            <div className="connections-card-actions">
+              <button className="btn-primary" onClick={handleSaveApartment}>
+                <Save size={16} /> Save Apartment
+              </button>
+              <button className="btn-secondary" onClick={handleLoadDevConfig}>Load Dev Config</button>
+              <StatusPill connected={knxStatus.connected} label={knxStatus.connected ? 'KNX connected' : 'KNX offline'} />
+            </div>
+          </SetupCard>
+
+          <SetupCard
+            icon={<FileText size={20} />}
+            title="Apartment ETS XML"
+            description="Import the ETS XML for the apartment's own KNX line."
+            tone="ets-icon"
+          >
+            <div className="connections-card-actions">
+              <button
+                className="btn-secondary"
+                onClick={() => setGroupAddressModal({
+                  open: true,
+                  title: 'Apartment ETS XML import',
+                  allowUpload: true,
+                  mode: 'any',
+                  helperText: 'Upload the ETS XML for this apartment.',
+                  scope: 'apartment',
+                })}
+              >
+                <FileText size={15} /> Manage Apartment ETS XML
+              </button>
+
+              {apartmentGroupAddressFileName && apartmentGroupAddressBook.length > 0 && (
+                <div className="ets-status-badge">
+                  <div className="ets-status-dot" />
+                  <span>
+                    <strong>{apartmentGroupAddressFileName}</strong>
+                    {' · '}
+                    <span style={{ color: 'var(--text-secondary)' }}>{apartmentSupportedCount} supported addresses</span>
+                  </span>
+                </div>
+              )}
+            </div>
+          </SetupCard>
+
+          <SetupCard
+            icon={<Lightbulb size={20} />}
+            title="Philips Hue"
+            description="Connect only the Hue Bridge that belongs to this apartment."
+            tone="hue-icon"
+          >
+            {hueStatus.paired ? (
+              <div className="connections-card-actions">
+                <div className="connections-inline-status">
+                  <div className="connections-inline-dot" />
+                  <span>Paired with {hueStatus.bridgeIp}</span>
+                </div>
+                <button className="btn-danger" onClick={handleHueUnpair}>Unpair</button>
+              </div>
+            ) : (
+              <div className="connections-stack">
+                <div className="connections-inline-form">
+                  <button className="btn-secondary" onClick={handleHueDiscover}>Discover Bridge</button>
+                  <input
+                    className="form-input"
+                    value={hueBridgeIp}
+                    placeholder="Hue bridge IP"
+                    onChange={(event) => setHueBridgeIp(event.target.value)}
+                  />
+                  <button className="btn-primary" onClick={handleHuePair} disabled={!hueBridgeIp}>Pair</button>
+                </div>
+                {hueError && <p className="connections-error">{hueError}</p>}
+              </div>
+            )}
+          </SetupCard>
         </div>
       </div>
 
-      <div className="connections-section">
-        <div className="connections-section-header">
-          <div className="connections-section-icon hue-icon">
-            <Lightbulb size={20} />
-          </div>
+      <div className="connections-group">
+        <div className="connections-group-header">
           <div>
-            <h2 style={{ margin: 0 }}>Philips Hue</h2>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-              Connect the Hue Bridge for this apartment only.
+            <div className="connections-group-label">Shared Building Setup</div>
+            <h3 className="connections-group-title">Shared Areas & Shared Information</h3>
+            <p className="connections-group-copy">
+              Use this for KNX group addresses that are not on the current apartment's own line, for example central house values like outside temperature, wind or shared spaces such as garden and garage.
             </p>
           </div>
         </div>
 
-        <div style={{ marginTop: '1.25rem' }}>
-          {hueStatus.paired ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                padding: '0.5rem 1rem', borderRadius: '8px',
-                background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)'
-              }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }} />
-                <span style={{ color: 'var(--success-color)', fontWeight: 600, fontSize: '0.85rem' }}>Paired</span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>({hueStatus.bridgeIp})</span>
+        <div className="connections-card-grid connections-card-grid--shared">
+          <SetupCard
+            icon={<Building2 size={20} />}
+            title="Shared KNX Access"
+            description="Choose which apartment gateway can listen to KNX telegrams from the other/shared line, for example the main line with central building values."
+            tone="knx-icon"
+          >
+            <div className="connections-grid">
+              <div className="settings-field">
+                <label className="settings-field-label">Shared Access via Apartment</label>
+                <select className="form-select" value={sharedAccessApartmentId} onChange={(event) => setSharedAccessApartmentId(event.target.value)}>
+                  {fullConfig.apartments.map((entry) => (
+                    <option key={entry.id} value={entry.id}>{entry.name}</option>
+                  ))}
+                </select>
               </div>
-              <button className="btn-danger" onClick={handleHueUnpair}>Unpair</button>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: '520px' }}>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <button className="btn-secondary" onClick={handleHueDiscover}>Discover Bridge</button>
-                <input className="form-input" value={hueBridgeIp} placeholder="Hue bridge IP" onChange={(event) => setHueBridgeIp(event.target.value)} style={{ flex: 1, minWidth: '220px' }} />
-                <button className="btn-primary" onClick={handleHuePair} disabled={!hueBridgeIp}>Pair</button>
-              </div>
-              {hueError && <p style={{ color: 'var(--danger-color)', margin: 0 }}>{hueError}</p>}
+            <div className="connections-card-actions">
+              <button className="btn-primary" onClick={handleSaveSharedSettings}>
+                <Save size={16} /> Save Shared Setup
+              </button>
+              <StatusPill connected={sharedKnxStatus.connected} label={sharedKnxStatus.connected ? 'Shared KNX connected' : 'Shared KNX offline'} />
             </div>
-          )}
+          </SetupCard>
+
+          <SetupCard
+            icon={<FileText size={20} />}
+            title="Shared ETS XML"
+            description="Import the ETS export that contains the group addresses from the other/shared KNX line, for example outside temperature, wind, garden or garage."
+            tone="ets-icon"
+          >
+            <div className="connections-card-actions">
+              <button
+                className="btn-secondary"
+                onClick={() => setGroupAddressModal({
+                  open: true,
+                  title: 'Shared ETS XML import',
+                  allowUpload: true,
+                  mode: 'any',
+                  helperText: 'Upload the ETS XML for shared areas and shared information.',
+                  scope: 'shared',
+                })}
+              >
+                <FileText size={15} /> Manage Shared ETS XML
+              </button>
+
+              {sharedGroupAddressFileName && sharedGroupAddressBook.length > 0 && (
+                <div className="ets-status-badge">
+                  <div className="ets-status-dot" />
+                  <span>
+                    <strong>{sharedGroupAddressFileName}</strong>
+                    {' · '}
+                    <span style={{ color: 'var(--text-secondary)' }}>{sharedSupportedCount} supported addresses</span>
+                  </span>
+                </div>
+              )}
+            </div>
+          </SetupCard>
         </div>
       </div>
 
-      <div className="connections-section">
-        <div className="connections-section-header">
-          <div className="connections-section-icon knx-icon">
-            <Building2 size={20} />
-          </div>
+      <div className="connections-group">
+        <div className="connections-group-header">
           <div>
-            <h2 style={{ margin: 0 }}>Shared Areas & Shared Information</h2>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-              Community areas and shared weather data are reached via one apartment's KNX gateway.
-            </p>
+            <div className="connections-group-label">Apartments</div>
+            <h3 className="connections-group-title">Manage Apartments</h3>
+            <p className="connections-group-copy">Switch quickly or add another apartment to the same building.</p>
           </div>
         </div>
 
-        <div className="connections-grid">
-          <div className="settings-field">
-            <label className="settings-field-label">Shared Access via Apartment</label>
-            <select className="form-select" value={sharedAccessApartmentId} onChange={(event) => setSharedAccessApartmentId(event.target.value)}>
+        <div className="connections-card-grid connections-card-grid--apartments">
+          <SetupCard
+            icon={<Building2 size={20} />}
+            title="Existing Apartments"
+            description="These apartments are currently configured in the app."
+            tone="knx-icon"
+          >
+            <div className="connections-apartment-list">
               {fullConfig.apartments.map((entry) => (
-                <option key={entry.id} value={entry.id}>{entry.name}</option>
+                <button
+                  key={entry.id}
+                  className={`connections-apartment-item ${entry.id === apartment.id ? 'active' : ''}`}
+                  onClick={() => navigateToApartment(entry.slug)}
+                >
+                  <div>
+                    <div className="connections-apartment-name">{entry.name}</div>
+                    <div className="connections-apartment-slug">/{entry.slug}</div>
+                  </div>
+                  {entry.id === apartment.id && <span className="connections-apartment-current">Current</span>}
+                </button>
               ))}
-            </select>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button className="btn-primary" onClick={handleSaveSharedSettings}>
-            <Save size={16} /> Save Shared Access
-          </button>
-          <div className={`status-badge ${sharedKnxStatus.connected ? 'status-connected' : 'status-disconnected'}`}>
-            <Plug size={14} />
-            <div className="status-dot" />
-            <span>{sharedKnxStatus.connected ? 'Shared KNX connected' : 'Shared KNX offline'}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="connections-section">
-        <div className="connections-section-header">
-          <div className="connections-section-icon ets-icon">
-            <FileText size={20} />
-          </div>
-          <div>
-            <h2 style={{ margin: 0 }}>Shared ETS XML</h2>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-              Import the ETS XML that contains the shared areas and shared weather/status group addresses.
-            </p>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <button
-            className="btn-secondary"
-            onClick={() => setGroupAddressModal({
-              open: true,
-              title: 'Shared ETS XML import',
-              allowUpload: true,
-              mode: 'any',
-              helperText: 'Upload the ETS XML for shared areas and shared information.',
-              scope: 'shared',
-            })}
-          >
-            <FileText size={15} /> Manage Shared ETS XML
-          </button>
-
-          {sharedGroupAddressFileName && sharedGroupAddressBook.length > 0 && (
-            <div className="ets-status-badge">
-              <div className="ets-status-dot" />
-              <span>
-                <strong>{sharedGroupAddressFileName}</strong>
-                {' · '}
-                <span style={{ color: 'var(--text-secondary)' }}>{sharedSupportedCount} supported addresses</span>
-              </span>
             </div>
-          )}
-        </div>
-      </div>
+          </SetupCard>
 
-      <div className="connections-section">
-        <div className="connections-section-header">
-          <div className="connections-section-icon knx-icon">
-            <Plus size={20} />
-          </div>
-          <div>
-            <h2 style={{ margin: 0 }}>Add Another Apartment</h2>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-              Add a new apartment directly from the configuration of the current one.
-            </p>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <input
-            className="form-input"
-            value={newApartmentName}
-            onChange={(event) => setNewApartmentName(event.target.value)}
-            placeholder="e.g. Wohnung West"
-            style={{ flex: 1, minWidth: '220px', maxWidth: '360px' }}
-          />
-          <button className="btn-primary" onClick={handleCreateApartment} disabled={!newApartmentName.trim()}>
-            <Plus size={16} /> Create Apartment
-          </button>
+          <SetupCard
+            icon={<Plus size={20} />}
+            title="Add Apartment"
+            description="Create another apartment with its own private areas, alarms and connections."
+            tone="ets-icon"
+          >
+            <div className="connections-inline-form">
+              <input
+                className="form-input"
+                value={newApartmentName}
+                onChange={(event) => setNewApartmentName(event.target.value)}
+                placeholder="e.g. Wohnung West"
+              />
+              <button className="btn-primary" onClick={handleCreateApartment} disabled={!newApartmentName.trim()}>
+                <Plus size={16} /> Create Apartment
+              </button>
+            </div>
+          </SetupCard>
         </div>
       </div>
 

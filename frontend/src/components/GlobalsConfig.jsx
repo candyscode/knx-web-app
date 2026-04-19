@@ -44,7 +44,13 @@ function ItemSection({
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this item?')) return;
+    const confirmed = await requestConfirm?.({
+      title: type === 'alarm' ? 'Delete Alarm' : 'Delete Shared Information',
+      message: 'Delete this item?',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!confirmed) return;
     await saveItems(items.filter((item) => item.id !== id));
   };
 
@@ -189,6 +195,7 @@ export default function GlobalsConfig({
   saveSharedInfos,
   saveApartmentAlarms,
   openGroupAddressModal,
+  requestConfirm,
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

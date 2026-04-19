@@ -115,12 +115,14 @@ export default function FloorTabs({
   onSelectFloor,
   onReorderFloors = null,
   onAddFloor,
+  onAddButtonClick = null,
   onDeleteFloor,
   onRenameFloor = null,
   showAddButton = true,
   showRoomCount = true,
   largeTabs = false,
   extraTab = null,
+  addButtonLabel = 'Add Floor',
 }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -173,8 +175,18 @@ export default function FloorTabs({
               />
             ))}
             {showAddButton && !adding && (
-              <button className="floor-tab-add" onClick={() => setAdding(true)} title="Add floor">
-                <Plus size={14} /> Add Floor
+              <button
+                className="floor-tab-add"
+                onClick={() => {
+                  if (onAddButtonClick) {
+                    onAddButtonClick();
+                    return;
+                  }
+                  setAdding(true);
+                }}
+                title={addButtonLabel}
+              >
+                <Plus size={14} /> {addButtonLabel}
               </button>
             )}
             {adding && (

@@ -299,7 +299,7 @@ function App() {
               onClick={() => apartment && navigateTo(apartment.slug, 'connections')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
             >
-              <Plug size={18} /><span className="nav-link-text"> Connections</span>
+              <Plug size={18} /><span className="nav-link-text"> Setup</span>
             </button>
           </nav>
         </div>
