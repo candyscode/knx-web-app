@@ -3,9 +3,20 @@ import { createPortal } from 'react-dom';
 import { Search, Upload, X, FileText, Trash2, Check } from 'lucide-react';
 import { parseKNXGroupAddressXML } from '../knx-xml-parser';
 
+function normalizeDptPrefix(value) {
+  return String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/^DPT\s*/i, '');
+}
+
 function isAddressAllowedForMode(address, mode, dptFilter) {
   if (!address.supported) return false;
-  if (dptFilter && (!address.dpt || !address.dpt.startsWith(dptFilter))) return false;
+  if (dptFilter) {
+    const normalizedFilter = normalizeDptPrefix(dptFilter);
+    const normalizedAddressDpt = normalizeDptPrefix(address.dpt);
+    if (!normalizedAddressDpt || !normalizedAddressDpt.startsWith(normalizedFilter)) return false;
+  }
   if (mode === 'any') return true;
   if (mode === 'scene') return address.functionType === 'scene';
   if (mode === 'switch') return address.functionType === 'switch';

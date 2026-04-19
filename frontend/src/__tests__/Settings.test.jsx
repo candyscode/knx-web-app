@@ -3,7 +3,7 @@
  * Tests KNX config, room CRUD, scene CRUD, generate base scenes, Hue pairing flows.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Settings from '../Settings';
 import * as api from '../configApi';
@@ -40,6 +40,7 @@ const CONFIG_WITH_ROOM = {
   rooms: [{
     id: 'r1',
     name: 'Living Room',
+    roomTemperatureGroupAddress: '',
     sceneGroupAddress: '3/5/0',
     scenes: [{ id: 's1', name: 'Relax', sceneNumber: 5, category: 'light' }],
     functions: [],
@@ -304,6 +305,9 @@ describe('Settings — ETS modal filtering', () => {
       { address: '2/1/6', name: 'Living Room - Blind Position Status', functionType: 'percentage', supported: true },
       { address: '2/1/7', name: 'Living Room - Blind Moving', functionType: 'percentage', supported: true },
       { address: '3/5/4', name: 'Living Room - Scene Control', functionType: 'scene', supported: true },
+      { address: '5/1/1', name: 'Living Room - Temperature', functionType: 'temperature', dpt: 'DPT9.001', supported: true },
+      { address: '6/1/1', name: 'Outside Temperature', functionType: 'temperature', dpt: 'DPT9.001', supported: true },
+      { address: '6/1/2', name: 'Rain Alarm', functionType: 'switch', dpt: 'DPT1.001', supported: true },
     ]
   };
 
@@ -332,6 +336,42 @@ describe('Settings — ETS modal filtering', () => {
     expect(await screen.findByText(/filtered list: scene group addresses only/i)).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: /living room - scene control/i }));
     expect(screen.getByDisplayValue('3/5/4')).toBeInTheDocument();
+  });
+
+  it('opens the room temperature picker with a DPT 9.x filter', async () => {
+    const user = userEvent.setup();
+    renderSettings(CONFIG_WITH_ETS);
+
+    await user.click(screen.getByRole('button', { name: /search ets addresses for room temperature ga/i }));
+    expect(await screen.findByText(/filtered list: matching dpt 9\.x only/i)).toBeInTheDocument();
+    expect(screen.queryByText(/rain alarm/i)).not.toBeInTheDocument();
+  });
+
+  it('opens global info and alarm pickers with the correct DPT filters', async () => {
+    const user = userEvent.setup();
+    renderSettings({
+      ...CONFIG_WITH_ETS,
+      globals: [
+        { id: 'g1', name: 'Outside Temperature', type: 'info', category: 'temperature', statusGroupAddress: '', dpt: '' },
+        { id: 'g2', name: 'Rain Alarm', type: 'alarm', category: 'alarm', statusGroupAddress: '', dpt: '' },
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /global info & alarms/i }));
+
+    const infoCard = screen.getByDisplayValue('Outside Temperature').closest('.function-card');
+    const infoBrowseButton = within(infoCard).getByTitle('Browse ETS addresses');
+    await user.click(infoBrowseButton);
+    expect(await screen.findByText(/filtered list: matching dpt 9\.x only/i)).toBeInTheDocument();
+    expect(screen.queryByText(/rain alarm/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTitle('Close'));
+
+    const alarmCard = screen.getByDisplayValue('Rain Alarm').closest('.function-card');
+    const alarmBrowseButton = within(alarmCard).getByTitle('Browse ETS addresses');
+    await user.click(alarmBrowseButton);
+    expect(await screen.findByText(/filtered list: matching dpt 1\.x only/i)).toBeInTheDocument();
+    expect(screen.queryByText(/outside temperature/i)).not.toBeInTheDocument();
   });
 });
 

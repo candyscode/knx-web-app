@@ -67,7 +67,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
   const [hueScenes, setHueScenes] = useState([]);
   const [hueScenesLoading, setHueScenesLoading] = useState(false);
 
-  const [groupAddressModal, setGroupAddressModal] = useState({ open: false, roomId: null, floorId: null, title: '', mode: 'any', target: null, allowUpload: false, helperText: '' });
+  const [groupAddressModal, setGroupAddressModal] = useState({ open: false, roomId: null, floorId: null, title: '', mode: 'any', dptFilter: null, target: null, allowUpload: false, helperText: '' });
   const [groupAddressBook, setGroupAddressBook] = useState([]);
   const [groupAddressFileName, setGroupAddressFileName] = useState('');
 
@@ -399,9 +399,9 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
 
   // ── GA modal ─────────────────────────────────────────────
   const openGroupAddressModal = (options) => {
-    setGroupAddressModal({ open: true, roomId: options.roomId || null, floorId: options.floorId || null, title: options.title || 'Select Group Address', mode: options.mode || 'any', target: options.target || null, allowUpload: !!options.allowUpload, helperText: options.helperText || '' });
+    setGroupAddressModal({ open: true, roomId: options.roomId || null, floorId: options.floorId || null, title: options.title || 'Select Group Address', mode: options.mode || 'any', dptFilter: options.dptFilter || null, target: options.target || null, allowUpload: !!options.allowUpload, helperText: options.helperText || '' });
   };
-  const closeGroupAddressModal = () => setGroupAddressModal({ open: false, roomId: null, floorId: null, title: '', mode: 'any', target: null, allowUpload: false, helperText: '' });
+  const closeGroupAddressModal = () => setGroupAddressModal({ open: false, roomId: null, floorId: null, title: '', mode: 'any', dptFilter: null, target: null, allowUpload: false, helperText: '' });
 
   const importGroupAddresses = async (addresses, fileName) => {
     try {
@@ -435,6 +435,10 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
     if (target?.kind === 'sceneGA') {
       updateRoom(floorId, roomId, { sceneGroupAddress: groupAddress.address });
       addToast(`Selected scene GA "${groupAddress.name}"`, 'success'); closeGroupAddressModal(); return;
+    }
+    if (target?.kind === 'roomTemperatureGA') {
+      updateRoom(floorId, roomId, { roomTemperatureGroupAddress: groupAddress.address });
+      addToast(`Selected room temperature GA "${groupAddress.name}"`, 'success'); closeGroupAddressModal(); return;
     }
     const newFunction = { id: Date.now().toString(), name: groupAddress.name, type: groupAddress.functionType || 'switch', groupAddress: groupAddress.address };
     if (newFunction.type === 'switch') newFunction.iconType = 'lightbulb';
@@ -662,6 +666,7 @@ export default function Settings({ config, fetchConfig, addToast, hueStatus, set
         onImport={importGroupAddresses}
         onClear={clearGroupAddresses}
         mode={groupAddressModal.mode}
+        dptFilter={groupAddressModal.dptFilter}
         allowUpload={groupAddressModal.allowUpload}
         helperText={groupAddressModal.helperText}
       />

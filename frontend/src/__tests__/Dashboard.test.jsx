@@ -36,6 +36,7 @@ const BLIND_FUNC = {
 const ROOM_WITH_SCENES = {
   id: 'r1',
   name: 'Living Room',
+  roomTemperatureGroupAddress: '',
   sceneGroupAddress: '3/5/0',
   scenes: [
     { id: 's1', name: 'Relax', sceneNumber: 5, category: 'light' },
@@ -89,6 +90,20 @@ describe('Dashboard — room card', () => {
   it('renders room name in card header', () => {
     renderDashboard({ rooms: [ROOM_WITH_SCENES] });
     expect(screen.getByText('Living Room')).toBeInTheDocument();
+  });
+
+  it('renders room temperature badge when a room temperature GA has a value', () => {
+    renderDashboard({
+      rooms: [{ ...ROOM_WITH_SCENES, roomTemperatureGroupAddress: '5/1/1' }],
+      deviceStates: { '5/1/1': 22.6 },
+    });
+
+    expect(screen.getByText('22.6 °C')).toBeInTheDocument();
+  });
+
+  it('hides room temperature badge when no room temperature GA is configured', () => {
+    renderDashboard({ rooms: [ROOM_WITH_SCENES] });
+    expect(screen.queryByText(/°C/)).not.toBeInTheDocument();
   });
 
   it('shows "No functions available" when room has no scenes or functions', () => {

@@ -30,6 +30,7 @@ const GA_TOOLTIPS = {
   action: 'The group address this function writes to on the KNX bus.',
   scene: 'Scene number to activate (1–64). The bus value is automatically offset by −1.',
   sceneGA: 'The group address for scene control. All room scenes share this single GA (DPT 17.001).',
+  roomTemperature: 'Status group address for the measured room temperature (DPT 9.001).',
   feedback: 'Status group address — the actuator reports its current state here.',
   moving: 'Group address the actuator uses to signal movement (1 = moving, 0 = stopped).',
 };
@@ -395,6 +396,25 @@ function CollapsibleRoomCard({
                 browseLabel="Search ETS addresses for scene GA"
                 onChange={(val) => updateRoom(floorId, room.id, { sceneGroupAddress: val })} placeholder="e.g. 3/5/0"
                 onBrowse={() => openGroupAddressModal({ roomId: room.id, floorId, title: 'Select Scene Group Address', mode: 'scene', target: { kind: 'sceneGA' }, helperText: 'Select a scene or 1-byte value ETS group address.' })} />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <GAField
+                label="Room Temperature GA"
+                tooltipKey="roomTemperature"
+                value={room.roomTemperatureGroupAddress || ''}
+                browseLabel="Search ETS addresses for room temperature GA"
+                onChange={(val) => updateRoom(floorId, room.id, { roomTemperatureGroupAddress: val })}
+                placeholder="e.g. 4/1/7"
+                onBrowse={() => openGroupAddressModal({
+                  roomId: room.id,
+                  floorId,
+                  title: 'Select Room Temperature Group Address',
+                  mode: 'any',
+                  dptFilter: '9.',
+                  target: { kind: 'roomTemperatureGA' },
+                  helperText: 'Select a compatible room temperature ETS group address.',
+                })}
+              />
             </div>
             {hueStatus && hueStatus.paired && (
               <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

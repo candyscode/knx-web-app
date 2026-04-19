@@ -61,6 +61,10 @@ function RoomCard({ room, deviceStates, hueStates, setDeviceStates, setHueStates
   const roomScenes = room.scenes || [];
   const hasScenes = roomScenes.length > 0;
   const hasFunctions = room.functions && room.functions.length > 0;
+  const roomTemperatureValue = room.roomTemperatureGroupAddress ? deviceStates[room.roomTemperatureGroupAddress] : undefined;
+  const hasRoomTemperature = room.roomTemperatureGroupAddress && roomTemperatureValue !== undefined && roomTemperatureValue !== null && roomTemperatureValue !== '';
+  const parsedRoomTemperature = hasRoomTemperature ? Number(roomTemperatureValue) : null;
+  const showRoomTemperature = Number.isFinite(parsedRoomTemperature);
 
   const renderSwitchIcon = (func, isOn) => {
     if (func.type === 'scene') return <Gamepad2 size={24} />;
@@ -71,7 +75,12 @@ function RoomCard({ room, deviceStates, hueStates, setDeviceStates, setHueStates
 
   return (
     <div className="room-card">
-      <div className="room-header"><h2>{room.name}</h2></div>
+      <div className="room-header">
+        <h2 title={room.name}>{room.name}</h2>
+        {showRoomTemperature && (
+          <span className="room-temperature-badge">{parsedRoomTemperature.toFixed(1)} °C</span>
+        )}
+      </div>
 
       {hasScenes && (
         <div className="scene-categories">

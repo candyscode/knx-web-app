@@ -84,6 +84,12 @@ function buildKnxTrackingMaps() {
   }
 
   allRooms().forEach(room => {
+    if (room.roomTemperatureGroupAddress) {
+      statusGAs.add(room.roomTemperatureGroupAddress);
+      gaToType[room.roomTemperatureGroupAddress] = 'info';
+      gaToDpt[room.roomTemperatureGroupAddress] = 'DPT9.001';
+    }
+
     if (!room.functions) return;
     room.functions.forEach(func => {
       if (func.statusGroupAddress) {
