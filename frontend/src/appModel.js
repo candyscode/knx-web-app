@@ -25,6 +25,7 @@ export function migrateLegacyConfig(config) {
     version: 2,
     building: {
       sharedAccessApartmentId: 'apartment_1',
+      sharedUsesApartmentImportedGroupAddresses: false,
       sharedInfos: Array.isArray(config?.globals)
         ? config.globals.filter((item) => item?.type !== 'alarm')
         : [],
@@ -145,6 +146,7 @@ export function buildApartmentView(config, apartmentSlug) {
         : [],
       sharedImportedGroupAddressesFileName: normalized.building?.sharedImportedGroupAddressesFileName || '',
       sharedAccessApartmentId: normalized.building?.sharedAccessApartmentId || apartment.id,
+      sharedUsesApartmentImportedGroupAddresses: normalized.building?.sharedUsesApartmentImportedGroupAddresses === true,
     },
     sharedAreas,
     sharedInfos: Array.isArray(normalized.building?.sharedInfos) ? normalized.building.sharedInfos : [],

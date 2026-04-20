@@ -11,6 +11,7 @@ import { createApartmentDraft, ensureUniqueSlug, slugifyApartmentName } from './
 import {
   Save, Plus, Lightbulb, FileText, Plug, Building2, Home as HomeIcon
 } from 'lucide-react';
+import ConfirmDialog from './components/ConfirmDialog';
 
 function StatusPill({ connected, label }) {
   return (
@@ -60,7 +61,18 @@ export default function Connections({
   const [hueBridgeIp, setHueBridgeIp] = useState(config.hue?.bridgeIp || '');
   const [hueError, setHueError] = useState('');
   const [sharedAccessApartmentId, setSharedAccessApartmentId] = useState(config.sharedAccessApartmentId || apartment.id);
+  const [sharedUsesApartmentImportedGroupAddresses, setSharedUsesApartmentImportedGroupAddresses] = useState(
+    config.sharedUsesApartmentImportedGroupAddresses === true
+  );
   const [newApartmentName, setNewApartmentName] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Confirm',
+    cancelLabel: 'Cancel',
+    danger: false,
+  });
 
   const [groupAddressModal, setGroupAddressModal] = useState({
     open: false,
@@ -91,6 +103,7 @@ export default function Connections({
     setPort(config.knxPort || 3671);
     setHueBridgeIp(config.hue?.bridgeIp || '');
     setSharedAccessApartmentId(config.sharedAccessApartmentId || apartment.id);
+    setSharedUsesApartmentImportedGroupAddresses(config.sharedUsesApartmentImportedGroupAddresses === true);
     setApartmentGroupAddressBook(Array.isArray(config.importedGroupAddresses) ? config.importedGroupAddresses : []);
     setApartmentGroupAddressFileName(config.importedGroupAddressesFileName || '');
     setSharedGroupAddressBook(Array.isArray(config.sharedImportedGroupAddresses) ? config.sharedImportedGroupAddresses : []);
@@ -108,6 +121,8 @@ export default function Connections({
     building: {
       ...fullConfig.building,
       sharedAccessApartmentId: overrides.sharedAccessApartmentId ?? sharedAccessApartmentId,
+      sharedUsesApartmentImportedGroupAddresses: overrides.sharedUsesApartmentImportedGroupAddresses
+        ?? sharedUsesApartmentImportedGroupAddresses,
       sharedImportedGroupAddresses: overrides.sharedGroupAddressBook ?? sharedGroupAddressBook,
       sharedImportedGroupAddressesFileName: overrides.sharedGroupAddressFileName ?? sharedGroupAddressFileName,
     },
@@ -141,7 +156,14 @@ export default function Connections({
 
   const handleSaveSharedSettings = async () => {
     try {
-      await persistConfig(buildNextConfig({ sharedAccessApartmentId }));
+      const nextSharedGroupAddressBook = sharedUsesApartmentImportedGroupAddresses ? [] : sharedGroupAddressBook;
+      const nextSharedGroupAddressFileName = sharedUsesApartmentImportedGroupAddresses ? '' : sharedGroupAddressFileName;
+      await persistConfig(buildNextConfig({
+        sharedAccessApartmentId,
+        sharedUsesApartmentImportedGroupAddresses,
+        sharedGroupAddressBook: nextSharedGroupAddressBook,
+        sharedGroupAddressFileName: nextSharedGroupAddressFileName,
+      }));
       addToast('Shared building settings saved', 'success');
     } catch {
       addToast('Failed to save shared building settings', 'error');
@@ -240,6 +262,59 @@ export default function Connections({
     } catch {
       addToast('Failed to clear imported group addresses', 'error');
     }
+  };
+
+  const requestConfirm = ({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false }) => (
+    new Promise((resolve) => {
+      setConfirmDialog({
+        open: true,
+        title,
+        message,
+        confirmLabel,
+        cancelLabel,
+        danger,
+        onResolve: resolve,
+      });
+    })
+  );
+
+  const closeConfirmDialog = (confirmed = false) => {
+    setConfirmDialog((prev) => {
+      if (typeof prev.onResolve === 'function') prev.onResolve(confirmed);
+      return {
+        open: false,
+        title: '',
+        message: '',
+        confirmLabel: 'Confirm',
+        cancelLabel: 'Cancel',
+        danger: false,
+      };
+    });
+  };
+
+  const handleSharedApartmentXmlToggle = async (nextValue) => {
+    if (!nextValue) {
+      setSharedUsesApartmentImportedGroupAddresses(false);
+      return;
+    }
+
+    if (sharedGroupAddressBook.length === 0 && !sharedGroupAddressFileName) {
+      setSharedUsesApartmentImportedGroupAddresses(true);
+      return;
+    }
+
+    const confirmed = await requestConfirm({
+      title: 'Use Apartment ETS XML',
+      message: 'Switching this on removes the dedicated shared ETS XML. Continue?',
+      confirmLabel: 'Use Apartment XML',
+      danger: true,
+    });
+
+    if (!confirmed) return;
+
+    setSharedUsesApartmentImportedGroupAddresses(true);
+    setSharedGroupAddressBook([]);
+    setSharedGroupAddressFileName('');
   };
 
   const handleCreateApartment = async () => {
@@ -433,22 +508,53 @@ export default function Connections({
             description="Import the ETS export that contains the group addresses from the other/shared KNX line, for example outside temperature, wind, garden or garage."
             tone="ets-icon"
           >
-            <div className="connections-card-actions">
-              <button
-                className="btn-secondary"
-                onClick={() => setGroupAddressModal({
-                  open: true,
-                  title: 'Shared ETS XML import',
-                  allowUpload: true,
-                  mode: 'any',
-                  helperText: 'Upload the ETS XML for shared areas and shared information.',
-                  scope: 'shared',
-                })}
+            <div className="settings-field" style={{ marginBottom: '1rem' }}>
+              <label
+                className="settings-toggle-row"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', cursor: 'pointer' }}
               >
-                <FileText size={15} /> Manage Shared ETS XML
-              </button>
+                <div>
+                  <div className="settings-field-label" style={{ marginBottom: '0.2rem' }}>Use apartment's ETS XML</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                    Use the current apartment ETS import for shared group-address browsing instead of a separate shared XML.
+                  </div>
+                </div>
+                <span className="settings-toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={sharedUsesApartmentImportedGroupAddresses}
+                    onChange={(event) => handleSharedApartmentXmlToggle(event.target.checked)}
+                    aria-label="Use apartment's ETS XML"
+                  />
+                  <span className="settings-toggle-slider" />
+                </span>
+              </label>
+            </div>
+            <div className="connections-card-actions">
+              {sharedUsesApartmentImportedGroupAddresses ? (
+                <div className="ets-status-badge">
+                  <div className="ets-status-dot" />
+                  <span>
+                    Using the current apartment ETS XML for shared address browsing.
+                  </span>
+                </div>
+              ) : (
+                <button
+                  className="btn-secondary"
+                  onClick={() => setGroupAddressModal({
+                    open: true,
+                    title: 'Shared ETS XML import',
+                    allowUpload: true,
+                    mode: 'any',
+                    helperText: 'Upload the ETS XML for shared areas and shared information.',
+                    scope: 'shared',
+                  })}
+                >
+                  <FileText size={15} /> Manage Shared ETS XML
+                </button>
+              )}
 
-              {sharedGroupAddressFileName && sharedGroupAddressBook.length > 0 && (
+              {!sharedUsesApartmentImportedGroupAddresses && sharedGroupAddressFileName && sharedGroupAddressBook.length > 0 && (
                 <div className="ets-status-badge">
                   <div className="ets-status-dot" />
                   <span>
@@ -529,6 +635,17 @@ export default function Connections({
         mode={groupAddressModal.mode}
         allowUpload={groupAddressModal.allowUpload}
         helperText={groupAddressModal.helperText}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.confirmLabel}
+        cancelLabel={confirmDialog.cancelLabel}
+        danger={confirmDialog.danger}
+        onConfirm={() => closeConfirmDialog(true)}
+        onCancel={() => closeConfirmDialog(false)}
       />
     </div>
   );

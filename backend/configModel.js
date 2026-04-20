@@ -168,6 +168,7 @@ function migrateLegacyConfig(input) {
     version: 2,
     building: {
       sharedAccessApartmentId: 'apartment_1',
+      sharedUsesApartmentImportedGroupAddresses: false,
       sharedInfos,
       sharedAreas: [],
       sharedImportedGroupAddresses: normalizeImportedGroupAddresses(input?.importedGroupAddresses),
@@ -216,6 +217,7 @@ function normalizeConfigShape(input) {
     version: 2,
     building: {
       sharedAccessApartmentId,
+      sharedUsesApartmentImportedGroupAddresses: source?.building?.sharedUsesApartmentImportedGroupAddresses === true,
       sharedInfos: Array.isArray(source?.building?.sharedInfos)
         ? source.building.sharedInfos.map(normalizeSharedInfo).filter(Boolean)
         : [],

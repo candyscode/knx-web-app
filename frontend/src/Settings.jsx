@@ -80,6 +80,7 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
   const [apartmentGroupAddressFileName, setApartmentGroupAddressFileName] = useState('');
   const [sharedGroupAddressBook, setSharedGroupAddressBook] = useState([]);
   const [sharedGroupAddressFileName, setSharedGroupAddressFileName] = useState('');
+  const sharedUsesApartmentImportedGroupAddresses = config.sharedUsesApartmentImportedGroupAddresses === true;
   const [addAreaModalOpen, setAddAreaModalOpen] = useState(false);
   const [newAreaName, setNewAreaName] = useState('');
   const [newAreaIsShared, setNewAreaIsShared] = useState(false);
@@ -113,8 +114,13 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
 
   // ── Floor helpers ────────────────────────────────────────
   const activeFloor = floors.find(f => f.id === activeFloorId) || floors[0];
-  const modalAddressBook = groupAddressModal.scope === 'shared' ? sharedGroupAddressBook : apartmentGroupAddressBook;
-  const modalAddressFileName = groupAddressModal.scope === 'shared' ? sharedGroupAddressFileName : apartmentGroupAddressFileName;
+  const useApartmentXmlForModal = groupAddressModal.scope === 'shared' && sharedUsesApartmentImportedGroupAddresses;
+  const modalAddressBook = useApartmentXmlForModal
+    ? apartmentGroupAddressBook
+    : (groupAddressModal.scope === 'shared' ? sharedGroupAddressBook : apartmentGroupAddressBook);
+  const modalAddressFileName = useApartmentXmlForModal
+    ? apartmentGroupAddressFileName
+    : (groupAddressModal.scope === 'shared' ? sharedGroupAddressFileName : apartmentGroupAddressFileName);
 
   const stripSharedMarker = (entries) => entries.map(({ isShared, ...floor }) => ({
     ...floor,

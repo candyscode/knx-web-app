@@ -27,7 +27,7 @@ const io = new Server(server, {
 });
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '5mb' }));
 
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 const apartmentContexts = new Map();
@@ -414,6 +414,14 @@ function applyConfigPatch(payload) {
             ? payload.sharedImportedGroupAddressesFileName
             : payload.importedGroupAddressesFileName)
           : '';
+    }
+
+    if (payload.sharedUsesApartmentImportedGroupAddresses !== undefined) {
+      config.building.sharedUsesApartmentImportedGroupAddresses = payload.sharedUsesApartmentImportedGroupAddresses === true;
+      if (config.building.sharedUsesApartmentImportedGroupAddresses) {
+        config.building.sharedImportedGroupAddresses = [];
+        config.building.sharedImportedGroupAddressesFileName = '';
+      }
     }
 
     if (payload.sharedAccessApartmentId !== undefined && getApartmentById(config, payload.sharedAccessApartmentId)) {

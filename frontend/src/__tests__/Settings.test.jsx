@@ -1,18 +1,12 @@
-/**
- * Settings component tests.
- * Tests KNX config, room CRUD, scene CRUD, generate base scenes, Hue pairing flows.
- */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Settings from '../Settings';
 import * as api from '../configApi';
+import { buildApartmentView } from '../appModel';
 
 vi.mock('../configApi', () => ({
   updateConfig: vi.fn(),
-  discoverHueBridge: vi.fn(),
-  pairHueBridge: vi.fn(),
-  unpairHueBridge: vi.fn(),
   getHueLights: vi.fn(),
   getHueRooms: vi.fn(),
   getHueScenes: vi.fn(),
@@ -22,394 +16,339 @@ vi.mock('../configApi', () => ({
   unlinkHueScene: vi.fn(),
 }));
 
+vi.mock('../components/FloorTabs', () => ({
+  default: ({ floors, activeFloorId, onSelectFloor, onAddButtonClick, onDeleteFloor, onReorderFloors }) => (
+    <div data-testid="floor-tabs-mock">
+      {floors.map((floor) => (
+        <button
+          key={floor.id}
+          data-active={floor.id === activeFloorId}
+          onClick={() => onSelectFloor?.(floor.id)}
+        >
+          {floor.name}{floor.isShared ? ' (shared)' : ''}
+        </button>
+      ))}
+      <button onClick={() => onAddButtonClick?.()}>Add Area</button>
+      {floors[0] && <button onClick={() => onDeleteFloor?.(floors[0].id)}>Delete First Area</button>}
+      {floors.length > 1 && <button onClick={() => onReorderFloors?.([...floors].reverse())}>Reverse Areas</button>}
+    </div>
+  ),
+}));
+
+vi.mock('../components/CollapsibleRoomCard', () => ({
+  default: ({ room, floorId, handleDeleteRoom }) => (
+    <div data-testid={`room-${room.id}`}>
+      <span>{room.name}</span>
+      <button onClick={() => handleDeleteRoom?.(floorId, room.id)}>Delete Room</button>
+    </div>
+  ),
+}));
+
+vi.mock('../components/KNXGroupAddressModal', () => ({
+  KNXGroupAddressModal: ({ isOpen, importedFileName, addresses }) => (
+    isOpen ? (
+      <div data-testid="knx-group-address-modal">
+        <div>file:{importedFileName || 'none'}</div>
+        <div>count:{addresses.length}</div>
+      </div>
+    ) : null
+  ),
+}));
+
 const addToast = vi.fn();
 const fetchConfig = vi.fn();
+const applyConfig = vi.fn();
 
-const BASE_CONFIG = {
-  knxIp: '192.168.1.85',
-  knxPort: 3671,
-  hue: { bridgeIp: '', apiKey: '' },
-  rooms: [],
-  globals: [],
-  importedGroupAddresses: [],
-  importedGroupAddressesFileName: '',
-};
-
-const CONFIG_WITH_ROOM = {
-  ...BASE_CONFIG,
-  rooms: [{
-    id: 'r1',
-    name: 'Living Room',
-    roomTemperatureGroupAddress: '',
-    sceneGroupAddress: '3/5/0',
-    scenes: [{ id: 's1', name: 'Relax', sceneNumber: 5, category: 'light' }],
-    functions: [],
-  }],
-};
-
-const CONFIG_WITH_EXISTING_FUNCTIONS = {
-  ...BASE_CONFIG,
-  rooms: [{
-    id: 'r1',
-    name: 'Living Room',
-    sceneGroupAddress: '3/5/0',
-    scenes: [{ id: 's1', name: 'Relax', sceneNumber: 5, category: 'light' }],
-    functions: [
+const FULL_CONFIG = {
+  version: 2,
+  building: {
+    sharedAccessApartmentId: 'apartment_1',
+    sharedUsesApartmentImportedGroupAddresses: false,
+    sharedInfos: [
       {
-        id: 'f1',
-        name: 'Ceiling Light',
-        type: 'switch',
-        groupAddress: '1/1/1',
-        statusGroupAddress: '',
-      },
-      {
-        id: 'f2',
-        name: 'Blind Position',
-        type: 'percentage',
-        groupAddress: '2/1/5',
-        statusGroupAddress: '',
-        movingGroupAddress: '',
+        id: 'info-1',
+        name: 'Outside Temperature',
+        type: 'info',
+        category: 'temperature',
+        statusGroupAddress: '1/1/1',
       },
     ],
-  }],
+    sharedAreas: [
+      {
+        id: 'shared-garden',
+        name: 'Garden',
+        rooms: [{ id: 'shared-room-1', name: 'Garden Lights', scenes: [], functions: [] }],
+      },
+    ],
+    sharedImportedGroupAddresses: [{ address: '1/6/3', name: 'Shared Weather', supported: true }],
+    sharedImportedGroupAddressesFileName: 'shared.xml',
+  },
+  apartments: [
+    {
+      id: 'apartment_1',
+      name: 'Wohnung Ost',
+      slug: 'wohnung-ost',
+      knxIp: '192.168.1.10',
+      knxPort: 3671,
+      hue: { bridgeIp: '', apiKey: '' },
+      floors: [
+        {
+          id: 'east-living',
+          name: 'Living',
+          rooms: [{ id: 'room-1', name: 'Living Room', scenes: [], functions: [] }],
+        },
+      ],
+      areaOrder: ['east-living', 'shared-garden'],
+      alarms: [
+        {
+          id: 'alarm-1',
+          name: 'Rain Alarm',
+          type: 'alarm',
+          category: 'alarm',
+          statusGroupAddress: '2/1/1',
+        },
+      ],
+      importedGroupAddresses: [{ address: '3/6/1', name: 'Apartment Weather', supported: true }],
+      importedGroupAddressesFileName: 'apartment.xml',
+    },
+    {
+      id: 'apartment_2',
+      name: 'Wohnung West',
+      slug: 'wohnung-west',
+      knxIp: '192.168.1.20',
+      knxPort: 3671,
+      hue: { bridgeIp: '', apiKey: '' },
+      floors: [{ id: 'west-living', name: 'West Living', rooms: [] }],
+      areaOrder: ['west-living', 'shared-garden'],
+      alarms: [],
+      importedGroupAddresses: [],
+      importedGroupAddressesFileName: '',
+    },
+  ],
 };
 
-function renderSettings(config = BASE_CONFIG, hueStatus = { paired: false, bridgeIp: '' }) {
+function renderSettings(fullConfig = FULL_CONFIG, apartmentSlug = 'wohnung-ost') {
+  const { apartment, apartmentConfig } = buildApartmentView(fullConfig, apartmentSlug);
+
   return render(
     <Settings
-      config={config}
+      fullConfig={fullConfig}
+      apartment={apartment}
+      config={apartmentConfig}
       fetchConfig={fetchConfig}
+      applyConfig={applyConfig}
       addToast={addToast}
-      hueStatus={hueStatus}
-      setHueStatus={vi.fn()}
+      hueStatus={{ paired: false, bridgeIp: '' }}
+      sharedHueStatus={{ paired: false, bridgeIp: '' }}
     />
   );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  api.updateConfig.mockResolvedValue({ success: true, config: BASE_CONFIG });
-  api.discoverHueBridge.mockResolvedValue({ success: true, bridges: [{ internalipaddress: '192.168.1.65' }] });
-  api.pairHueBridge.mockResolvedValue({ success: true, apiKey: 'new-api-key' });
-  api.unpairHueBridge.mockResolvedValue({ success: true });
-  api.getHueLights.mockResolvedValue({ success: true, lights: [{ id: '1', name: 'Leselampe', on: false, reachable: true }] });
-  api.getHueRooms.mockResolvedValue({ success: true, rooms: [{ id: '1', name: 'Wohnzimmer', lights: [] }] });
-  api.getHueScenes.mockResolvedValue({ success: true, scenes: [{ id: 'abc', name: 'Relax', group: '1' }] });
+  api.updateConfig.mockImplementation(async (nextConfig) => ({ success: true, config: nextConfig }));
+  api.getHueLights.mockResolvedValue({ success: true, lights: [] });
+  api.getHueRooms.mockResolvedValue({ success: true, rooms: [] });
+  api.getHueScenes.mockResolvedValue({ success: true, scenes: [] });
   api.linkHueRoom.mockResolvedValue({ success: true });
   api.unlinkHueRoom.mockResolvedValue({ success: true });
   api.linkHueScene.mockResolvedValue({ success: true });
   api.unlinkHueScene.mockResolvedValue({ success: true });
 });
 
-// ── Rooms ─────────────────────────────────────────────────────────────────────
-
-describe('Settings — Room management', () => {
-
-
-  it('shows "Add Room" input and button', () => {
-    renderSettings();
-    expect(screen.getByPlaceholderText(/Add room to/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add room/i })).toBeInTheDocument();
-  });
-
-  it('creates a new room when Add Room is clicked', async () => {
-    const user = userEvent.setup();
+describe('Settings — merged multi-apartment area view', () => {
+  it('shows private and shared areas together for the current apartment', () => {
     renderSettings();
 
-    const nameInput = screen.getByPlaceholderText(/Add room to/i);
-    await user.type(nameInput, 'New Room');
-    await user.click(screen.getByRole('button', { name: /add room/i }));
-
-    expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
-      floors: expect.arrayContaining([expect.objectContaining({ rooms: expect.arrayContaining([expect.objectContaining({ name: 'New Room' })]) })]),
-    }));
-    expect(addToast).toHaveBeenCalledWith('Room added', 'success');
-  });
-
-  it('does not create room when name is empty', async () => {
-    const user = userEvent.setup();
-    renderSettings();
-    await user.click(screen.getByRole('button', { name: /add room/i }));
-    expect(api.updateConfig).not.toHaveBeenCalled();
-  });
-
-  it('renders existing room card', () => {
-    renderSettings(CONFIG_WITH_ROOM);
-    expect(screen.getByText('Living Room')).toBeInTheDocument();
-  });
-
-  it('deletes room when Delete Room button is clicked', async () => {
-    vi.spyOn(window, 'confirm').mockImplementation(() => true);
-    const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ROOM);
-
-    const deleteBtn = screen.getByTitle('Delete Room');
-    await user.click(deleteBtn);
-
-    expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({ floors: expect.arrayContaining([expect.objectContaining({ rooms: [] })]) }));
-    expect(addToast).toHaveBeenCalledWith('Room deleted', 'success');
+    expect(screen.getByText('Living')).toBeInTheDocument();
+    expect(screen.getByText('Garden (shared)')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Add room to Living/i)).toBeInTheDocument();
   });
 });
 
-// ── Scenes ────────────────────────────────────────────────────────────────────
-
-describe('Settings — Scene management', () => {
-  it('renders existing scenes in room', () => {
-    renderSettings(CONFIG_WITH_ROOM);
-    expect(screen.getByDisplayValue('Relax')).toBeInTheDocument();
-  });
-
-  it('adds a light scene when "Add Light Scene" is clicked', async () => {
+describe('Settings — area creation and ordering', () => {
+  it('creates a private area from the Add Area modal inside the current apartment only', async () => {
     const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ROOM);
+    renderSettings();
 
-    await user.click(screen.getByRole('button', { name: /add light scene/i }));
-
-    // A new scene row should now appear (with empty name input)
-    const nameInputs = screen.getAllByPlaceholderText('e.g. Off');
-    expect(nameInputs.length).toBeGreaterThan(0);
-  });
-
-  it('adds a shade scene when "Add Shade Scene" is clicked', async () => {
-    const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ROOM);
-
-    const shadeSections = screen.getAllByText(/shade scenes/i);
-    const addShadeBtn = screen.getByRole('button', { name: /add shade scene/i });
-    await user.click(addShadeBtn);
-
-    // Shade section now has one row
-    const deleteButtons = screen.getAllByTitle('Delete scene');
-    expect(deleteButtons.length).toBeGreaterThan(0);
-  });
-
-  it('removes scene when Delete scene button is clicked', async () => {
-    const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ROOM);
-
-    const beforeCount = screen.getAllByDisplayValue('Relax').length;
-    await user.click(screen.getByTitle('Delete scene'));
+    await user.click(screen.getByRole('button', { name: 'Add Area' }));
+    await user.type(screen.getByPlaceholderText('e.g. Garden'), 'Bedroom');
+    await user.click(screen.getByRole('button', { name: /create area/i }));
 
     await waitFor(() => {
-      expect(screen.queryByDisplayValue('Relax')).not.toBeInTheDocument();
-    });
-  });
-
-  it('"Generate Base Scenes" adds Off (scene 1) and Bright (scene 2)', async () => {
-    const user = userEvent.setup();
-    // Start with empty scenes
-    const configEmpty = { ...CONFIG_WITH_ROOM, rooms: [{ ...CONFIG_WITH_ROOM.rooms[0], scenes: [] }] };
-    renderSettings(configEmpty);
-
-    await user.click(screen.getByRole('button', { name: /generate base scenes/i }));
-
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('Off')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Bright')).toBeInTheDocument();
-    });
-    expect(addToast).toHaveBeenCalledWith(expect.stringContaining('Off'), 'success');
-  });
-
-  it('"Generate Base Scenes" shows toast when scenes already exist', async () => {
-    const user = userEvent.setup();
-    // Config has scenes 1 and 2 already
-    const configFull = {
-      ...CONFIG_WITH_ROOM, rooms: [{
-        ...CONFIG_WITH_ROOM.rooms[0],
-        scenes: [
-          { id: 's1', name: 'Off', sceneNumber: 1, category: 'light' },
-          { id: 's2', name: 'Bright', sceneNumber: 2, category: 'light' },
-        ],
-      }],
-    };
-    renderSettings(configFull);
-
-    await user.click(screen.getByRole('button', { name: /generate base scenes/i }));
-    expect(addToast).toHaveBeenCalledWith(expect.stringContaining('already exist'), 'success');
-  });
-});
-
-// ── Functions ─────────────────────────────────────────────────────────────────
-
-describe('Settings — Function management', () => {
-  it('adds a function card when "Add Function" is clicked', async () => {
-    const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ROOM);
-
-    await user.click(screen.getByRole('button', { name: /add function/i }));
-
-    // A new function card should appear
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('e.g. Lock Door')).toBeInTheDocument();
-    });
-  });
-
-  it('uses search icon buttons for imported ETS address lookup on GA fields', async () => {
-    const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ROOM);
-
-    await user.click(screen.getByRole('button', { name: /add function/i }));
-
-    expect(await screen.findByRole('button', { name: /search ets addresses for action ga/i })).toBeInTheDocument();
-  });
-});
-
-describe('Settings — Global information & alarms', () => {
-  it('saves the GA field on blur without showing a generic success toast for each keystroke', async () => {
-    const user = userEvent.setup();
-    renderSettings({
-      ...BASE_CONFIG,
-      globals: [
-        {
-          id: 'global_1',
-          name: 'Outside Temperature',
-          type: 'info',
-          category: 'temperature',
-          statusGroupAddress: '1/2/3',
-          dpt: 'DPT9.001',
-        },
-      ],
-    });
-
-    await user.click(screen.getByRole('button', { name: /global info & alarms/i }));
-
-    const gaInput = screen.getByDisplayValue('1/2/3');
-    await user.clear(gaInput);
-    await user.type(gaInput, '1/2/30');
-
-    expect(api.updateConfig).not.toHaveBeenCalled();
-    expect(addToast).not.toHaveBeenCalledWith('Globals saved', 'success');
-
-    await user.tab();
-
-    await waitFor(() => {
-      expect(api.updateConfig).toHaveBeenCalledWith({
-        globals: [
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedAreas: [expect.objectContaining({ id: 'shared-garden', name: 'Garden' })],
+        }),
+        apartments: expect.arrayContaining([
           expect.objectContaining({
-            id: 'global_1',
-            statusGroupAddress: '1/2/30',
+            id: 'apartment_1',
+            floors: expect.arrayContaining([
+              expect.objectContaining({ id: 'east-living', name: 'Living' }),
+              expect.objectContaining({ name: 'Bedroom', rooms: [] }),
+            ]),
           }),
-        ],
-      });
+          expect.objectContaining({
+            id: 'apartment_2',
+            floors: [expect.objectContaining({ id: 'west-living', name: 'West Living' })],
+          }),
+        ]),
+      }));
     });
-    expect(addToast).not.toHaveBeenCalledWith('Globals saved', 'success');
+  });
+
+  it('creates a shared area from the Add Area modal in the shared building scope', async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole('button', { name: 'Add Area' }));
+    await user.type(screen.getByPlaceholderText('e.g. Garden'), 'Garage');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /create area/i }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedAreas: expect.arrayContaining([
+            expect.objectContaining({ id: 'shared-garden', name: 'Garden' }),
+            expect.objectContaining({ name: 'Garage', rooms: [] }),
+          ]),
+        }),
+        apartments: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'apartment_1',
+            floors: [expect.objectContaining({ id: 'east-living', name: 'Living' })],
+          }),
+        ]),
+      }));
+    });
+  });
+
+  it('persists mixed private and shared area order back into apartment.areaOrder', async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole('button', { name: 'Reverse Areas' }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedAreas: [expect.objectContaining({ id: 'shared-garden', name: 'Garden' })],
+        }),
+        apartments: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'apartment_1',
+            areaOrder: ['shared-garden', 'east-living'],
+            floors: [expect.objectContaining({ id: 'east-living', name: 'Living' })],
+          }),
+        ]),
+      }));
+    });
   });
 });
 
-describe('Settings — ETS modal filtering', () => {
-  const CONFIG_WITH_ETS = {
-    ...CONFIG_WITH_EXISTING_FUNCTIONS,
-    importedGroupAddressesFileName: 'ets-export.xml',
-    importedGroupAddresses: [
-      { address: '1/1/2', name: 'Living Room - Ceiling Light Status', functionType: 'switch', supported: true },
-      { address: '2/1/6', name: 'Living Room - Blind Position Status', functionType: 'percentage', supported: true },
-      { address: '2/1/7', name: 'Living Room - Blind Moving', functionType: 'percentage', supported: true },
-      { address: '3/5/4', name: 'Living Room - Scene Control', functionType: 'scene', supported: true },
-      { address: '5/1/1', name: 'Living Room - Temperature', functionType: 'temperature', dpt: 'DPT9.001', supported: true },
-      { address: '6/1/1', name: 'Outside Temperature', functionType: 'temperature', dpt: 'DPT9.001', supported: true },
-      { address: '6/1/2', name: 'Rain Alarm', functionType: 'switch', dpt: 'DPT1.001', supported: true },
-    ]
-  };
-
-  it('assigns imported ETS status and moving addresses to existing function fields', async () => {
+describe('Settings — custom confirmations', () => {
+  it('uses the custom confirm dialog instead of window.confirm when deleting an area', async () => {
     const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ETS);
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    renderSettings();
 
-    const feedbackButtons = screen.getAllByRole('button', { name: /search ets addresses for feedback ga/i });
-    await user.click(feedbackButtons[0]);
-    expect(await screen.findByText(/filtered list: switch\/status group addresses only/i)).toBeInTheDocument();
-    await user.click(await screen.findByRole('button', { name: /living room - ceiling light status/i }));
-    expect(screen.getByDisplayValue('1/1/2')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Delete First Area' }));
 
-    const movingButtons = screen.getAllByRole('button', { name: /search ets addresses for moving ga/i });
-    await user.click(movingButtons[0]);
-    expect(await screen.findByText(/filtered list: blind\/percentage group addresses only/i)).toBeInTheDocument();
-    await user.click(await screen.findByRole('button', { name: /living room - blind moving/i }));
-    expect(screen.getByDisplayValue('2/1/7')).toBeInTheDocument();
+    expect(screen.getByText('Delete Area')).toBeInTheDocument();
+    expect(screen.getByText('"Living" contains 1 room(s). Delete everything?')).toBeInTheDocument();
+    expect(confirmSpy).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        apartments: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'apartment_1',
+            floors: [],
+            areaOrder: ['shared-garden'],
+          }),
+        ]),
+      }));
+    });
+  });
+});
+
+describe('Settings — shared information and apartment alarms', () => {
+  it('stores new shared information in the building scope only', async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole('button', { name: /global info & alarms/i }));
+    await user.click(screen.getByRole('button', { name: /add shared information/i }));
+    await user.type(screen.getByPlaceholderText('Name (e.g. Outside Temperature)'), 'Wind');
+    await user.click(screen.getByRole('button', { name: /save item/i }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedInfos: expect.arrayContaining([
+            expect.objectContaining({ id: 'info-1', name: 'Outside Temperature' }),
+            expect.objectContaining({ name: 'Wind', type: 'info', category: 'temperature' }),
+          ]),
+        }),
+        apartments: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'apartment_1',
+            alarms: [expect.objectContaining({ id: 'alarm-1', name: 'Rain Alarm' })],
+          }),
+        ]),
+      }));
+    });
   });
 
-  it('assigns imported scene GA to room scene GA', async () => {
+  it('stores new apartment alarms only inside the active apartment', async () => {
     const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ETS);
+    renderSettings();
 
-    await user.click(screen.getByRole('button', { name: /search ets addresses for scene ga/i }));
-    expect(await screen.findByText(/filtered list: scene group addresses only/i)).toBeInTheDocument();
-    await user.click(await screen.findByRole('button', { name: /living room - scene control/i }));
-    expect(screen.getByDisplayValue('3/5/4')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /global info & alarms/i }));
+    await user.click(screen.getByRole('button', { name: /add alarm/i }));
+    await user.type(screen.getByPlaceholderText('Name (e.g. Rain Alarm)'), 'Window Alarm');
+    await user.click(screen.getByRole('button', { name: /save item/i }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedInfos: [expect.objectContaining({ id: 'info-1', name: 'Outside Temperature' })],
+        }),
+        apartments: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'apartment_1',
+            alarms: expect.arrayContaining([
+              expect.objectContaining({ id: 'alarm-1', name: 'Rain Alarm' }),
+              expect.objectContaining({ name: 'Window Alarm', type: 'alarm' }),
+            ]),
+          }),
+          expect.objectContaining({
+            id: 'apartment_2',
+            alarms: [],
+          }),
+        ]),
+      }));
+    });
   });
 
-  it('opens the room temperature picker with a DPT 9.x filter', async () => {
-    const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ETS);
-
-    await user.click(screen.getByRole('button', { name: /search ets addresses for room temperature ga/i }));
-    expect(await screen.findByText(/filtered list: matching dpt 9\.x only/i)).toBeInTheDocument();
-    expect(screen.queryByText(/rain alarm/i)).not.toBeInTheDocument();
-  });
-
-  it('opens global info and alarm pickers with the correct DPT filters', async () => {
+  it('uses the apartment ETS XML for shared GA browsing when configured', async () => {
     const user = userEvent.setup();
     renderSettings({
-      ...CONFIG_WITH_ETS,
-      globals: [
-        { id: 'g1', name: 'Outside Temperature', type: 'info', category: 'temperature', statusGroupAddress: '', dpt: '' },
-        { id: 'g2', name: 'Rain Alarm', type: 'alarm', category: 'alarm', statusGroupAddress: '', dpt: '' },
-      ],
+      ...FULL_CONFIG,
+      building: {
+        ...FULL_CONFIG.building,
+        sharedUsesApartmentImportedGroupAddresses: true,
+      },
     });
 
     await user.click(screen.getByRole('button', { name: /global info & alarms/i }));
+    await user.click(screen.getAllByTitle('Browse ETS addresses')[0]);
 
-    const infoCard = screen.getByDisplayValue('Outside Temperature').closest('.function-card');
-    const infoBrowseButton = within(infoCard).getByTitle('Browse ETS addresses');
-    await user.click(infoBrowseButton);
-    expect(await screen.findByText(/filtered list: matching dpt 9\.x only/i)).toBeInTheDocument();
-    expect(screen.queryByText(/rain alarm/i)).not.toBeInTheDocument();
-
-    await user.click(screen.getByTitle('Close'));
-
-    const alarmCard = screen.getByDisplayValue('Rain Alarm').closest('.function-card');
-    const alarmBrowseButton = within(alarmCard).getByTitle('Browse ETS addresses');
-    await user.click(alarmBrowseButton);
-    expect(await screen.findByText(/filtered list: matching dpt 1\.x only/i)).toBeInTheDocument();
-    expect(screen.queryByText(/outside temperature/i)).not.toBeInTheDocument();
-  });
-});
-
-
-// ── Philips Hue ───────────────────────────────────────────────────────────────
-
-describe('Settings — Hue: Add Hue Lamp', () => {
-  it('shows "Add Hue Lamp" button in room when paired', () => {
-    renderSettings(CONFIG_WITH_ROOM, { paired: true, bridgeIp: '192.168.1.65' });
-    expect(screen.getByRole('button', { name: /add hue lamp/i })).toBeInTheDocument();
-  });
-
-  it('opens lamp selection modal on click', async () => {
-    const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ROOM, { paired: true, bridgeIp: '192.168.1.65' });
-
-    await user.click(screen.getByRole('button', { name: /add hue lamp/i }));
-
-    await waitFor(() => {
-      expect(api.getHueLights).toHaveBeenCalled();
-      expect(screen.getByText('Leselampe')).toBeInTheDocument();
-    });
-  });
-
-  it('adds selected lamp to room functions', async () => {
-    const user = userEvent.setup();
-    renderSettings(CONFIG_WITH_ROOM, { paired: true, bridgeIp: '192.168.1.65' });
-
-    await user.click(screen.getByRole('button', { name: /add hue lamp/i }));
-
-    await waitFor(() => screen.getByText('Leselampe'));
-    await user.click(screen.getByText('Leselampe'));
-
-    expect(addToast).toHaveBeenCalledWith(expect.stringContaining('Leselampe'), 'success');
-  });
-
-  it('does not show "Add Hue Lamp" button when not paired', () => {
-    renderSettings(CONFIG_WITH_ROOM, { paired: false, bridgeIp: '' });
-    expect(screen.queryByRole('button', { name: /add hue lamp/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('knx-group-address-modal')).toBeInTheDocument();
+    expect(screen.getByText('file:apartment.xml')).toBeInTheDocument();
+    expect(screen.getByText('count:1')).toBeInTheDocument();
   });
 });

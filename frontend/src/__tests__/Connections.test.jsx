@@ -1,159 +1,294 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Connections from '../Connections';
 import * as api from '../configApi';
+import { buildApartmentView } from '../appModel';
 
 vi.mock('../configApi', () => ({
   updateConfig: vi.fn(),
   discoverHueBridge: vi.fn(),
   pairHueBridge: vi.fn(),
   unpairHueBridge: vi.fn(),
+  loadDevConfig: vi.fn(),
+}));
+
+vi.mock('../components/KNXGroupAddressModal', () => ({
+  KNXGroupAddressModal: ({ isOpen, title, helperText, onImport, onClear }) => (
+    isOpen ? (
+      <div data-testid="knx-group-address-modal">
+        <div>{title}</div>
+        <div>{helperText}</div>
+        <button
+          onClick={() => onImport?.([{ address: '1/2/3', name: 'Imported Address', supported: true }], `${title}.xml`)}
+        >
+          Import mock XML
+        </button>
+        <button onClick={() => onClear?.()}>Clear mock XML</button>
+      </div>
+    ) : null
+  ),
 }));
 
 const addToast = vi.fn();
 const fetchConfig = vi.fn();
+const applyConfig = vi.fn();
+const navigateToApartment = vi.fn();
 
-const BASE_CONFIG = {
-  knxIp: '192.168.1.85',
-  knxPort: 3671,
-  hue: { bridgeIp: '', apiKey: '' },
+const FULL_CONFIG = {
+  version: 2,
+  building: {
+    sharedAccessApartmentId: 'apartment_1',
+    sharedUsesApartmentImportedGroupAddresses: false,
+    sharedInfos: [{ id: 'info-1', name: 'Outside Temperature', type: 'info', category: 'temperature' }],
+    sharedAreas: [{ id: 'shared-garden', name: 'Garden', rooms: [] }],
+    sharedImportedGroupAddresses: [{ address: '1/7/1', name: 'Garden Weather', supported: true }],
+    sharedImportedGroupAddressesFileName: 'shared.xml',
+  },
+  apartments: [
+    {
+      id: 'apartment_1',
+      name: 'Wohnung Ost',
+      slug: 'wohnung-ost',
+      knxIp: '192.168.1.10',
+      knxPort: 3671,
+      hue: { bridgeIp: '', apiKey: '' },
+      floors: [{ id: 'living', name: 'Living', rooms: [] }],
+      areaOrder: ['living', 'shared-garden'],
+      alarms: [{ id: 'alarm-1', name: 'Rain Alarm', type: 'alarm', category: 'alarm' }],
+      importedGroupAddresses: [{ address: '2/1/1', name: 'East Line', supported: true }],
+      importedGroupAddressesFileName: 'ost.xml',
+    },
+    {
+      id: 'apartment_2',
+      name: 'Wohnung West',
+      slug: 'wohnung-west',
+      knxIp: '192.168.1.20',
+      knxPort: 3671,
+      hue: { bridgeIp: '', apiKey: '' },
+      floors: [{ id: 'west-floor', name: 'West Floor', rooms: [] }],
+      areaOrder: ['west-floor', 'shared-garden'],
+      alarms: [],
+      importedGroupAddresses: [],
+      importedGroupAddressesFileName: '',
+    },
+  ],
 };
 
-function renderConnections(config = BASE_CONFIG, hueStatus = { paired: false, bridgeIp: '' }) {
+function renderConnections(fullConfig = FULL_CONFIG, apartmentSlug = 'wohnung-ost') {
+  const { apartment, apartmentConfig } = buildApartmentView(fullConfig, apartmentSlug);
+
   return render(
     <Connections
-      config={config}
+      fullConfig={fullConfig}
+      apartment={apartment}
+      config={apartmentConfig}
       fetchConfig={fetchConfig}
+      applyConfig={applyConfig}
       addToast={addToast}
-      hueStatus={hueStatus}
-      setHueStatus={vi.fn()}
+      knxStatus={{ connected: true, msg: 'ok' }}
+      sharedKnxStatus={{ connected: false, msg: 'offline' }}
+      hueStatus={{ paired: false, bridgeIp: '' }}
+      navigateToApartment={navigateToApartment}
     />
   );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  api.updateConfig.mockResolvedValue({ success: true, config: BASE_CONFIG });
+  api.updateConfig.mockImplementation(async (nextConfig) => ({ success: true, config: nextConfig }));
   api.discoverHueBridge.mockResolvedValue({ success: true, bridges: [{ internalipaddress: '192.168.1.65' }] });
   api.pairHueBridge.mockResolvedValue({ success: true, apiKey: 'new-api-key' });
   api.unpairHueBridge.mockResolvedValue({ success: true });
+  api.loadDevConfig.mockResolvedValue({ success: true });
 });
 
-describe('Connections — KNX Interface', () => {
-  it('renders KNX section heading', () => {
+describe('Connections — multi-apartment setup grouping', () => {
+  it('renders the setup page with apartment, shared, and management groups', () => {
     renderConnections();
-    expect(screen.getByText('KNX Interface')).toBeInTheDocument();
-  });
 
-  it('populates IP input with config value', () => {
-    renderConnections();
-    const ipInput = screen.getByPlaceholderText('192.168.1.50');
-    expect(ipInput.value).toBe('192.168.1.85');
+    expect(screen.getByText('Building Setup')).toBeInTheDocument();
+    expect(screen.getByText('Current Apartment')).toBeInTheDocument();
+    expect(screen.getByText('Shared Building Setup')).toBeInTheDocument();
+    expect(screen.getByText('Manage Apartments')).toBeInTheDocument();
+    expect(screen.getByText(/Shared KNX line via Wohnung Ost offline/i)).toBeInTheDocument();
   });
+});
 
-  it('populates port input with config value', () => {
-    renderConnections();
-    const portInput = screen.getByPlaceholderText('3671');
-    expect(portInput.value).toBe('3671');
-  });
-
-  it('calls updateConfig with new IP when Save is clicked', async () => {
+describe('Connections — apartment-specific persistence', () => {
+  it('saves only the current apartment identity and gateway settings', async () => {
     const user = userEvent.setup();
     renderConnections();
-    const ipInput = screen.getByPlaceholderText('192.168.1.50');
+
+    const identityHeading = screen.getByText('Identity & KNX Gateway');
+    const identityCard = identityHeading.closest('section');
+    const [nameInput, slugInput, ipInput] = within(identityCard).getAllByRole('textbox');
+    const portInput = within(identityCard).getByRole('spinbutton');
+
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Wohnung Ost Neu');
+    await user.clear(slugInput);
+    await user.type(slugInput, 'wohn-ost-neu');
     await user.clear(ipInput);
-    await user.type(ipInput, '10.0.0.1');
-    const saveBtn = screen.getByRole('button', { name: /save/i });
-    await user.click(saveBtn);
-    expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({ knxIp: '10.0.0.1' }));
-  });
+    await user.type(ipInput, '192.168.50.10');
+    await user.clear(portInput);
+    await user.type(portInput, '3675');
+    await user.click(screen.getByRole('button', { name: /save apartment/i }));
 
-  it('shows success toast after saving KNX settings', async () => {
-    const user = userEvent.setup();
-    renderConnections();
-    await user.click(screen.getByRole('button', { name: /save/i }));
-    await waitFor(() => expect(addToast).toHaveBeenCalledWith('Connection settings saved', 'success'));
-  });
-});
-
-describe('Connections — Hue: not paired', () => {
-  it('renders Philips Hue section', () => {
-    renderConnections();
-    expect(screen.getByText('Philips Hue')).toBeInTheDocument();
-  });
-
-  it('shows Discover and manual IP buttons when not paired', () => {
-    renderConnections();
-    expect(screen.getByRole('button', { name: /discover/i })).toBeInTheDocument();
-  });
-
-  it('discovers bridge and fills IP on success', async () => {
-    const user = userEvent.setup();
-    renderConnections();
-    await user.click(screen.getByRole('button', { name: /discover/i }));
-    await waitFor(() => { expect(api.discoverHueBridge).toHaveBeenCalled(); });
-  });
-
-  it('shows error when no bridges found during discovery', async () => {
-    api.discoverHueBridge.mockResolvedValueOnce({ success: true, bridges: [] });
-    const user = userEvent.setup();
-    renderConnections();
-    await user.click(screen.getByRole('button', { name: /discover/i }));
-    await waitFor(() => { expect(screen.getByText(/No Hue Bridge found/i)).toBeInTheDocument(); });
-  });
-});
-
-describe('Connections — Hue: pairing flow', () => {
-  it('shows Pair button after bridge is found', async () => {
-    const user = userEvent.setup();
-    renderConnections();
-    await user.click(screen.getByRole('button', { name: /discover/i }));
-    await waitFor(() => { expect(screen.getByRole('button', { name: /pair/i })).toBeInTheDocument(); });
-  });
-
-  it('calls pairHueBridge and shows success toast when pairing succeeds', async () => {
-    const user = userEvent.setup();
-    renderConnections();
-    await user.click(screen.getByRole('button', { name: /discover/i }));
-    await waitFor(() => screen.getByRole('button', { name: /pair/i }));
-    await user.click(screen.getByRole('button', { name: /pair/i }));
     await waitFor(() => {
-      expect(api.pairHueBridge).toHaveBeenCalled();
-      expect(addToast).toHaveBeenCalledWith('Hue Bridge paired!', 'success');
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedAccessApartmentId: 'apartment_1',
+          sharedImportedGroupAddressesFileName: 'shared.xml',
+        }),
+        apartments: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'apartment_1',
+            name: 'Wohnung Ost Neu',
+            slug: 'wohn-ost-neu',
+            knxIp: '192.168.50.10',
+            knxPort: 3675,
+          }),
+          expect.objectContaining({
+            id: 'apartment_2',
+            name: 'Wohnung West',
+            slug: 'wohnung-west',
+          }),
+        ]),
+      }));
+    });
+    expect(addToast).toHaveBeenCalledWith('Apartment settings saved', 'success');
+  });
+
+  it('opens the apartment ETS modal and persists imported addresses in the apartment scope', async () => {
+    const user = userEvent.setup();
+    renderConnections();
+
+    await user.click(screen.getByRole('button', { name: /manage apartment ets xml/i }));
+    expect(screen.getByTestId('knx-group-address-modal')).toBeInTheDocument();
+    expect(screen.getByText('Apartment ETS XML import')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /import mock xml/i }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        apartments: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'apartment_1',
+            importedGroupAddresses: [expect.objectContaining({ address: '1/2/3', name: 'Imported Address' })],
+            importedGroupAddressesFileName: 'Apartment ETS XML import.xml',
+          }),
+        ]),
+        building: expect.objectContaining({
+          sharedImportedGroupAddressesFileName: 'shared.xml',
+        }),
+      }));
+    });
+  });
+});
+
+describe('Connections — shared building setup', () => {
+  it('saves which apartment provides shared KNX access', async () => {
+    const user = userEvent.setup();
+    renderConnections();
+
+    await user.selectOptions(screen.getByRole('combobox'), 'apartment_2');
+    await user.click(screen.getByRole('button', { name: /save shared setup/i }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedAccessApartmentId: 'apartment_2',
+        }),
+      }));
+    });
+    expect(addToast).toHaveBeenCalledWith('Shared building settings saved', 'success');
+  });
+
+  it('opens the shared ETS modal and persists imported addresses in the building scope', async () => {
+    const user = userEvent.setup();
+    renderConnections();
+
+    await user.click(screen.getByRole('button', { name: /manage shared ets xml/i }));
+    expect(screen.getByText('Shared ETS XML import')).toBeInTheDocument();
+    expect(screen.getByText(/shared areas and shared information/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /import mock xml/i }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedImportedGroupAddresses: [expect.objectContaining({ address: '1/2/3', name: 'Imported Address' })],
+          sharedImportedGroupAddressesFileName: 'Shared ETS XML import.xml',
+        }),
+        apartments: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'apartment_1',
+            importedGroupAddressesFileName: 'ost.xml',
+          }),
+        ]),
+      }));
     });
   });
 
-  it('shows pairing error when link button not pressed', async () => {
-    api.pairHueBridge.mockResolvedValueOnce({ success: false, error: 'link button not pressed' });
+  it('can switch shared browsing to the apartment ETS XML and clears dedicated shared XML after confirmation', async () => {
     const user = userEvent.setup();
     renderConnections();
-    await user.click(screen.getByRole('button', { name: /discover/i }));
-    await waitFor(() => screen.getByRole('button', { name: /pair/i }));
-    await user.click(screen.getByRole('button', { name: /pair/i }));
-    await waitFor(() => { expect(screen.getByText(/link button not pressed/i)).toBeInTheDocument(); });
+
+    await user.click(screen.getByRole('checkbox', { name: /use apartment's ets xml/i }));
+    expect(screen.getByText('Use Apartment ETS XML')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Use Apartment XML' }));
+
+    expect(screen.queryByRole('button', { name: /manage shared ets xml/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/using the current apartment ets xml for shared address browsing/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /save shared setup/i }));
+
+    await waitFor(() => {
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        building: expect.objectContaining({
+          sharedUsesApartmentImportedGroupAddresses: true,
+          sharedImportedGroupAddresses: [],
+          sharedImportedGroupAddressesFileName: '',
+        }),
+      }));
+    });
   });
 });
 
-describe('Connections — Hue: paired state', () => {
-  it('shows "Paired" badge when hueStatus.paired=true', () => {
-    renderConnections(BASE_CONFIG, { paired: true, bridgeIp: '192.168.1.65' });
-    expect(screen.getByText('Paired')).toBeInTheDocument();
-    expect(screen.getByText(/192.168.1.65/)).toBeInTheDocument();
-  });
-
-  it('shows Unpair button when paired', () => {
-    renderConnections(BASE_CONFIG, { paired: true, bridgeIp: '192.168.1.65' });
-    expect(screen.getByRole('button', { name: /unpair/i })).toBeInTheDocument();
-  });
-
-  it('calls unpairHueBridge and shows toast when Unpair is clicked', async () => {
+describe('Connections — apartment management', () => {
+  it('navigates to another apartment from the apartment list', async () => {
     const user = userEvent.setup();
-    renderConnections(BASE_CONFIG, { paired: true, bridgeIp: '192.168.1.65' });
-    await user.click(screen.getByRole('button', { name: /unpair/i }));
+    renderConnections();
+
+    await user.click(screen.getByRole('button', { name: /wohnung west/i }));
+
+    expect(navigateToApartment).toHaveBeenCalledWith('wohnung-west');
+  });
+
+  it('creates a new apartment with a unique slug and navigates there', async () => {
+    const user = userEvent.setup();
+    renderConnections();
+
+    await user.type(screen.getByPlaceholderText('e.g. Wohnung West'), 'Wohnung West');
+    await user.click(screen.getByRole('button', { name: /create apartment/i }));
+
     await waitFor(() => {
-      expect(api.unpairHueBridge).toHaveBeenCalled();
-      expect(addToast).toHaveBeenCalledWith('Hue Bridge unpaired', 'success');
+      expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+        apartments: expect.arrayContaining([
+          expect.objectContaining({ id: 'apartment_1', slug: 'wohnung-ost' }),
+          expect.objectContaining({ id: 'apartment_2', slug: 'wohnung-west' }),
+          expect.objectContaining({
+            name: 'Wohnung West',
+            slug: 'wohnung-west-2',
+            floors: [expect.objectContaining({ name: 'Ground Floor' })],
+          }),
+        ]),
+      }));
     });
+
+    expect(navigateToApartment).toHaveBeenCalledWith('wohnung-west-2');
+    expect(addToast).toHaveBeenCalledWith('Apartment "Wohnung West" created', 'success');
   });
 });

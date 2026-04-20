@@ -3,7 +3,7 @@
  * Tests navigation, KNX status display, toast system, and socket event handling.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import { triggerSocketEvent, resetSocketMock } from '../__mocks__/socket.io-client';
@@ -55,6 +55,7 @@ vi.mock('socket.io-client', async () => {
 beforeEach(() => {
   resetSocketMock();
   vi.clearAllMocks();
+  window.history.replaceState({}, '', '/');
 });
 
 describe('App — rendering', () => {
@@ -87,6 +88,100 @@ describe('App — rendering', () => {
 
     expect(screen.getByText(/No rooms on/i)).toBeInTheDocument();
   });
+
+  it('loads the bookmarked apartment and section from the URL', async () => {
+    vi.mocked((await import('../configApi')).getConfig).mockResolvedValueOnce({
+      version: 2,
+      building: {
+        sharedAccessApartmentId: 'apartment_1',
+        sharedInfos: [],
+        sharedAreas: [],
+        sharedImportedGroupAddresses: [],
+        sharedImportedGroupAddressesFileName: '',
+      },
+      apartments: [
+        {
+          id: 'apartment_1',
+          name: 'Wohnung Ost',
+          slug: 'wohnung-ost',
+          knxIp: '192.168.1.85',
+          knxPort: 3671,
+          hue: { bridgeIp: '', apiKey: '' },
+          floors: [{ id: 'floor-1', name: 'Living', rooms: [] }],
+          alarms: [],
+          importedGroupAddresses: [],
+          importedGroupAddressesFileName: '',
+        },
+        {
+          id: 'apartment_2',
+          name: 'Wohnung West',
+          slug: 'wohnung-west',
+          knxIp: '192.168.1.86',
+          knxPort: 3671,
+          hue: { bridgeIp: '', apiKey: '' },
+          floors: [{ id: 'west-floor', name: 'West Floor', rooms: [] }],
+          alarms: [],
+          importedGroupAddresses: [],
+          importedGroupAddressesFileName: '',
+        },
+      ],
+    });
+
+    window.history.replaceState({}, '', '/wohnung-west/rooms');
+    await act(async () => { render(<App />); });
+
+    expect(screen.getByPlaceholderText(/Add room to West Floor/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Wohnung West')).toBeInTheDocument();
+  });
+
+  it('keeps the current section when switching apartments via the switcher', async () => {
+    const user = userEvent.setup();
+    vi.mocked((await import('../configApi')).getConfig).mockResolvedValueOnce({
+      version: 2,
+      building: {
+        sharedAccessApartmentId: 'apartment_1',
+        sharedInfos: [],
+        sharedAreas: [],
+        sharedImportedGroupAddresses: [],
+        sharedImportedGroupAddressesFileName: '',
+      },
+      apartments: [
+        {
+          id: 'apartment_1',
+          name: 'Wohnung Ost',
+          slug: 'wohnung-ost',
+          knxIp: '192.168.1.85',
+          knxPort: 3671,
+          hue: { bridgeIp: '', apiKey: '' },
+          floors: [{ id: 'floor-1', name: 'Living', rooms: [] }],
+          alarms: [],
+          importedGroupAddresses: [],
+          importedGroupAddressesFileName: '',
+        },
+        {
+          id: 'apartment_2',
+          name: 'Wohnung West',
+          slug: 'wohnung-west',
+          knxIp: '192.168.1.86',
+          knxPort: 3671,
+          hue: { bridgeIp: '', apiKey: '' },
+          floors: [{ id: 'west-floor', name: 'West Floor', rooms: [] }],
+          alarms: [],
+          importedGroupAddresses: [],
+          importedGroupAddressesFileName: '',
+        },
+      ],
+    });
+
+    window.history.replaceState({}, '', '/wohnung-ost/connections');
+    await act(async () => { render(<App />); });
+
+    const switcher = screen.getAllByRole('combobox')[0];
+    await user.selectOptions(switcher, 'wohnung-west');
+
+    expect(window.location.pathname).toBe('/wohnung-west/connections');
+    expect(screen.getByText('Building Setup')).toBeInTheDocument();
+  });
 });
 
 describe('App — KNX status badge', () => {
@@ -113,6 +208,58 @@ describe('App — KNX status badge', () => {
     });
 
     expect(screen.getByText(/offline/i)).toBeInTheDocument();
+  });
+
+  it('shows the current apartment status when multiple apartment statuses exist', async () => {
+    const user = userEvent.setup();
+    vi.mocked((await import('../configApi')).getConfig).mockResolvedValueOnce({
+      version: 2,
+      building: {
+        sharedAccessApartmentId: 'apartment_1',
+        sharedInfos: [],
+        sharedAreas: [],
+        sharedImportedGroupAddresses: [],
+        sharedImportedGroupAddressesFileName: '',
+      },
+      apartments: [
+        {
+          id: 'apartment_1',
+          name: 'Wohnung Ost',
+          slug: 'wohnung-ost',
+          knxIp: '192.168.1.85',
+          knxPort: 3671,
+          hue: { bridgeIp: '', apiKey: '' },
+          floors: [{ id: 'floor-1', name: 'Living', rooms: [] }],
+          alarms: [],
+          importedGroupAddresses: [],
+          importedGroupAddressesFileName: '',
+        },
+        {
+          id: 'apartment_2',
+          name: 'Wohnung West',
+          slug: 'wohnung-west',
+          knxIp: '192.168.1.86',
+          knxPort: 3671,
+          hue: { bridgeIp: '', apiKey: '' },
+          floors: [{ id: 'west-floor', name: 'West Floor', rooms: [] }],
+          alarms: [],
+          importedGroupAddresses: [],
+          importedGroupAddressesFileName: '',
+        },
+      ],
+    });
+
+    await act(async () => { render(<App />); });
+
+    await act(async () => {
+      triggerSocketEvent('knx_status', { apartmentId: 'apartment_1', scope: 'apartment', connected: false, msg: 'offline' });
+      triggerSocketEvent('knx_status', { apartmentId: 'apartment_2', scope: 'apartment', connected: true, msg: 'connected' });
+    });
+
+    expect(screen.getByText(/Wohnung Ost Offline/i)).toBeInTheDocument();
+
+    await user.selectOptions(screen.getAllByRole('combobox')[0], 'wohnung-west');
+    expect(screen.getByText(/Wohnung West Connected/i)).toBeInTheDocument();
   });
 });
 

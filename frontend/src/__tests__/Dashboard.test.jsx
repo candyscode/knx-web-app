@@ -149,6 +149,77 @@ describe('Dashboard — globals widget', () => {
   });
 });
 
+describe('Dashboard — shared area behavior', () => {
+  it('triggers KNX actions in shared areas with shared scope', async () => {
+    const user = userEvent.setup();
+    const setDeviceStates = vi.fn();
+    const setSharedDeviceStates = vi.fn();
+
+    renderDashboard({
+      floors: [
+        { id: 'private-floor', name: 'Living', rooms: [] },
+        {
+          id: 'shared-garden',
+          name: 'Garden',
+          isShared: true,
+          rooms: [{
+            id: 'shared-room',
+            name: 'Garden Lights',
+            sceneGroupAddress: '',
+            scenes: [],
+            functions: [SWITCH_FUNC],
+          }],
+        },
+      ],
+      deviceStates: { '1/0/1': false },
+      setDeviceStates,
+      setSharedDeviceStates,
+    });
+
+    await user.click(screen.getByText('Garden'));
+    await user.click(screen.getByText('Main Light').closest('button'));
+
+    expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+      apartmentId: 'apartment_1',
+      scope: 'shared',
+      type: 'switch',
+    }));
+    expect(setSharedDeviceStates).toHaveBeenCalled();
+    expect(setDeviceStates).not.toHaveBeenCalled();
+  });
+
+  it('triggers Hue actions in shared areas with shared scope', async () => {
+    const user = userEvent.setup();
+    const setHueStates = vi.fn();
+    const setSharedHueStates = vi.fn();
+
+    renderDashboard({
+      floors: [
+        { id: 'private-floor', name: 'Living', rooms: [] },
+        {
+          id: 'shared-garden',
+          name: 'Garden',
+          isShared: true,
+          rooms: [{ ...ROOM_WITH_HUE, id: 'shared-hue-room' }],
+        },
+      ],
+      hueStates: { hue_1: false },
+      setHueStates,
+      setSharedHueStates,
+    });
+
+    await user.click(screen.getByText('Garden'));
+    await user.click(screen.getByText('Ambient Light').closest('button'));
+
+    expect(api.triggerHueAction).toHaveBeenCalledWith('1', true, expect.objectContaining({
+      apartmentId: 'apartment_1',
+      scope: 'shared',
+    }));
+    expect(setSharedHueStates).toHaveBeenCalled();
+    expect(setHueStates).not.toHaveBeenCalled();
+  });
+});
+
 describe('Dashboard — light scenes', () => {
   it('renders light scene pills', () => {
     renderDashboard({ rooms: [ROOM_WITH_SCENES] });
