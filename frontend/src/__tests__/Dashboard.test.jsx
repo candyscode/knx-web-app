@@ -145,7 +145,9 @@ describe('Dashboard — globals widget', () => {
     expect(screen.getByText('Outside Temperature')).toBeInTheDocument();
     expect(screen.getByText('21.4 °C')).toBeInTheDocument();
     expect(screen.getByText('Active Alarms')).toBeInTheDocument();
-    expect(screen.getAllByText((_, node) => node?.textContent?.includes('Rain Alarm') ?? false).length).toBeGreaterThan(0);
+    const rainAlarmPill = screen.getByText('Rain Alarm');
+    expect(rainAlarmPill).toBeInTheDocument();
+    expect(rainAlarmPill.className).toContain('active-alarm-pill');
   });
 
   it('does not render NaN for invalid shared info values', () => {
