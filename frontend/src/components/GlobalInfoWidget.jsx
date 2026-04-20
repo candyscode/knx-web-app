@@ -37,11 +37,11 @@ export default function GlobalInfoWidget({ globals, deviceStates }) {
           <h4 style={{ margin: '0 0 0.75rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fca5a5' }}>
             <AlertTriangle size={18} /> Active Alarms
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div className="scene-pills" style={{ marginBottom: 0 }}>
             {activeAlarms.map(alarm => (
-              <div key={alarm.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fee2e2', fontWeight: 500 }}>
-                • {alarm.name}
-              </div>
+              <span key={alarm.id} className="scene-pill active-alarm-pill">
+                {alarm.name}
+              </span>
             ))}
           </div>
         </div>

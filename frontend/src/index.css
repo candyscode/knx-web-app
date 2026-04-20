@@ -593,6 +593,25 @@ body {
   background: rgba(168, 85, 247, 0.25);
 }
 
+.active-alarm-pill {
+  color: #fee2e2;
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(248, 113, 113, 0.45);
+  cursor: default;
+}
+
+.active-alarm-pill:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(248, 113, 113, 0.55);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.12);
+  transform: none;
+}
+
+.active-alarm-pill:active {
+  transform: none;
+  background: rgba(239, 68, 68, 0.22);
+}
+
 /* ── Room Scenes Settings ───────────────────────── */
 .room-scenes-settings {
   background: rgba(59, 130, 246, 0.04);
