@@ -9,6 +9,7 @@ A local web application for controlling a KNX smart home system with support for
 - [Architecture Overview](#architecture-overview)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Docker Deployment](#docker-deployment)
 - [Starting the App](#starting-the-app)
 - [Configuration](#configuration)
 - [Multi-Apartment Model](#multi-apartment-model)
@@ -69,7 +70,7 @@ We provide a script to securely install Node.js, npm, and the KNX Web App via a 
 Run the following command in your terminal to download and start the installation:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/knx-web-app/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/AI/main/install.sh)
 ```
 
 This script will explain what it's about to do and pause to let you confirm. Under the hood, it performs the following:
@@ -102,6 +103,48 @@ The installation automatically enabled autostart. If you ever need to turn this 
 ```bash
 sudo systemctl disable knx-web-app.service
 ```
+
+---
+
+## Docker Deployment
+
+If you prefer a containerized setup, the repository now includes first-class Docker files for a production deployment that serves the built frontend from the backend on **port `3001`**.
+
+### Quick start
+
+```bash
+mkdir -p data
+docker compose up -d --build
+```
+
+Then open:
+
+- On the same machine: `http://localhost:3001`
+- From another device on your LAN: `http://<docker-host-ip>:3001`
+
+The app configuration is persisted in `./data/config.json` on the host, so rebuilds and upgrades do not wipe your rooms, apartments, KNX settings, or Hue pairing.
+
+### What the container needs
+
+- **Published TCP port `3001`** for the UI, API, and Socket.IO
+- **Outbound UDP `3671`** reachability from the container to the KNX gateway
+- **Outbound HTTP access on your LAN** to reach a Philips Hue bridge, if used
+
+Useful commands:
+
+```bash
+docker compose logs -f
+docker compose ps
+docker compose up -d --build
+docker compose down
+```
+
+### Docker notes
+
+- The app is still a **local-network** application. The Docker host must be able to reach the KNX gateway and Hue bridge directly.
+- Keep the `./data:/app/data` bind mount if you want configuration to survive container rebuilds.
+- If port `3001` is already in use, either stop the conflicting service or change the host-side port mapping in `compose.yaml`.
+- If you change the published port, use the new host-side port in the browser URL. For example, `8080:3001` means browsing to `http://<host-ip>:8080`.
 
 ---
 
