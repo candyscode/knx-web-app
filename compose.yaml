@@ -1,0 +1,14 @@
+services:
+  knx-web-app:
+    build:
+      context: .
+    container_name: knx-web-app
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      KNX_CONFIG_DIR: /app/data
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    init: true
