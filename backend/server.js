@@ -8,6 +8,10 @@ const path = require('path');
 const KnxService = require('./knxService');
 const HueService = require('./hueService');
 const {
+  executeAutomation,
+  getDueAutomations,
+} = require('./automationService');
+const {
   getAllApartmentRooms,
   getAllSharedRooms,
   getApartmentById,
@@ -16,6 +20,7 @@ const {
   normalizeConfigShape,
   normalizeImportedGroupAddresses,
   normalizeAlarm,
+  normalizeAutomation,
   normalizeSharedInfo,
   slugifyApartmentName,
 } = require('./configModel');
@@ -33,6 +38,7 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 const apartmentContexts = new Map();
 
 let config = normalizeConfigShape({});
+let automationExecutionInProgress = false;
 
 function loadConfig() {
   if (!fs.existsSync(CONFIG_FILE)) {
@@ -483,6 +489,12 @@ function applyConfigPatch(payload) {
       : [];
   }
 
+  if (payload.automations !== undefined) {
+    apartment.automations = Array.isArray(payload.automations)
+      ? payload.automations.map(normalizeAutomation).filter(Boolean)
+      : [];
+  }
+
   if (payload.globals !== undefined) {
     apartment.alarms = Array.isArray(payload.globals)
       ? payload.globals.filter((entry) => entry?.type === 'alarm').map(normalizeAlarm).filter(Boolean)
@@ -568,6 +580,84 @@ async function handleExternalSceneTrigger(apartmentId, scope, groupAddress, scen
   await triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumber);
 }
 
+async function performKnxAction({ apartmentId, scope = 'apartment', groupAddress, type, sceneNumber, value }) {
+  const actionContext = getActionContext(apartmentId, scope);
+
+  if (!actionContext?.context?.knxService) {
+    throw new Error('No KNX context available');
+  }
+
+  if (!groupAddress) {
+    throw new Error('Missing group address');
+  }
+
+  if (type === 'scene') {
+    actionContext.context.knxService.writeScene(groupAddress, sceneNumber);
+    await triggerLinkedHueScene(actionContext.apartmentId, scope, groupAddress, sceneNumber);
+    return actionContext;
+  }
+
+  if (type === 'percentage') {
+    actionContext.context.knxService.writeGroupValue(groupAddress, value, 'DPT5.001');
+    return actionContext;
+  }
+
+  actionContext.context.knxService.writeGroupValue(
+    groupAddress,
+    value === true || value === 1 || value === '1',
+    'DPT1'
+  );
+  return actionContext;
+}
+
+function emitKnxActionError(actionContext, scope, error) {
+  const resolvedScope = scope === 'shared' ? 'shared' : 'apartment';
+  const fallbackApartmentId = actionContext?.apartmentId
+    || (resolvedScope === 'shared' ? getSharedAccessApartment(config)?.id : config.apartments[0]?.id);
+
+  io.emit('knx_error', {
+    apartmentId: fallbackApartmentId,
+    scope: resolvedScope,
+    msg: `Action failed on bus: ${error.message}`,
+  });
+}
+
+async function runDueAutomations() {
+  if (automationExecutionInProgress) return;
+
+  automationExecutionInProgress = true;
+  try {
+    const dueAutomations = getDueAutomations(config, new Date());
+    if (dueAutomations.length === 0) return;
+
+    let shouldPersist = false;
+
+    for (const { apartmentId, automation } of dueAutomations) {
+      const result = await executeAutomation(
+        config,
+        apartmentId,
+        automation.id,
+        async (payload) => {
+          await performKnxAction(payload);
+        },
+        new Date()
+      );
+
+      shouldPersist = true;
+
+      result.results
+        .filter((entry) => !entry.success)
+        .forEach((entry) => {
+          emitKnxActionError({ apartmentId }, entry.scope, new Error(entry.error));
+        });
+    }
+
+    if (shouldPersist) saveConfig();
+  } finally {
+    automationExecutionInProgress = false;
+  }
+}
+
 loadConfig();
 syncApartmentContexts();
 config.apartments.forEach((apartment) => {
@@ -575,6 +665,7 @@ config.apartments.forEach((apartment) => {
   if (apartment.knxIp) establishConnection(apartment.id);
   startHuePolling(apartment.id);
 });
+setInterval(runDueAutomations, 30000);
 
 app.get('/api/config', (req, res) => {
   res.json(config);
@@ -632,35 +723,13 @@ app.post('/api/dev/load-config', (req, res) => {
 
 app.post('/api/action', async (req, res) => {
   const { apartmentId, scope = 'apartment', groupAddress, type, sceneNumber, value } = req.body;
-  const actionContext = getActionContext(apartmentId, scope);
-
-  if (!actionContext?.context?.knxService) {
-    res.status(400).json({ success: false, error: 'No KNX context available' });
-    return;
-  }
 
   try {
-    if (type === 'scene') {
-      actionContext.context.knxService.writeScene(groupAddress, sceneNumber);
-      await triggerLinkedHueScene(actionContext.apartmentId, scope, groupAddress, sceneNumber);
-    } else if (type === 'percentage') {
-      actionContext.context.knxService.writeGroupValue(groupAddress, value, 'DPT5.001');
-    } else {
-      actionContext.context.knxService.writeGroupValue(
-        groupAddress,
-        value === true || value === 1 || value === '1',
-        'DPT1'
-      );
-    }
-
+    await performKnxAction({ apartmentId, scope, groupAddress, type, sceneNumber, value });
     res.json({ success: true, message: 'Sent to bus' });
   } catch (error) {
     console.error('Failed to execute action:', error.message);
-    io.emit('knx_error', {
-      apartmentId: actionContext.apartmentId,
-      scope,
-      msg: `Action failed on bus: ${error.message}`,
-    });
+    emitKnxActionError(getActionContext(apartmentId, scope), scope, error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

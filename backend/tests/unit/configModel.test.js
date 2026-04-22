@@ -90,6 +90,77 @@ describe('configModel migration and normalization', () => {
     expect(normalized.building.sharedUsesApartmentImportedGroupAddresses).toBe(true);
   });
 
+  it('normalizes apartment automations and supported action payloads', () => {
+    const normalized = normalizeConfigShape({
+      version: 2,
+      building: {
+        sharedAccessApartmentId: 'apartment_1',
+        sharedInfos: [],
+        sharedAreas: [],
+        sharedImportedGroupAddresses: [],
+        sharedImportedGroupAddressesFileName: '',
+      },
+      apartments: [{
+        id: 'apartment_1',
+        name: 'Wohnung Ost',
+        slug: 'wohnung-ost',
+        floors: [],
+        alarms: [],
+        automations: [{
+          id: 'routine-1',
+          name: 'Morning Routine',
+          enabled: true,
+          time: '06:45',
+          frequency: 'daily',
+          actions: [
+            {
+              id: 'action-1',
+              kind: 'scene',
+              scope: 'shared',
+              areaId: 'shared-garden',
+              roomId: 'room-1',
+              targetId: 'scene-1',
+            },
+            {
+              id: 'action-2',
+              kind: 'function',
+              scope: 'apartment',
+              areaId: 'living',
+              roomId: 'room-2',
+              targetId: 'function-1',
+              targetType: 'percentage',
+              value: '55',
+            },
+          ],
+        }],
+      }],
+    });
+
+    expect(normalized.apartments[0].automations).toEqual([
+      expect.objectContaining({
+        id: 'routine-1',
+        name: 'Morning Routine',
+        enabled: true,
+        time: '06:45',
+        frequency: 'daily',
+        actions: [
+          expect.objectContaining({
+            id: 'action-1',
+            kind: 'scene',
+            scope: 'shared',
+            areaId: 'shared-garden',
+          }),
+          expect.objectContaining({
+            id: 'action-2',
+            kind: 'function',
+            targetType: 'percentage',
+            value: '55',
+          }),
+        ],
+      }),
+    ]);
+  });
+
   it('normalizes imported and persisted ETS DPT formats into backend-safe DPT ids', () => {
     const normalized = normalizeConfigShape({
       version: 2,

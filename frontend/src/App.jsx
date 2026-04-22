@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
-import { Home, Settings as SettingsIcon, Wifi, WifiOff, Plug } from 'lucide-react';
+import { Home, Settings as SettingsIcon, Wifi, WifiOff, Plug, Clock3 } from 'lucide-react';
 import Dashboard from './Dashboard';
 import Settings from './Settings';
 import Connections from './Connections';
+import Automation from './Automation';
 import { getConfig } from './configApi';
 import { buildApartmentPath, buildApartmentView, migrateLegacyConfig, parseAppPath } from './appModel';
 
@@ -301,6 +302,14 @@ function App() {
             >
               <Plug size={18} /><span className="nav-link-text"> Setup</span>
             </button>
+            <button
+              id="nav-automation"
+              className={`nav-link ${route.section === 'automation' ? 'active' : ''}`}
+              onClick={() => apartment && navigateTo(apartment.slug, 'automation')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
+            >
+              <Clock3 size={18} /><span className="nav-link-text"> Automation</span>
+            </button>
           </nav>
         </div>
       </header>
@@ -346,6 +355,17 @@ function App() {
             hueStatus={currentHueStatus}
             addToast={addToast}
             navigateToApartment={(slug) => navigateTo(slug, 'dashboard')}
+          />
+        )}
+
+        {apartment && apartmentConfig && route.section === 'automation' && (
+          <Automation
+            fullConfig={normalizedConfig}
+            apartment={apartment}
+            config={apartmentConfig}
+            fetchConfig={fetchConfig}
+            applyConfig={applyConfig}
+            addToast={addToast}
           />
         )}
       </main>

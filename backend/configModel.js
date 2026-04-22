@@ -96,6 +96,47 @@ function normalizeAlarm(alarm) {
   };
 }
 
+function normalizeAutomationAction(action) {
+  if (!action || typeof action !== 'object') return null;
+
+  const kind = action.kind === 'function' ? 'function' : (action.kind === 'scene' ? 'scene' : null);
+  if (!kind) return null;
+
+  const normalized = {
+    id: typeof action.id === 'string' ? action.id : `automation_action_${Date.now()}`,
+    kind,
+    scope: action.scope === 'shared' ? 'shared' : 'apartment',
+    areaId: typeof action.areaId === 'string' ? action.areaId : '',
+    roomId: typeof action.roomId === 'string' ? action.roomId : '',
+    targetId: typeof action.targetId === 'string' ? action.targetId : '',
+    targetType: typeof action.targetType === 'string' ? action.targetType : (kind === 'scene' ? 'scene' : ''),
+  };
+
+  if (kind === 'function') {
+    normalized.value = action.value ?? '';
+  }
+
+  return normalized;
+}
+
+function normalizeAutomation(automation) {
+  if (!automation || typeof automation !== 'object') return null;
+
+  return {
+    id: typeof automation.id === 'string' ? automation.id : `automation_${Date.now()}`,
+    name: typeof automation.name === 'string' && automation.name.trim() ? automation.name.trim() : 'Routine',
+    enabled: automation.enabled !== false,
+    time: typeof automation.time === 'string' && /^\d{2}:\d{2}$/.test(automation.time) ? automation.time : '07:00',
+    frequency: automation.frequency === 'daily' ? 'daily' : 'daily',
+    actions: Array.isArray(automation.actions)
+      ? automation.actions.map(normalizeAutomationAction).filter(Boolean)
+      : [],
+    lastRunAt: typeof automation.lastRunAt === 'string' ? automation.lastRunAt : '',
+    lastRunStatus: typeof automation.lastRunStatus === 'string' ? automation.lastRunStatus : '',
+    lastRunMessage: typeof automation.lastRunMessage === 'string' ? automation.lastRunMessage : '',
+  };
+}
+
 function normalizeSharedInfo(info) {
   if (!info || typeof info !== 'object') return null;
 
@@ -165,6 +206,9 @@ function normalizeApartment(apartment, index = 0, usedSlugs = new Set()) {
     alarms: Array.isArray(apartment?.alarms)
       ? apartment.alarms.map(normalizeAlarm).filter(Boolean)
       : [],
+    automations: Array.isArray(apartment?.automations)
+      ? apartment.automations.map(normalizeAutomation).filter(Boolean)
+      : [],
     importedGroupAddresses: normalizeImportedGroupAddresses(apartment?.importedGroupAddresses),
     importedGroupAddressesFileName: typeof apartment?.importedGroupAddressesFileName === 'string'
       ? apartment.importedGroupAddressesFileName
@@ -217,6 +261,7 @@ function migrateLegacyConfig(input) {
         floors,
         areaOrder: floors.map((area) => area.id),
         alarms,
+        automations: [],
         importedGroupAddresses: normalizeImportedGroupAddresses(input?.importedGroupAddresses),
         importedGroupAddressesFileName: typeof input?.importedGroupAddressesFileName === 'string'
           ? input.importedGroupAddressesFileName
@@ -306,6 +351,8 @@ module.exports = {
   normalizeApartment,
   normalizeRoom,
   normalizeAlarm,
+  normalizeAutomation,
+  normalizeAutomationAction,
   normalizeSharedInfo,
   slugifyApartmentName,
 };

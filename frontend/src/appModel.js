@@ -11,7 +11,7 @@ export function parseAppPath(pathname, apartments = []) {
 
   const fallbackApartment = apartments[0] || null;
   const apartmentSlug = segments[0] || fallbackApartment?.slug || null;
-  const section = segments[1] === 'rooms' || segments[1] === 'connections'
+  const section = segments[1] === 'rooms' || segments[1] === 'connections' || segments[1] === 'automation'
     ? segments[1]
     : 'dashboard';
 
@@ -53,6 +53,7 @@ export function migrateLegacyConfig(config) {
         alarms: Array.isArray(config?.globals)
           ? config.globals.filter((item) => item?.type === 'alarm')
           : [],
+        automations: [],
         importedGroupAddresses: Array.isArray(config?.importedGroupAddresses)
           ? config.importedGroupAddresses
           : [],
@@ -139,6 +140,7 @@ export function buildApartmentView(config, apartmentSlug) {
       areaOrder,
       sharedInfos: Array.isArray(normalized.building?.sharedInfos) ? normalized.building.sharedInfos : [],
       alarms: Array.isArray(apartment.alarms) ? apartment.alarms : [],
+      automations: Array.isArray(apartment.automations) ? apartment.automations : [],
       importedGroupAddresses: Array.isArray(apartment.importedGroupAddresses) ? apartment.importedGroupAddresses : [],
       importedGroupAddressesFileName: apartment.importedGroupAddressesFileName || '',
       sharedImportedGroupAddresses: Array.isArray(normalized.building?.sharedImportedGroupAddresses)
@@ -171,6 +173,7 @@ export function createApartmentDraft(apartments, name) {
     floors: [{ id: firstAreaId, name: 'Ground Floor', rooms: [] }],
     areaOrder: [firstAreaId],
     alarms: [],
+    automations: [],
     importedGroupAddresses: [],
     importedGroupAddressesFileName: '',
   };

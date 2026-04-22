@@ -109,6 +109,7 @@ describe('App — rendering', () => {
           hue: { bridgeIp: '', apiKey: '' },
           floors: [{ id: 'floor-1', name: 'Living', rooms: [] }],
           alarms: [],
+          automations: [],
           importedGroupAddresses: [],
           importedGroupAddressesFileName: '',
         },
@@ -121,6 +122,7 @@ describe('App — rendering', () => {
           hue: { bridgeIp: '', apiKey: '' },
           floors: [{ id: 'west-floor', name: 'West Floor', rooms: [] }],
           alarms: [],
+          automations: [],
           importedGroupAddresses: [],
           importedGroupAddressesFileName: '',
         },
@@ -155,6 +157,7 @@ describe('App — rendering', () => {
           hue: { bridgeIp: '', apiKey: '' },
           floors: [{ id: 'floor-1', name: 'Living', rooms: [] }],
           alarms: [],
+          automations: [],
           importedGroupAddresses: [],
           importedGroupAddressesFileName: '',
         },
@@ -167,6 +170,7 @@ describe('App — rendering', () => {
           hue: { bridgeIp: '', apiKey: '' },
           floors: [{ id: 'west-floor', name: 'West Floor', rooms: [] }],
           alarms: [],
+          automations: [],
           importedGroupAddresses: [],
           importedGroupAddressesFileName: '',
         },
@@ -181,6 +185,22 @@ describe('App — rendering', () => {
 
     expect(window.location.pathname).toBe('/wohnung-west/connections');
     expect(screen.getByText('Building Setup')).toBeInTheDocument();
+  });
+
+  it('navigates to Automation and supports bookmarked automation URLs', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/wohnung-1/automation');
+
+    await act(async () => { render(<App />); });
+
+    expect(screen.getByText('Routines')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add routine/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /dashboard/i }));
+    await user.click(screen.getByRole('button', { name: /automation/i }));
+
+    expect(window.location.pathname).toBe('/wohnung-1/automation');
+    expect(screen.getByText('Routines')).toBeInTheDocument();
   });
 });
 

@@ -14,6 +14,7 @@ describe('appModel path helpers', () => {
     expect(buildApartmentPath('wohnung-ost')).toBe('/wohnung-ost');
     expect(buildApartmentPath('wohnung-west', 'rooms')).toBe('/wohnung-west/rooms');
     expect(buildApartmentPath('wohnung-west', 'connections')).toBe('/wohnung-west/connections');
+    expect(buildApartmentPath('wohnung-west', 'automation')).toBe('/wohnung-west/automation');
   });
 
   it('parses apartment slug and falls back to the first apartment', () => {
@@ -22,6 +23,11 @@ describe('appModel path helpers', () => {
     expect(parseAppPath('/wohnung-west/rooms', apartments)).toEqual({
       apartmentSlug: 'wohnung-west',
       section: 'rooms',
+    });
+
+    expect(parseAppPath('/wohnung-west/automation', apartments)).toEqual({
+      apartmentSlug: 'wohnung-west',
+      section: 'automation',
     });
 
     expect(parseAppPath('/', apartments)).toEqual({
@@ -105,6 +111,7 @@ describe('appModel migration and view building', () => {
     expect(view.apartmentConfig.alarms).toEqual([
       expect.objectContaining({ name: 'Rain Alarm' }),
     ]);
+    expect(view.apartmentConfig.automations).toEqual([]);
   });
 });
 
@@ -130,5 +137,6 @@ describe('appModel apartment drafts and slugs', () => {
     expect(draft.floors).toHaveLength(1);
     expect(draft.areaOrder).toEqual([draft.floors[0].id]);
     expect(draft.knxPort).toBe(3671);
+    expect(draft.automations).toEqual([]);
   });
 });
