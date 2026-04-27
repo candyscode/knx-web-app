@@ -138,7 +138,8 @@ describe('Automation page', () => {
       }],
     });
     render(<Automation {...props} />);
-    fireEvent.click(screen.getByText(/enabled/i));
+    // Toggle switch has aria-label 'Routine enabled'
+    fireEvent.click(screen.getByTitle(/disable routine/i));
     await waitFor(() => expect(updateConfig).toHaveBeenCalledWith(
       expect.objectContaining({
         automations: expect.arrayContaining([expect.objectContaining({ id: 'a1', enabled: false })]),
@@ -154,7 +155,11 @@ describe('Automation page', () => {
       }],
     });
     render(<Automation {...props} />);
+    // Click trash icon → opens ConfirmDialog
     fireEvent.click(screen.getByTitle(/delete routine/i));
+    // Confirm dialog should appear; click the confirm button
+    const confirmBtn = await screen.findByRole('button', { name: /löschen/i });
+    fireEvent.click(confirmBtn);
     await waitFor(() => expect(updateConfig).toHaveBeenCalledWith(
       expect.objectContaining({ automations: [] })
     ));

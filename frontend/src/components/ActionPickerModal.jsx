@@ -112,11 +112,10 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
         {!selectedItem ? (
           /* Step 1: Pick scene or function */
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '0.5rem 0.75rem' }}>
-              <Search size={16} style={{ color: 'var(--text-secondary)' }} />
+            <div className="action-picker-search">
+              <Search size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
               <input
-                className="form-input"
-                style={{ background: 'transparent', border: 'none', padding: 0, flex: 1 }}
+                className="action-picker-search-input"
                 placeholder="Search areas, rooms, scenes, functions…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -155,7 +154,7 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
                     </div>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', flexShrink: 0, background: 'rgba(255,255,255,0.07)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
-                    {item.kind === 'scene' ? 'Scene' : item.targetType === 'percentage' ? 'Dimmer' : 'Switch'}
+                    {item.kind === 'scene' ? 'Scene' : item.targetType === 'percentage' ? 'Percentage' : 'Switch'}
                   </span>
                 </button>
               ))}

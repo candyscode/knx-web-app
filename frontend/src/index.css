@@ -2511,45 +2511,77 @@ html { overflow-x: hidden; }
   gap: 0.5rem;
 }
 
-/* Enable / Disable Toggle Button */
-.routine-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 20px;
-  border: 1px solid transparent;
+/* Enable / Disable Toggle Switch */
+.routine-toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 24px;
+  border: none;
+  background: rgba(255,255,255,0.12);
   cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 500;
-  font-family: inherit;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  padding: 0;
 }
-.routine-toggle-btn.enabled {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.3);
-  color: #86efac;
+.routine-toggle-switch.enabled {
+  background: var(--success-color, #22c55e);
 }
-.routine-toggle-btn.disabled {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary);
+.routine-toggle-switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
-.routine-toggle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.routine-toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.routine-toggle-switch.enabled .routine-toggle-knob {
+  transform: translateX(20px);
+}
 
 /* Meta Info Row */
 .routine-card-meta {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
 }
-.routine-card-meta span {
-  display: flex;
+.routine-meta-tag {
+  display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  padding: 0.2rem 0.65rem;
+  white-space: nowrap;
+}
+.routine-meta-tag--next {
+  color: var(--accent-color);
+  background: rgba(99,179,237,0.07);
+  border-color: rgba(99,179,237,0.18);
+}
+.routine-meta-tag--last {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+.routine-meta-sep {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
 }
 
 /* Badges */
@@ -2629,4 +2661,42 @@ html { overflow-x: hidden; }
   border-radius: 6px;
   color: var(--accent-color);
   flex-shrink: 0;
+}
+
+/* Value badge in RoutineCard action chips (feature 5) */
+.routine-action-value-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  background: rgba(99,179,237,0.12);
+  border: 1px solid rgba(99,179,237,0.25);
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* Action Picker search wrapper */
+.action-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+.action-picker-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0;
+}
+.action-picker-search-input::placeholder {
+  color: var(--text-secondary);
 }

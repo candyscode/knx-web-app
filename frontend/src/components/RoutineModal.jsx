@@ -150,10 +150,15 @@ export default function RoutineModal({ routine, floors, onSave, onClose }) {
           </div>
           <div className="settings-field" style={{ width: '100px' }}>
             <label className="settings-field-label">Enabled</label>
-            <label className="toggle-label" style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <input type="checkbox" checked={draft.enabled} onChange={(e) => update('enabled', e.target.checked)} />
-              <span>{draft.enabled ? 'Yes' : 'No'}</span>
-            </label>
+            <button
+              className={`routine-toggle-switch ${draft.enabled ? 'enabled' : ''}`}
+              style={{ marginTop: '0.5rem' }}
+              onClick={() => update('enabled', !draft.enabled)}
+              aria-label={draft.enabled ? 'Enabled' : 'Disabled'}
+              title={draft.enabled ? 'Click to disable' : 'Click to enable'}
+            >
+              <span className="routine-toggle-knob" />
+            </button>
           </div>
         </div>
 
