@@ -124,6 +124,35 @@ function slugifyApartmentName(name, fallbackIndex = 1) {
   return base || `wohnung-${fallbackIndex}`;
 }
 
+function normalizeAutomationAction(action) {
+  if (!action || typeof action !== 'object') return null;
+  return {
+    id: typeof action.id === 'string' ? action.id : `action_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    kind: action.kind === 'scene' || action.kind === 'function' ? action.kind : 'function',
+    areaId: typeof action.areaId === 'string' ? action.areaId : '',
+    roomId: typeof action.roomId === 'string' ? action.roomId : '',
+    targetId: typeof action.targetId === 'string' ? action.targetId : '',
+    targetType: typeof action.targetType === 'string' ? action.targetType : '',
+    value: action.value !== undefined ? action.value : null,
+  };
+}
+
+function normalizeAutomation(automation) {
+  if (!automation || typeof automation !== 'object') return null;
+  return {
+    id: typeof automation.id === 'string' ? automation.id : `automation_${Date.now()}`,
+    name: typeof automation.name === 'string' ? automation.name : 'New Routine',
+    enabled: automation.enabled !== false,
+    time: typeof automation.time === 'string' ? automation.time : '08:00',
+    frequency: 'daily',
+    actions: Array.isArray(automation.actions)
+      ? automation.actions.map(normalizeAutomationAction).filter(Boolean)
+      : [],
+    lastRunAt: automation.lastRunAt || null,
+    lastRunStatus: automation.lastRunStatus || null,
+  };
+}
+
 function ensureUniqueSlug(slug, usedSlugs) {
   let candidate = slug || 'wohnung';
   let counter = 2;
@@ -164,6 +193,9 @@ function normalizeApartment(apartment, index = 0, usedSlugs = new Set()) {
       : [],
     alarms: Array.isArray(apartment?.alarms)
       ? apartment.alarms.map(normalizeAlarm).filter(Boolean)
+      : [],
+    automations: Array.isArray(apartment?.automations)
+      ? apartment.automations.map(normalizeAutomation).filter(Boolean)
       : [],
     importedGroupAddresses: normalizeImportedGroupAddresses(apartment?.importedGroupAddresses),
     importedGroupAddressesFileName: typeof apartment?.importedGroupAddressesFileName === 'string'
@@ -217,6 +249,7 @@ function migrateLegacyConfig(input) {
         floors,
         areaOrder: floors.map((area) => area.id),
         alarms,
+        automations: [],
         importedGroupAddresses: normalizeImportedGroupAddresses(input?.importedGroupAddresses),
         importedGroupAddressesFileName: typeof input?.importedGroupAddressesFileName === 'string'
           ? input.importedGroupAddressesFileName
@@ -307,5 +340,6 @@ module.exports = {
   normalizeRoom,
   normalizeAlarm,
   normalizeSharedInfo,
+  normalizeAutomation,
   slugifyApartmentName,
 };

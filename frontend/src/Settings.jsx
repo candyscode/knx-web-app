@@ -732,8 +732,27 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
 
   return (
     <div className="glass-panel settings-panel">
+      <div className="page-hero">
+        <div>
+          <div className="page-eyebrow">Rooms</div>
+          <h2 className="page-title">Apartment Rooms</h2>
+          <p className="page-copy">
+            Configure floors, rooms, group addresses, and Hue assignments.
+          </p>
+        </div>
+        <div className="page-hero-statuses">
+          <button 
+            className={`btn-secondary-sm settings-global-toggle ${activeTab === 'globals' ? 'active' : ''}`}
+            onClick={() => setActiveTab(activeTab === 'rooms' ? 'globals' : 'rooms')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: activeTab === 'globals' ? 'var(--accent-color)' : '', color: activeTab === 'globals' ? 'white' : '' }}
+          >
+            <SettingsIcon size={14} />
+            {activeTab === 'rooms' ? 'Global Info & Alarms' : 'Back to Rooms'}
+          </button>
+        </div>
+      </div>
       
-      {/* Header bar that holds either FloorTabs or Title, and the Globals toggle button */}
+      {/* Header bar that holds either FloorTabs or Title */}
       <div className="settings-floors-header">
         {activeTab === 'rooms' ? (
           <>
@@ -753,16 +772,6 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
             Central Information & Apartment Alarms
           </div>
         )}
-
-        {/* The Toggle Button on the absolute right */}
-        <button 
-          className={`btn-secondary-sm settings-global-toggle ${activeTab === 'globals' ? 'active' : ''}`}
-          onClick={() => setActiveTab(activeTab === 'rooms' ? 'globals' : 'rooms')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: activeTab === 'globals' ? 'var(--accent-color)' : '', color: activeTab === 'globals' ? 'white' : '' }}
-        >
-          <SettingsIcon size={14} />
-          {activeTab === 'rooms' ? 'Global Info & Alarms' : 'Back to Rooms'}
-        </button>
       </div>
 
       {activeTab === 'globals' ? (

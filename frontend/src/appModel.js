@@ -11,7 +11,7 @@ export function parseAppPath(pathname, apartments = []) {
 
   const fallbackApartment = apartments[0] || null;
   const apartmentSlug = segments[0] || fallbackApartment?.slug || null;
-  const section = segments[1] === 'rooms' || segments[1] === 'connections'
+  const section = segments[1] === 'rooms' || segments[1] === 'connections' || segments[1] === 'automation'
     ? segments[1]
     : 'dashboard';
 
@@ -147,6 +147,7 @@ export function buildApartmentView(config, apartmentSlug) {
       sharedImportedGroupAddressesFileName: normalized.building?.sharedImportedGroupAddressesFileName || '',
       sharedAccessApartmentId: normalized.building?.sharedAccessApartmentId || apartment.id,
       sharedUsesApartmentImportedGroupAddresses: normalized.building?.sharedUsesApartmentImportedGroupAddresses === true,
+      automations: Array.isArray(apartment.automations) ? apartment.automations : [],
     },
     sharedAreas,
     sharedInfos: Array.isArray(normalized.building?.sharedInfos) ? normalized.building.sharedInfos : [],

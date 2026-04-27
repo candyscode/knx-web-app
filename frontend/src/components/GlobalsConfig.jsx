@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Check, X, AlertTriangle, Info, Thermometer, Wind, Sun } from 'lucide-react';
 
 function ItemSection({
@@ -10,9 +10,15 @@ function ItemSection({
   openGroupAddressModal,
   emptyText,
   resolveGroupAddressName,
+  requestConfirm,
 }) {
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ name: '', category: 'temperature', statusGroupAddress: '' });
+  // Local shadow state so edits don't trigger saves on every keystroke
+  const [localItems, setLocalItems] = useState(() => items);
+
+  // Keep local shadow in sync when parent items change (e.g. after navigation)
+  useEffect(() => { setLocalItems(items); }, [items]);
 
   const getCategoryIcon = (category) => {
     if (type === 'alarm') return <AlertTriangle size={18} style={{ color: 'var(--danger-color)' }} />;
@@ -26,7 +32,7 @@ function ItemSection({
     if (!draft.name.trim()) return;
 
     const nextItems = [
-      ...items,
+      ...localItems,
       {
         id: `${type}_${Date.now()}`,
         name: draft.name.trim(),
@@ -52,11 +58,32 @@ function ItemSection({
       danger: true,
     });
     if (!confirmed) return;
-    await saveItems(items.filter((item) => item.id !== id));
+    const next = localItems.filter((item) => item.id !== id);
+    setLocalItems(next);
+    setItems(next);
+    await saveItems(next);
   };
 
-  const updateItem = (id, key, value) => {
-    setItems(items.map((item) => item.id === id ? { ...item, [key]: value } : item));
+  // Only update local shadow — persist on blur
+  const updateLocalItem = (id, key, value) => {
+    setLocalItems((prev) => prev.map((item) => item.id === id ? { ...item, [key]: value } : item));
+  };
+
+  // Persist after a field loses focus (silent — no toast)
+  const commitItem = (id) => {
+    const updated = localItems.map((item) =>
+      item.id === id ? localItems.find((i) => i.id === id) : item
+    );
+    setItems(localItems);
+    saveItems(localItems);
+  };
+
+  // For dropdowns that don't have a blur event — persist immediately but silently
+  const updateAndCommitItem = (id, key, value) => {
+    const next = localItems.map((item) => item.id === id ? { ...item, [key]: value } : item);
+    setLocalItems(next);
+    setItems(next);
+    saveItems(next);
   };
 
   return (
@@ -74,7 +101,7 @@ function ItemSection({
         </div>
       )}
 
-      {items.map((item) => (
+      {localItems.map((item) => (
         <div key={item.id} className="function-card" style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', paddingRight: '3rem' }}>
           <button
             type="button"
@@ -93,8 +120,8 @@ function ItemSection({
             <input
               className="form-input"
               value={item.name}
-              onChange={(event) => updateItem(item.id, 'name', event.target.value)}
-              onBlur={() => saveItems(items)}
+              onChange={(event) => updateLocalItem(item.id, 'name', event.target.value)}
+              onBlur={() => commitItem(item.id)}
               placeholder={type === 'alarm' ? 'e.g. Rain Alarm' : 'e.g. Outside Temperature'}
             />
           </div>
@@ -105,7 +132,7 @@ function ItemSection({
               <select
                 className="form-select"
                 value={item.category}
-                onChange={(event) => saveItems(items.map((entry) => entry.id === item.id ? { ...entry, category: event.target.value } : entry))}
+                onChange={(event) => updateAndCommitItem(item.id, 'category', event.target.value)}
               >
                 <option value="temperature">Temperature (°C)</option>
                 <option value="wind">Wind (m/s)</option>
@@ -120,8 +147,8 @@ function ItemSection({
               <input
                 className="form-input"
                 value={item.statusGroupAddress || ''}
-                onChange={(event) => updateItem(item.id, 'statusGroupAddress', event.target.value)}
-                onBlur={() => saveItems(items)}
+                onChange={(event) => updateLocalItem(item.id, 'statusGroupAddress', event.target.value)}
+                onBlur={() => commitItem(item.id)}
                 placeholder="e.g. 1/1/1"
               />
               <button

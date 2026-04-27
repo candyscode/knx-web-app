@@ -456,15 +456,15 @@ export default function Connections({
 
   return (
     <div className="glass-panel settings-panel connections-page">
-      <div className="connections-hero">
+      <div className="page-hero">
         <div>
-          <div className="connections-eyebrow">Setup</div>
-          <h2 className="connections-page-title">Building Setup</h2>
-          <p className="connections-page-copy">
+          <div className="page-eyebrow">Setup</div>
+          <h2 className="page-title">Building Setup</h2>
+          <p className="page-copy">
             Everything for the current apartment, the Main Line setup and apartment management in one place.
           </p>
         </div>
-        <div className="connections-hero-statuses">
+        <div className="page-hero-statuses">
           <StatusPill connected={knxStatus.connected} label={`${apartment.name} ${knxStatus.connected ? 'connected' : 'offline'}`} />
           <StatusPill connected={sharedKnxStatus.connected} label={`Main Line via ${sharedAccessApartmentName} ${sharedKnxStatus.connected ? 'connected' : 'offline'}`} />
         </div>

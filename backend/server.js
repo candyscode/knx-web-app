@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const KnxService = require('./knxService');
 const HueService = require('./hueService');
+const { startScheduler, reloadScheduler } = require('./automationScheduler');
 const {
   getAllApartmentRooms,
   getAllSharedRooms,
@@ -17,6 +18,7 @@ const {
   normalizeImportedGroupAddresses,
   normalizeAlarm,
   normalizeSharedInfo,
+  normalizeAutomation,
   slugifyApartmentName,
 } = require('./configModel');
 
@@ -483,6 +485,12 @@ function applyConfigPatch(payload) {
       : [];
   }
 
+  if (payload.automations !== undefined) {
+    apartment.automations = Array.isArray(payload.automations)
+      ? payload.automations.map(normalizeAutomation).filter(Boolean)
+      : [];
+  }
+
   if (payload.globals !== undefined) {
     apartment.alarms = Array.isArray(payload.globals)
       ? payload.globals.filter((entry) => entry?.type === 'alarm').map(normalizeAlarm).filter(Boolean)
@@ -568,6 +576,62 @@ async function handleExternalSceneTrigger(apartmentId, scope, groupAddress, scen
   await triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumber);
 }
 
+async function executeAutomationAction(apartment, action, allFloors) {
+  const actionContext = getActionContext(apartment.id, 'apartment');
+  if (!actionContext?.context?.knxService) {
+    throw new Error(`No KNX context for apartment ${apartment.id}`);
+  }
+  const { knxService } = actionContext.context;
+
+  if (action.kind === 'scene') {
+    // Find the scene and its GA from config
+    let sceneNumber = null;
+    let groupAddress = null;
+    for (const floor of allFloors) {
+      if (!Array.isArray(floor.rooms)) continue;
+      const room = floor.rooms.find((r) => r.id === action.roomId);
+      if (!room) continue;
+      groupAddress = room.sceneGroupAddress;
+      const scene = Array.isArray(room.scenes) ? room.scenes.find((s) => s.id === action.targetId) : null;
+      if (scene) sceneNumber = scene.sceneNumber;
+      break;
+    }
+    if (!groupAddress || sceneNumber == null) throw new Error(`Scene target not found: ${action.targetId}`);
+    knxService.writeScene(groupAddress, sceneNumber);
+    await triggerLinkedHueScene(apartment.id, 'apartment', groupAddress, sceneNumber);
+
+  } else if (action.kind === 'function') {
+    // Find the function's GA
+    let groupAddress = null;
+    for (const floor of allFloors) {
+      if (!Array.isArray(floor.rooms)) continue;
+      const room = floor.rooms.find((r) => r.id === action.roomId);
+      if (!room) continue;
+      const func = Array.isArray(room.functions) ? room.functions.find((f) => f.id === action.targetId) : null;
+      if (func) groupAddress = func.groupAddress;
+      break;
+    }
+    if (!groupAddress) throw new Error(`Function target not found: ${action.targetId}`);
+    if (action.targetType === 'percentage') {
+      knxService.writeGroupValue(groupAddress, action.value, 'DPT5.001');
+    } else {
+      knxService.writeGroupValue(groupAddress, action.value === true || action.value === 1, 'DPT1');
+    }
+  } else {
+    throw new Error(`Unknown action kind: ${action.kind}`);
+  }
+}
+
+async function persistAutomationStatus(apartmentId, automationId, { lastRunAt, lastRunStatus }) {
+  const apt = config.apartments.find((a) => a.id === apartmentId);
+  if (!apt || !Array.isArray(apt.automations)) return;
+  const automation = apt.automations.find((a) => a.id === automationId);
+  if (!automation) return;
+  automation.lastRunAt = lastRunAt;
+  automation.lastRunStatus = lastRunStatus;
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+
 loadConfig();
 syncApartmentContexts();
 config.apartments.forEach((apartment) => {
@@ -575,6 +639,12 @@ config.apartments.forEach((apartment) => {
   if (apartment.knxIp) establishConnection(apartment.id);
   startHuePolling(apartment.id);
 });
+
+startScheduler(
+  () => config,
+  executeAutomationAction,
+  persistAutomationStatus
+);
 
 app.get('/api/config', (req, res) => {
   res.json(config);
@@ -601,6 +671,7 @@ app.post('/api/config', (req, res) => {
   });
 
   emitAllStatuses();
+  reloadScheduler();
 
   res.json({ success: true, config });
 });
