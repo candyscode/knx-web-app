@@ -1,6 +1,6 @@
 'use strict';
 
-const { shouldServeFrontendShell } = require('../../frontendFallback');
+const { APARTMENT_SHELL_ROUTE_PATTERN, shouldServeFrontendShell } = require('../../frontendFallback');
 
 describe('shouldServeFrontendShell', () => {
   it('serves the app shell for apartment deep links', () => {
@@ -43,5 +43,15 @@ describe('shouldServeFrontendShell', () => {
       method: 'GET',
       path: '/assets/index-Bn6DoZAu.js',
     })).toBe(false);
+  });
+
+  it('matches apartment root routes explicitly', () => {
+    expect(APARTMENT_SHELL_ROUTE_PATTERN.test('/wohnung-ost')).toBe(true);
+    expect(APARTMENT_SHELL_ROUTE_PATTERN.test('/wohnung-west/automation')).toBe(true);
+  });
+
+  it('does not match api or asset routes explicitly', () => {
+    expect(APARTMENT_SHELL_ROUTE_PATTERN.test('/api/config')).toBe(false);
+    expect(APARTMENT_SHELL_ROUTE_PATTERN.test('/assets/index.js')).toBe(false);
   });
 });

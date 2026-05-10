@@ -8,7 +8,7 @@ const path = require('path');
 const KnxService = require('./knxService');
 const HueService = require('./hueService');
 const { startScheduler, reloadScheduler, triggerSunRoutines } = require('./automationScheduler');
-const { shouldServeFrontendShell } = require('./frontendFallback');
+const { APARTMENT_SHELL_ROUTE_PATTERN, shouldServeFrontendShell } = require('./frontendFallback');
 const { createLogger } = require('./logger');
 const {
   getAllApartmentRooms,
@@ -1017,13 +1017,20 @@ if (fs.existsSync(distPath)) {
   logger.info('Serving static frontend', { path: distPath });
   app.use(express.static(distPath));
 
+  const serveFrontendShell = (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  };
+
+  app.get(APARTMENT_SHELL_ROUTE_PATTERN, serveFrontendShell);
+  app.head(APARTMENT_SHELL_ROUTE_PATTERN, serveFrontendShell);
+
   app.use((req, res, next) => {
     if (!shouldServeFrontendShell(req)) {
       next();
       return;
     }
 
-    res.sendFile(path.join(distPath, 'index.html'));
+    serveFrontendShell(req, res);
   });
 }
 
