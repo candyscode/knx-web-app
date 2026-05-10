@@ -1,13 +1,14 @@
 'use strict';
 
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const express = require('express');
 const request = require('supertest');
 const { mountFrontendShell } = require('../../frontendFallback');
 
-function buildApp() {
+function buildApp(distPath) {
   const app = express();
-  const distPath = path.join(__dirname, '../../../frontend/dist');
   mountFrontendShell(app, distPath);
 
   app.use((req, res) => {
@@ -18,8 +19,26 @@ function buildApp() {
 }
 
 describe('frontend shell routing', () => {
+  let distPath;
+
+  beforeEach(() => {
+    distPath = fs.mkdtempSync(path.join(os.tmpdir(), 'knx-frontend-shell-'));
+    fs.writeFileSync(
+      path.join(distPath, 'index.html'),
+      '<!doctype html><html><body><div id="root"></div></body></html>',
+    );
+    fs.writeFileSync(
+      path.join(distPath, 'favicon.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    );
+  });
+
+  afterEach(() => {
+    fs.rmSync(distPath, { recursive: true, force: true });
+  });
+
   it('serves index.html for apartment root urls', async () => {
-    const app = buildApp();
+    const app = buildApp(distPath);
     const res = await request(app).get('/wohnung-ost-neu');
 
     expect(res.status).toBe(200);
@@ -27,7 +46,7 @@ describe('frontend shell routing', () => {
   });
 
   it('serves index.html for apartment section urls', async () => {
-    const app = buildApp();
+    const app = buildApp(distPath);
     const res = await request(app).get('/wohnung-ost-neu/connections');
 
     expect(res.status).toBe(200);
@@ -35,7 +54,7 @@ describe('frontend shell routing', () => {
   });
 
   it('serves static assets normally', async () => {
-    const app = buildApp();
+    const app = buildApp(distPath);
     const res = await request(app).get('/favicon.svg');
 
     expect(res.status).toBe(200);
@@ -43,7 +62,7 @@ describe('frontend shell routing', () => {
   });
 
   it('does not turn api-like routes into index.html', async () => {
-    const app = buildApp();
+    const app = buildApp(distPath);
     const res = await request(app).get('/api/config');
 
     expect(res.status).toBe(404);
