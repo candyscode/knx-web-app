@@ -197,8 +197,7 @@ export default function Dashboard({
         type: 'scene',
         sceneNumber: scene.sceneNumber
       });
-      if (res.success) addToast(`${scene.name}`, 'success');
-      else addToast(`Failed: ${res.error}`, 'error');
+      if (!res.success) addToast(`Failed: ${res.error}`, 'error');
     } catch { addToast('Error communicating with backend server (is it running?)', 'error'); }
   };
 
@@ -226,7 +225,7 @@ export default function Dashboard({
           applyStateUpdate((prev) => ({ ...prev, [func.statusGroupAddress || groupAddress]: currentState }));
         }
         addToast(`Failed: ${res.error}`, 'error');
-      } else if (type === 'scene' || type === 'percentage') addToast(`Triggered ${func.name}`, 'success');
+      }
     } catch {
       if (type === 'switch' && applyStateUpdate) {
         applyStateUpdate((prev) => ({ ...prev, [func.statusGroupAddress || groupAddress]: currentState }));
