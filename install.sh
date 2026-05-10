@@ -127,6 +127,32 @@ create_cli_command "knx-restart" "sudo systemctl restart $SERVICE_NAME"
 create_cli_command "knx-log"     "sudo journalctl -u $SERVICE_NAME -f"
 create_cli_command "knx-update"  "bash <(curl -fsSL https://raw.githubusercontent.com/candyscode/knx-web-app/main/install.sh)"
 
+# knx-quickupdate: fast update without reinstalling dependencies
+APP_DIR_ESCAPED="$INSTALL_DIR"
+sudo bash -c "cat > /usr/local/bin/knx-quickupdate << 'QUICKEOF'
+#!/bin/bash
+set -e
+APP_DIR=\"$APP_DIR_ESCAPED\"
+SERVICE=\"$SERVICE_NAME\"
+
+echo \"[knx-quickupdate] Pulling latest changes from GitHub...\"
+cd \"\$APP_DIR\"
+git fetch --all
+git reset --hard origin/main
+
+echo \"[knx-quickupdate] Building frontend...\"
+cd \"\$APP_DIR/frontend\"
+npm run build
+
+echo \"[knx-quickupdate] Restarting service...\"
+sudo systemctl restart \"\$SERVICE\"
+
+echo \"\"
+echo \"✓ Quick update complete! No dependency reinstall was performed.\"
+echo \"  If the app misbehaves, run knx-update for a full reinstall.\"
+QUICKEOF"
+sudo chmod +x /usr/local/bin/knx-quickupdate
+
 # Uninstall command
 sudo bash -c "cat > /usr/local/bin/knx-uninstall <<EOF
 #!/bin/bash
@@ -143,6 +169,7 @@ if [[ \\\$prompt =~ ^[Yy]$ ]]; then
     sudo rm /usr/local/bin/knx-restart
     sudo rm /usr/local/bin/knx-log
     sudo rm /usr/local/bin/knx-update
+    sudo rm -f /usr/local/bin/knx-quickupdate
     sudo rm /usr/local/bin/knx-uninstall
     echo \"Uninstallation complete.\"
 else
@@ -160,12 +187,13 @@ echo "==========================================================="
 echo "The KNX Web App is now running in the background."
 echo ""
 echo "Available CLI Commands:"
-echo "  knx-start    - Start the app"
-echo "  knx-stop     - Stop the app"
-echo "  knx-restart  - Restart the app"
-echo "  knx-log      - View live logs"
-echo "  knx-update   - Update to the latest version from GitHub"
-echo "  knx-uninstall - Remove the app completely"
+echo "  knx-start        - Start the app"
+echo "  knx-stop         - Stop the app"
+echo "  knx-restart      - Restart the app"
+echo "  knx-log          - View live logs"
+echo "  knx-quickupdate  - Fast update: git pull + rebuild (no dependency reinstall)"
+echo "  knx-update       - Full update: reinstalls everything from GitHub"
+echo "  knx-uninstall    - Remove the app completely"
 echo ""
 echo "You can access your dashboard safely at:"
 echo "http://${LOCAL_IP}:3001"
