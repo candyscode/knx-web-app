@@ -1015,11 +1015,21 @@ io.on('connection', (socket) => {
 const distPath = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(distPath)) {
   logger.info('Serving static frontend', { path: distPath });
-  app.use(express.static(distPath));
 
   const serveFrontendShell = (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   };
+
+  app.use((req, res, next) => {
+    if (req.path === '/' || APARTMENT_SHELL_ROUTE_PATTERN.test(req.path)) {
+      serveFrontendShell(req, res);
+      return;
+    }
+
+    next();
+  });
+
+  app.use(express.static(distPath));
 
   app.get(APARTMENT_SHELL_ROUTE_PATTERN, serveFrontendShell);
   app.head(APARTMENT_SHELL_ROUTE_PATTERN, serveFrontendShell);

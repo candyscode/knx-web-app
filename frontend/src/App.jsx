@@ -13,7 +13,7 @@ const CONFIG_UNLOCK_STORAGE_KEY = 'knx-config-unlocked';
 
 function App() {
   const [route, setRoute] = useState(() => parseAppPath(window.location.pathname));
-  const [config, setConfig] = useState(() => migrateLegacyConfig({}));
+  const [config, setConfig] = useState(() => ({ apartments: [], building: {} }));
   const [knxStatuses, setKnxStatuses] = useState({});
   const [hueStatuses, setHueStatuses] = useState({});
   const [deviceStates, setDeviceStates] = useState({ apartments: {}, shared: {} });
@@ -30,7 +30,12 @@ function App() {
   const [configPasswordValue, setConfigPasswordValue] = useState('');
   const [configPasswordError, setConfigPasswordError] = useState('');
 
-  const normalizedConfig = useMemo(() => migrateLegacyConfig(config), [config]);
+  const normalizedConfig = useMemo(() => {
+    if (!configReady && !config?.apartments?.length && !config?.building?.sharedInfos?.length) {
+      return { apartments: [], building: {} };
+    }
+    return migrateLegacyConfig(config);
+  }, [config, configReady]);
   const { apartment, apartmentConfig } = useMemo(
     () => buildApartmentView(normalizedConfig, route.apartmentSlug),
     [normalizedConfig, route.apartmentSlug]
