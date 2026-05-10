@@ -37,6 +37,7 @@ class KnxService {
     this.deviceStates = {};
     this.gaToType = {};
     this.gaToDpt = {};
+    this.actionToStatusGa = {}; // action GA → status GA cross-map
     this.sceneTriggerCallback = null;
     this.label = options.label || 'knx';
     this.logger = createLogger(['KNX', this.label]);
@@ -56,6 +57,10 @@ class KnxService {
 
   setGaToDpt(map) {
     this.gaToDpt = map;
+  }
+
+  setActionToStatusGaMap(map) {
+    this.actionToStatusGa = map;
   }
 
   /**
@@ -86,7 +91,7 @@ class KnxService {
     }
   }
 
-  connect(ipAddress, port = 3671, onConnectCallback = null) {
+  connect(ipAddress, port = 3671, onConnectCallback = null, options = {}) {
     // Disconnect existing connection first, then wait for it to close
     if (this.connection) {
       this._reconnecting = true; // suppress stale 'disconnected' event
@@ -107,22 +112,23 @@ class KnxService {
     }
 
     this.setConnectionState('connecting');
-    this.logger.info('Connecting to gateway', { ip: ipAddress, port });
+    this.logger.info('Connecting to gateway', { ip: ipAddress, port, interface: options.interface || '(auto)' });
     this.emitKnxStatus(false, 'Connecting to KNX gateway...');
 
     // Give the KNX library time to fully close the previous tunnel before opening a new one
     setTimeout(() => {
       try {
-        this.connection = new knx.Connection({
+        const connectionOptions = {
           ipAddr: ipAddress,
           ipPort: port,
           loglevel: 'error',
+          ...(options.interface ? { interface: options.interface } : {}),
           handlers: {
             connected: () => {
               this._reconnecting = false;
               this.isConnected = true;
               this.setConnectionState('connected');
-              this.logger.info('Connected', { ip: ipAddress, port });
+              this.logger.info('Connected', { ip: ipAddress, port, interface: options.interface || '(auto)' });
               this.emitKnxStatus(true, 'Connected successfully to bus');
               if (onConnectCallback) onConnectCallback();
             },
@@ -157,8 +163,24 @@ class KnxService {
               }
 
               if (evt === 'GroupValue_Write' || evt === 'GroupValue_Response') {
+                // Skip if parsing failed and we still have a raw Buffer — sending
+                // a Buffer object over socket.io produces garbage in the frontend.
+                if (Buffer.isBuffer(parsedValue)) {
+                  this.logger.warn('Dropping unparseable value', { ga: dest, bytes: value.length, dpt: dptString });
+                  return;
+                }
+
                 this.deviceStates[dest] = parsedValue;
                 this.io.emit('knx_state_update', { groupAddress: dest, value: parsedValue });
+
+                // Cross-emit: if this is a write on an action GA, also update the
+                // corresponding status GA so the frontend reflects the change immediately
+                // (even when the actuator doesn't broadcast on the status GA).
+                const statusGa = this.actionToStatusGa[dest];
+                if (statusGa && evt === 'GroupValue_Write') {
+                  this.deviceStates[statusGa] = parsedValue;
+                  this.io.emit('knx_state_update', { groupAddress: statusGa, value: parsedValue });
+                }
 
                 // If this is a scene GA and we have a callback, notify server for Hue sync
                 if (evt === 'GroupValue_Write' && type === 'scene' && this.sceneTriggerCallback) {
@@ -194,7 +216,8 @@ class KnxService {
               }
             }
           }
-        });
+        };
+        this.connection = new knx.Connection(connectionOptions);
       } catch (err) {
         this.isConnected = false;
         this.setConnectionState('offline');

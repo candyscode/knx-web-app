@@ -212,6 +212,7 @@ function normalizeApartment(apartment, index = 0, usedSlugs = new Set()) {
     slug: safeSlug,
     knxIp: typeof apartment?.knxIp === 'string' ? apartment.knxIp : '',
     knxPort: Number.isFinite(Number(apartment?.knxPort)) ? Number(apartment.knxPort) : 3671,
+    knxLocalInterface: typeof apartment?.knxLocalInterface === 'string' ? apartment.knxLocalInterface : '',
     hue: {
       bridgeIp: typeof apartment?.hue?.bridgeIp === 'string' ? apartment.hue.bridgeIp : '',
       apiKey: typeof apartment?.hue?.apiKey === 'string' ? apartment.hue.apiKey : '',

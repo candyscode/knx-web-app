@@ -768,16 +768,16 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
   const selectHueScene = async (hueScene) => {
     const { roomId, sceneId, scope = 'apartment' } = hueSceneModal;
     try {
-      const res = await linkHueScene(sceneId, hueScene.id, { apartmentId: apartment.id, scope });
+      const res = await linkHueScene(sceneId, hueScene.id, { apartmentId: apartment.id, scope, hueSceneName: hueScene.name });
       if (res.success) {
-        for (const f of floors) {
+        for (const f of floorsRef.current) {
           const room = f.rooms.find(r => r.id === roomId);
           if (room) {
             updateRoom(f.id, roomId, { scenes: (room.scenes || []).map(s => s.id !== sceneId ? s : { ...s, hueSceneId: hueScene.id, hueSceneName: hueScene.name }) });
             break;
           }
         }
-        addToast(`Linked Hue scene "${hueScene.name}"`, 'success'); fetchConfig();
+        addToast(`Linked Hue scene "${hueScene.name}"`, 'success');
       } else addToast('Link failed: ' + (res.error || ''), 'error');
     } catch { addToast('Could not reach backend', 'error'); }
     setHueSceneSearch(''); setHueSceneModal({ open: false, roomId: null, sceneId: null });
