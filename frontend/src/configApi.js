@@ -123,11 +123,11 @@ export const getHueScenes = async ({ apartmentId, scope = 'apartment' } = {}) =>
   return res.json();
 };
 
-export const linkHueRoom = async (roomId, hueRoomId, { apartmentId, scope = 'apartment' } = {}) => {
+export const linkHueRoom = async (roomId, hueRoomId, { apartmentId, scope = 'apartment', hueRoomName } = {}) => {
   const res = await fetch(`${API_BASE}/config/rooms/${roomId}/hue-room`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apartmentId, scope, hueRoomId })
+    body: JSON.stringify({ apartmentId, scope, hueRoomId, hueRoomName })
   });
   return res.json();
 };

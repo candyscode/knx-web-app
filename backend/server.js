@@ -967,7 +967,7 @@ app.get('/api/hue/scenes', async (req, res) => {
 app.post('/api/config/rooms/:roomId/hue-room', (req, res) => {
   const apartmentId = req.body.apartmentId || config.apartments[0]?.id;
   const scope = req.body.scope || 'apartment';
-  const { hueRoomId } = req.body;
+  const { hueRoomId, hueRoomName } = req.body;
   if (!hueRoomId) {
     res.status(400).json({ success: false, error: 'hueRoomId required' });
     return;
@@ -980,6 +980,7 @@ app.post('/api/config/rooms/:roomId/hue-room', (req, res) => {
   }
 
   room.hueRoomId = hueRoomId;
+  room.hueRoomName = hueRoomName;
   saveConfig();
   res.json({ success: true });
 });

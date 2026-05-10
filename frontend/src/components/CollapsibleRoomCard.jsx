@@ -317,6 +317,7 @@ function CollapsibleRoomCard({
   handleDeleteRoom, updateRoom, onRenameRoom,
   handleAddScene, handleDeleteScene, handleUpdateScene,
   handleAddFunction, handleDeleteFunction, handleUpdateFunction,
+  handleUnlinkHueRoom,
   handleGenerateBaseScenes, persistRoomChanges,
   openHueSceneModal, openHueRoomModal, openHueLampModal, openGroupAddressModal,
   hueStatus, onFuncDragEnd, onSceneDragEnd, sensors,
@@ -457,7 +458,7 @@ function CollapsibleRoomCard({
                   <div className="hue-linked-badge">
                     <Lightbulb size={12} />
                     <span className="hue-linked-label">{room.hueRoomName || room.hueRoomId}</span>
-                    <button className="hue-unlink-btn" title="Unlink" onClick={() => updateRoom(floorId, room.id, { hueRoomId: null, hueRoomName: null })}>×</button>
+                    <button className="hue-unlink-btn" title="Unlink" onClick={() => handleUnlinkHueRoom(room.id, floorId)}>×</button>
                   </div>
                 ) : (
                   <button className="btn-secondary-sm btn-purple-sm" onClick={() => openHueRoomModal(room.id, floorId)}>

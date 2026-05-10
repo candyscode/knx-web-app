@@ -732,10 +732,10 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
   const selectHueRoom = async (hueRoom) => {
     const { roomId, floorId, scope = 'apartment' } = hueRoomModal;
     try {
-      const res = await linkHueRoom(roomId, hueRoom.id, { apartmentId: apartment.id, scope });
+      const res = await linkHueRoom(roomId, hueRoom.id, { apartmentId: apartment.id, scope, hueRoomName: hueRoom.name });
       if (res.success) {
         updateRoom(floorId, roomId, { hueRoomId: hueRoom.id, hueRoomName: hueRoom.name });
-        addToast(`Linked Hue room "${hueRoom.name}"`, 'success'); fetchConfig();
+        addToast(`Linked Hue room "${hueRoom.name}"`, 'success');
       } else addToast('Link failed: ' + (res.error || ''), 'error');
     } catch { addToast('Could not reach backend', 'error'); }
     setHueRoomSearch(''); setHueRoomModal({ open: false, roomId: null, floorId: null });
@@ -747,7 +747,7 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
     try {
       await unlinkHueRoom(roomId, { apartmentId: apartment.id, scope });
       updateRoom(floorId, roomId, { hueRoomId: null, hueRoomName: null });
-      addToast('Hue room unlinked', 'success'); fetchConfig();
+      addToast('Hue room unlinked', 'success');
     } catch { addToast('Unlink failed', 'error'); }
   };
 
@@ -795,7 +795,7 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
           break;
         }
       }
-      addToast('Hue scene unlinked', 'success'); fetchConfig();
+      addToast('Hue scene unlinked', 'success');
     } catch { addToast('Unlink failed', 'error'); }
   };
 
@@ -1029,6 +1029,7 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
                   handleAddFunction={handleAddFunction}
                   handleDeleteFunction={handleDeleteFunction}
                   handleUpdateFunction={handleUpdateFunction}
+                  handleUnlinkHueRoom={handleUnlinkHueRoom}
                   handleGenerateBaseScenes={handleGenerateBaseScenes}
                   persistRoomChanges={persistRoomChanges}
                   openHueSceneModal={openHueSceneModal}
