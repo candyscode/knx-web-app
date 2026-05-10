@@ -48,6 +48,7 @@ describe('shouldServeFrontendShell', () => {
   it('matches apartment root routes explicitly', () => {
     expect(APARTMENT_SHELL_ROUTE_PATTERN.test('/wohnung-ost')).toBe(true);
     expect(APARTMENT_SHELL_ROUTE_PATTERN.test('/wohnung-west/automation')).toBe(true);
+    expect(APARTMENT_SHELL_ROUTE_PATTERN.test('/wohnung-ostt/connections')).toBe(true);
   });
 
   it('does not match api or asset routes explicitly', () => {
