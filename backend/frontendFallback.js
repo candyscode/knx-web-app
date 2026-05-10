@@ -1,5 +1,7 @@
 const path = require('path');
 
+const APARTMENT_SHELL_ROUTE_PATTERN = /^\/(?!(?:api|socket\.io)(?:\/|$))[^./]+(?:\/(?:rooms|connections|automation))?\/?$/i;
+
 function shouldServeFrontendShell(req) {
   const method = String(req?.method || '').toUpperCase();
   if (method !== 'GET' && method !== 'HEAD') return false;
@@ -18,5 +20,6 @@ function shouldServeFrontendShell(req) {
 }
 
 module.exports = {
+  APARTMENT_SHELL_ROUTE_PATTERN,
   shouldServeFrontendShell,
 };
