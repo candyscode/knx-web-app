@@ -1,5 +1,6 @@
 const path = require('path');
 const express = require('express');
+const fs = require('fs');
 
 const APARTMENT_SHELL_ROUTE_PATTERN = /^\/(?!(?:api|socket\.io)(?:\/|$))[^./]+(?:\/(?:rooms|connections|automation))?\/?$/i;
 
@@ -20,9 +21,27 @@ function shouldServeFrontendShell(req) {
   return true;
 }
 
-function mountFrontendShell(app, distPath) {
+function mountFrontendShell(app, distPath, options = {}) {
+  const logger = options.logger;
+  const getApartmentSlugs = typeof options.getApartmentSlugs === 'function'
+    ? options.getApartmentSlugs
+    : () => [];
+  const indexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
+
   const serveFrontendShell = (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+    logger?.info?.('Serving frontend shell', {
+      path: req.path,
+      apartmentSlugs: getApartmentSlugs().join(','),
+    });
+    res.status(200);
+    res.type('html');
+
+    if (req.method === 'HEAD') {
+      res.end();
+      return;
+    }
+
+    res.send(indexHtml);
   };
 
   app.use((req, res, next) => {

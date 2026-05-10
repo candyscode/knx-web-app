@@ -64,6 +64,46 @@ beforeEach(() => {
   window.sessionStorage.clear();
 });
 
+const IMPORTED_MULTI_APARTMENT_CONFIG = {
+  version: 2,
+  building: {
+    configProtectionEnabled: false,
+    houseWideInfoReadApartmentId: 'apartment_1',
+    sharedInfos: [],
+    sharedAreas: [],
+    importedGroupAddresses: [],
+    importedGroupAddressesFileName: '',
+  },
+  apartments: [
+    {
+      id: 'apartment_1',
+      name: 'Wohnung Ost',
+      slug: 'wohnung-ostt',
+      knxIp: '192.168.1.85',
+      knxPort: 3671,
+      hue: { bridgeIp: '', apiKey: '' },
+      floors: [{ id: 'east-floor', name: 'Erdgeschoss', rooms: [] }],
+      alarms: [],
+      automations: [],
+      importedGroupAddresses: [],
+      importedGroupAddressesFileName: '',
+    },
+    {
+      id: 'apartment_2',
+      name: 'Wohnung West',
+      slug: 'wohnung-westt',
+      knxIp: '192.168.1.86',
+      knxPort: 3671,
+      hue: { bridgeIp: '', apiKey: '' },
+      floors: [{ id: 'west-floor', name: 'Obergeschoss', rooms: [] }],
+      alarms: [],
+      automations: [],
+      importedGroupAddresses: [],
+      importedGroupAddressesFileName: '',
+    },
+  ],
+};
+
 describe('App — rendering', () => {
   it('renders the KNX Control header', async () => {
     await act(async () => { render(<App />); });
@@ -189,6 +229,44 @@ describe('App — rendering', () => {
 
     expect(window.location.pathname).toBe('/wohnung-west/connections');
     expect(screen.getByText('Building Setup')).toBeInTheDocument();
+  });
+
+  it('keeps imported apartment slug routes instead of redirecting to wohnung-1', async () => {
+    vi.mocked((await import('../configApi')).getConfig).mockResolvedValueOnce(IMPORTED_MULTI_APARTMENT_CONFIG);
+
+    window.history.replaceState({}, '', '/wohnung-ostt');
+    await act(async () => { render(<App />); });
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Wohnung Ost')).toBeInTheDocument();
+    });
+    expect(window.location.pathname).toBe('/wohnung-ostt');
+    expect(screen.getByText('Erdgeschoss')).toBeInTheDocument();
+  });
+
+  it('opens imported apartment setup routes directly after config import', async () => {
+    vi.mocked((await import('../configApi')).getConfig).mockResolvedValueOnce(IMPORTED_MULTI_APARTMENT_CONFIG);
+
+    window.history.replaceState({}, '', '/wohnung-ostt/connections');
+    await act(async () => { render(<App />); });
+
+    await waitFor(() => {
+      expect(screen.getByText('Building Setup')).toBeInTheDocument();
+    });
+    expect(window.location.pathname).toBe('/wohnung-ostt/connections');
+    expect(screen.getAllByDisplayValue('Wohnung Ost')).not.toHaveLength(0);
+  });
+
+  it('redirects the root path to the imported first apartment slug instead of a legacy default slug', async () => {
+    vi.mocked((await import('../configApi')).getConfig).mockResolvedValueOnce(IMPORTED_MULTI_APARTMENT_CONFIG);
+
+    window.history.replaceState({}, '', '/');
+    await act(async () => { render(<App />); });
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/wohnung-ostt');
+    });
+    expect(screen.getByDisplayValue('Wohnung Ost')).toBeInTheDocument();
   });
 });
 

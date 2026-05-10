@@ -40,24 +40,40 @@ const logger = createLogger('Server');
 
 let config = normalizeConfigShape({});
 
+function summarizeApartments(apartments = config.apartments) {
+  return (apartments || [])
+    .map((apartment) => `${apartment.name}:${apartment.slug}`)
+    .join(',');
+}
+
 function loadConfig() {
   if (!fs.existsSync(CONFIG_FILE)) {
-    saveConfig();
+    saveConfig('create default config');
     return;
   }
 
   try {
     const data = fs.readFileSync(CONFIG_FILE, 'utf8');
     config = normalizeConfigShape(JSON.parse(data));
+    logger.info('Loaded config', {
+      file: CONFIG_FILE,
+      apartmentCount: config.apartments.length,
+      apartments: summarizeApartments(),
+    });
   } catch (error) {
     logger.error('Failed to parse config.json', { error: error.message });
     config = normalizeConfigShape({});
   }
 }
 
-function saveConfig() {
+function saveConfig(reason = 'config update') {
   config = normalizeConfigShape(config);
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+  logger.info('Saved config', {
+    reason,
+    apartmentCount: config.apartments.length,
+    apartments: summarizeApartments(),
+  });
 }
 
 function createApartmentEmitter(apartmentId) {
@@ -424,6 +440,11 @@ function applyConfigPatch(payload) {
   if (!payload || typeof payload !== 'object') return;
 
   if (Array.isArray(payload.apartments) || payload.building || payload.version === 2) {
+    const importedConfig = normalizeConfigShape(payload);
+    logger.info('Applying full config replacement', {
+      apartmentCount: importedConfig.apartments.length,
+      apartments: summarizeApartments(importedConfig.apartments),
+    });
     config = normalizeConfigShape(payload);
     return;
   }
@@ -467,6 +488,7 @@ function applyConfigPatch(payload) {
   }
 
   if (payload.slug !== undefined && typeof payload.slug === 'string' && payload.slug.trim()) {
+    const previousSlug = apartment.slug;
     const usedSlugs = new Set(
       config.apartments
         .filter((entry) => entry.id !== apartment.id)
@@ -479,6 +501,13 @@ function applyConfigPatch(payload) {
       suffix += 1;
     }
     apartment.slug = slug;
+    logger.info('Updated apartment slug', {
+      apartmentId,
+      apartmentName: apartment.name,
+      previousSlug,
+      requestedSlug: payload.slug.trim(),
+      persistedSlug: apartment.slug,
+    });
   }
 
   if (payload.knxIp !== undefined) apartment.knxIp = payload.knxIp;
@@ -666,15 +695,20 @@ startScheduler(
 );
 
 app.get('/api/config', (req, res) => {
+  logger.debug('Serving public config', {
+    apartmentCount: config.apartments.length,
+    apartments: summarizeApartments(),
+  });
   res.json(buildPublicConfig(config));
 });
 
 app.post('/api/config', (req, res) => {
   const previousConfig = normalizeConfigShape(config);
+  const previousSummary = summarizeApartments(previousConfig.apartments);
 
   applyConfigPatch(req.body);
   config = normalizeConfigShape(config);
-  saveConfig();
+  saveConfig('api /api/config');
   syncApartmentContexts();
 
   config.apartments.forEach((apartment) => {
@@ -691,6 +725,14 @@ app.post('/api/config', (req, res) => {
 
   emitAllStatuses();
   reloadScheduler();
+
+  logger.info('Applied config patch', {
+    apartmentCount: config.apartments.length,
+    previousApartments: previousSummary,
+    currentApartments: summarizeApartments(),
+    apartmentId: req.body?.apartmentId || '',
+    scope: req.body?.scope || req.body?.target || 'apartment',
+  });
 
   res.json({ success: true, config: buildPublicConfig(config) });
 });
@@ -749,7 +791,7 @@ app.post('/api/dev/load-config', (req, res) => {
   try {
     const data = fs.readFileSync(devConfigFile, 'utf8');
     config = normalizeConfigShape(JSON.parse(data));
-    saveConfig();
+    saveConfig('load dev config');
     syncApartmentContexts();
     config.apartments.forEach((apartment) => {
       refreshKnxSubscriptions(apartment.id);
@@ -1015,7 +1057,10 @@ io.on('connection', (socket) => {
 const distPath = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(distPath)) {
   logger.info('Serving static frontend', { path: distPath });
-  mountFrontendShell(app, distPath);
+  mountFrontendShell(app, distPath, {
+    logger: logger.child('FrontendShell'),
+    getApartmentSlugs: () => config.apartments.map((apartment) => apartment.slug),
+  });
 }
 
 const PORT = 3001;
