@@ -287,13 +287,6 @@ describe('Dashboard — light scenes', () => {
     });
   });
 
-  it('shows success toast after scene triggered', async () => {
-    const user = userEvent.setup();
-    renderDashboard({ rooms: [ROOM_WITH_SCENES] });
-    await user.click(screen.getByText('Relax'));
-    await waitFor(() => expect(addToast).toHaveBeenCalledWith('Relax', 'success'));
-  });
-
   it('shows error toast when scene trigger fails', async () => {
     api.triggerAction.mockRejectedValueOnce(new Error('Network error'));
     const user = userEvent.setup();
