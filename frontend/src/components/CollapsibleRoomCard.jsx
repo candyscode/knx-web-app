@@ -25,6 +25,7 @@ export const TYPE_OPTIONS = [
   { value: 'scene', label: 'Scene', dpt: 'DPT 17.001' },
   { value: 'switch', label: 'Switch', dpt: 'DPT 1.001' },
   { value: 'percentage', label: 'Blind', dpt: 'DPT 5.001' },
+  { value: 'dimmer', label: 'Dimmer', dpt: 'DPT 5.001' },
 ];
 const GA_TOOLTIPS = {
   action: 'The group address this function writes to on the KNX bus.',
@@ -278,7 +279,7 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
               {func.type === 'scene' && (
                 <GAField label="Scene Number" tooltipKey="scene" value={func.sceneNumber} onChange={upd('sceneNumber')} onCommit={persistRoomChanges} placeholder="1–64" type="number" min={1} max={64} />
               )}
-              {(func.type === 'switch' || func.type === 'percentage') && (
+              {(func.type === 'switch' || func.type === 'percentage' || func.type === 'dimmer') && (
                 <GAField label="Feedback GA" tooltipKey="feedback" value={func.statusGroupAddress} onChange={upd('statusGroupAddress')} onCommit={persistRoomChanges} placeholder="e.g. 1/5/1" browseLabel="Search ETS addresses for feedback GA"
                   matchedAddressName={resolveGroupAddressName?.(func.statusGroupAddress)}
                   onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: func.type, target: { kind: 'field', functionId: func.id, field: 'statusGroupAddress' }, helperText: 'Select a compatible feedback GA.' })} />

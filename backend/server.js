@@ -197,10 +197,16 @@ function buildKnxTrackingMaps(apartmentId) {
         if (func.statusGroupAddress) {
           statusSet.add(func.statusGroupAddress);
           gaToType[func.statusGroupAddress] = func.type;
+          if (func.type === 'percentage' || func.type === 'dimmer') {
+            gaToDpt[func.statusGroupAddress] = 'DPT5.001';
+          }
           scopedSet.add(func.statusGroupAddress);
         }
         if (func.groupAddress) {
           gaToType[func.groupAddress] = func.type;
+          if (func.type === 'percentage' || func.type === 'dimmer') {
+            gaToDpt[func.groupAddress] = 'DPT5.001';
+          }
           scopedSet.add(func.groupAddress);
           // Map action GA → status GA so button presses update the UI immediately
           if (func.statusGroupAddress && func.groupAddress !== func.statusGroupAddress) {
@@ -677,7 +683,7 @@ async function executeAutomationAction(apartment, action, allFloors) {
       break;
     }
     if (!groupAddress) throw new Error(`Function target not found: ${action.targetId}`);
-    if (action.targetType === 'percentage') {
+    if (action.targetType === 'percentage' || action.targetType === 'dimmer') {
       knxService.writeGroupValue(groupAddress, action.value, 'DPT5.001');
     } else {
       knxService.writeGroupValue(groupAddress, action.value === true || action.value === 1, 'DPT1');
@@ -837,7 +843,7 @@ app.post('/api/action', async (req, res) => {
     if (type === 'scene') {
       actionContext.context.knxService.writeScene(groupAddress, sceneNumber);
       await triggerLinkedHueScene(actionContext.apartmentId, scope, groupAddress, sceneNumber);
-    } else if (type === 'percentage') {
+    } else if (type === 'percentage' || type === 'dimmer') {
       actionContext.context.knxService.writeGroupValue(groupAddress, value, 'DPT5.001');
     } else {
       actionContext.context.knxService.writeGroupValue(

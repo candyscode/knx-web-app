@@ -157,7 +157,7 @@ class KnxService {
                     });
                   }
                 } else if (value.length === 1) {
-                  if (type === 'percentage') {
+                  if (type === 'percentage' || type === 'dimmer') {
                     parsedValue = Math.round((value[0] / 255) * 100);
                   } else if (type === 'scene') {
                     parsedValue = value[0] & 0x3F;

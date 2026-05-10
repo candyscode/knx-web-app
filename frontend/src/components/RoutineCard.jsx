@@ -27,7 +27,7 @@ function resolveActionInfo(action, floors) {
         : null;
     } else {
       const func = Array.isArray(room.functions) ? room.functions.find((f) => f.id === action.targetId) : null;
-      const valueStr = action.targetType === 'percentage' ? `${action.value}%` : (action.value ? 'On' : 'Off');
+      const valueStr = (action.targetType === 'percentage' || action.targetType === 'dimmer') ? `${action.value}%` : (action.value ? 'On' : 'Off');
       return func
         ? { label: `${floor.name} › ${room.name} › ${func.name}`, valueStr }
         : null;
