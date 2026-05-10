@@ -47,6 +47,7 @@ function App() {
   const canRenderProtectedSection = !isProtectedSection || (configReady && (!configProtectionEnabled || configUnlocked));
 
   const addToast = (msg, type = 'info') => {
+    if (type === 'info' || type === 'success') return;
     const id = Date.now();
     setToasts((prev) => [...prev, { id, msg, type }]);
     setTimeout(() => removeToast(id), 7000);
