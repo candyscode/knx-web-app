@@ -36,20 +36,59 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
         <Blinds size={18} color="var(--accent-color)" />
         <span style={{ fontWeight: '600' }}>{func.name}</span>
         {isMoving && !!func.movingGroupAddress && (
-          <span style={{ fontSize: '0.7rem', color: 'var(--accent-color)', marginLeft: '0.25rem', animation: 'pulse 1s infinite' }}>⬆⬇ fährt…</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--accent-color)', marginLeft: 'auto', animation: 'pulse 1s infinite' }}>⬆⬇ fährt…</span>
         )}
-        <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{sollPosition}%</span>
       </div>
       <div className="blinds-widget">
         <div className="blinds-window">
           <div className="blinds-glass" />
           <div className="blinds-curtain" style={{ height: `${sollPosition}%` }} />
+          <div className="dimmer-label">{sollPosition}%</div>
           <input type="range" className="blinds-slider" min="0" max="100" value={sollPosition}
             onChange={e => setSollPosition(parseInt(e.target.value, 10))}
             onPointerUp={handlePointerUp} onTouchEnd={handlePointerUp} />
         </div>
         <div className="blinds-indicator-bar" title={`Ist-Position: ${istPosition}%`}>
           <div className="blinds-indicator-fill" style={{ height: `${istPosition}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Dimmer Card ───────────────────────────────────────────
+const DimmerCard = ({ func, istPosition, onAction }) => {
+  const [sollPosition, setSollPosition] = useState(istPosition !== undefined ? istPosition : 0);
+  const initializedRef = useRef(false);
+  const lockRef = useRef(false);
+
+  useEffect(() => {
+    if (istPosition === undefined) return;
+    if (!initializedRef.current) { initializedRef.current = true; lockRef.current = false; setSollPosition(istPosition); return; }
+    if (lockRef.current) return;
+    setSollPosition(istPosition);
+  }, [istPosition]);
+
+  const handlePointerUp = () => {
+    lockRef.current = true;
+    onAction({ ...func, value: sollPosition });
+    clearTimeout(lockRef._timeout);
+    lockRef._timeout = setTimeout(() => { lockRef.current = false; }, 5000);
+  };
+
+  return (
+    <div className="action-btn" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'default' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <Lightbulb size={18} color="var(--accent-color)" />
+        <span style={{ fontWeight: '600' }}>{func.name}</span>
+      </div>
+      <div className="dimmer-widget">
+        <div className="dimmer-track">
+          <div className="dimmer-fill" style={{ width: `${sollPosition}%` }} />
+          <div className="dimmer-label">{sollPosition}%</div>
+          <input type="range" className="dimmer-slider" min="0" max="100" value={sollPosition}
+            onChange={e => setSollPosition(parseInt(e.target.value, 10))}
+            onPointerUp={handlePointerUp} onTouchEnd={handlePointerUp} />
         </div>
       </div>
     </div>
@@ -122,6 +161,13 @@ function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction
                   <BlindsCard key={func.id} func={func}
                     istPosition={deviceStates[func.statusGroupAddress] !== undefined ? deviceStates[func.statusGroupAddress] : 0}
                     isMoving={func.movingGroupAddress ? deviceStates[func.movingGroupAddress] : undefined}
+                    onAction={handleAction} />
+                );
+              }
+              if (func.type === 'dimmer') {
+                return (
+                  <DimmerCard key={func.id} func={func}
+                    istPosition={deviceStates[func.statusGroupAddress] !== undefined ? deviceStates[func.statusGroupAddress] : 0}
                     onAction={handleAction} />
                 );
               }

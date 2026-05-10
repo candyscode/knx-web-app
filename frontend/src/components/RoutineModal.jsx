@@ -30,7 +30,7 @@ function SortableActionRow({ action, floors, index, onDelete }) {
       <span className="routine-action-kind">{action.kind}</span>
       {action.kind === 'function' && (
         <span className="routine-action-value">
-          {action.targetType === 'percentage' ? `${action.value}%` : (action.value ? 'On' : 'Off')}
+          {action.targetType === 'percentage' || action.targetType === 'dimmer' ? `${action.value}%` : (action.value ? 'On' : 'Off')}
         </span>
       )}
       <button className="icon-btn btn-danger" onClick={() => onDelete(action.id)} title="Remove action">

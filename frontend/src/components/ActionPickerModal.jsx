@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Search, Clapperboard, Zap } from 'lucide-react';
 
-const VALID_FUNCTION_TYPES = new Set(['switch', 'percentage']);
+const VALID_FUNCTION_TYPES = new Set(['switch', 'percentage', 'dimmer']);
 
 function buildSearchItems(floors) {
   const items = [];
@@ -77,7 +77,7 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
     } else {
       // Need value config
       setSelectedItem(item);
-      setValue(item.targetType === 'percentage' ? 50 : false);
+      setValue((item.targetType === 'percentage' || item.targetType === 'dimmer') ? 50 : false);
     }
   };
 
@@ -154,7 +154,7 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
                     </div>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', flexShrink: 0, background: 'rgba(255,255,255,0.07)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
-                    {item.kind === 'scene' ? 'Scene' : item.targetType === 'percentage' ? 'Percentage' : 'Switch'}
+                    {item.kind === 'scene' ? 'Scene' : (item.targetType === 'percentage' || item.targetType === 'dimmer') ? 'Percentage' : 'Switch'}
                   </span>
                 </button>
               ))}
@@ -172,9 +172,9 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
 
             <div className="settings-field" style={{ marginBottom: '1.5rem' }}>
               <label className="settings-field-label">
-                {selectedItem.targetType === 'percentage' ? 'Target Value (0–100%)' : 'Target State'}
+                {(selectedItem.targetType === 'percentage' || selectedItem.targetType === 'dimmer') ? 'Target Value (0–100%)' : 'Target State'}
               </label>
-              {selectedItem.targetType === 'percentage' ? (
+              {(selectedItem.targetType === 'percentage' || selectedItem.targetType === 'dimmer') ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <input
                     type="range" min={0} max={100} step={1}
