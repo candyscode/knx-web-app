@@ -527,6 +527,7 @@ body {
   opacity: 0;
   cursor: ns-resize;
   z-index: 10;
+  touch-action: none;
 }
 
 /* ── Scene Pills (Dashboard) ────────────────────── */
