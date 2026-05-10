@@ -30,8 +30,20 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
     }
   };
 
+  const handleFrameClick = (e) => {
+    if (e.target.tagName === 'INPUT') return; // ignore slider touches
+    const next = sollPosition === 0 ? 100 : 0;
+    setSollPosition(next);
+    softwareCommandActiveRef.current = true;
+    onAction({ ...func, value: next });
+    if (!func.movingGroupAddress) {
+      clearTimeout(softwareCommandActiveRef._timeout);
+      softwareCommandActiveRef._timeout = setTimeout(() => { softwareCommandActiveRef.current = false; }, 180000);
+    }
+  };
+
   return (
-    <div className="action-btn" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'default' }}>
+    <div className="action-btn" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={handleFrameClick}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
         <Blinds size={18} color="var(--accent-color)" />
         <span style={{ fontWeight: '600' }}>{func.name}</span>
@@ -76,8 +88,18 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
     lockRef._timeout = setTimeout(() => { lockRef.current = false; }, 5000);
   };
 
+  const handleFrameClick = (e) => {
+    if (e.target.tagName === 'INPUT') return; // ignore slider touches
+    const next = sollPosition === 0 ? 100 : 0;
+    setSollPosition(next);
+    lockRef.current = true;
+    onAction({ ...func, value: next });
+    clearTimeout(lockRef._timeout);
+    lockRef._timeout = setTimeout(() => { lockRef.current = false; }, 5000);
+  };
+
   return (
-    <div className="action-btn" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'default' }}>
+    <div className="action-btn" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={handleFrameClick}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
         <Lightbulb size={18} color="var(--accent-color)" />
         <span style={{ fontWeight: '600' }}>{func.name}</span>
