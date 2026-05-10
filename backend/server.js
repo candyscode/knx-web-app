@@ -179,6 +179,8 @@ function buildKnxTrackingMaps(apartmentId) {
   const sharedInfoStatusGAs = new Set();
   const sharedAreaStatusGAs = new Set();
 
+  const actionToStatusGa = {};
+
   const registerRoomSet = (rooms, scope) => {
     const scopedSet = scope === 'shared' ? sharedGaSet : apartmentGaSet;
     const statusSet = scope === 'shared' ? sharedAreaStatusGAs : apartmentStatusGAs;
@@ -200,6 +202,10 @@ function buildKnxTrackingMaps(apartmentId) {
         if (func.groupAddress) {
           gaToType[func.groupAddress] = func.type;
           scopedSet.add(func.groupAddress);
+          // Map action GA → status GA so button presses update the UI immediately
+          if (func.statusGroupAddress && func.groupAddress !== func.statusGroupAddress) {
+            actionToStatusGa[func.groupAddress] = func.statusGroupAddress;
+          }
         }
         if (func.movingGroupAddress) {
           gaToType[func.movingGroupAddress] = 'moving';
@@ -238,6 +244,7 @@ function buildKnxTrackingMaps(apartmentId) {
     statusGAs: new Set([...apartmentStatusGAs, ...sharedInfoStatusGAs, ...sharedAreaStatusGAs]),
     gaToType,
     gaToDpt,
+    actionToStatusGa,
     apartmentGaSet,
     sharedGaSet,
     apartmentStatusGAs,
@@ -277,6 +284,7 @@ function refreshKnxSubscriptions(apartmentId, { requestReads = false } = {}) {
   context.tracking = buildKnxTrackingMaps(apartmentId);
   context.knxService.setGaToType(context.tracking.gaToType);
   context.knxService.setGaToDpt(context.tracking.gaToDpt);
+  context.knxService.setActionToStatusGaMap(context.tracking.actionToStatusGa);
   context.knxService.setSceneTriggerCallback((groupAddress, sceneNumber) => {
     const scope = context.tracking.sharedGaSet.has(groupAddress) ? 'shared' : 'apartment';
     handleExternalSceneTrigger(apartmentId, scope, groupAddress, sceneNumber);
@@ -296,13 +304,14 @@ function establishConnection(apartmentId) {
   if (!apartment || !context) return;
 
   if (!apartment.knxIp) {
-    context.knxService.connect('', apartment.knxPort || 3671);
+    context.knxService.connect('', apartment.knxPort || 3671, null, {});
     return;
   }
 
+  const knxOptions = apartment.knxLocalInterface ? { interface: apartment.knxLocalInterface } : {};
   context.knxService.connect(apartment.knxIp, apartment.knxPort, () => {
     refreshKnxSubscriptions(apartmentId, { requestReads: true });
-  });
+  }, knxOptions);
 }
 
 function stopHuePolling(apartmentId) {
@@ -512,6 +521,7 @@ function applyConfigPatch(payload) {
 
   if (payload.knxIp !== undefined) apartment.knxIp = payload.knxIp;
   if (payload.knxPort !== undefined) apartment.knxPort = parseInt(payload.knxPort, 10) || 3671;
+  if (payload.knxLocalInterface !== undefined) apartment.knxLocalInterface = typeof payload.knxLocalInterface === 'string' ? payload.knxLocalInterface.trim() : '';
   if (payload.hue !== undefined && payload.hue && typeof payload.hue === 'object') {
     apartment.hue = {
       bridgeIp: typeof payload.hue.bridgeIp === 'string' ? payload.hue.bridgeIp : '',
@@ -715,7 +725,8 @@ app.post('/api/config', (req, res) => {
     const previousApartment = getApartmentById(previousConfig, apartment.id);
     const knxChanged = !previousApartment
       || previousApartment.knxIp !== apartment.knxIp
-      || previousApartment.knxPort !== apartment.knxPort;
+      || previousApartment.knxPort !== apartment.knxPort
+      || previousApartment.knxLocalInterface !== apartment.knxLocalInterface;
 
     if (knxChanged) establishConnection(apartment.id);
     else refreshKnxSubscriptions(apartment.id, { requestReads: true });
@@ -991,7 +1002,7 @@ app.delete('/api/config/rooms/:roomId/hue-room', (req, res) => {
 app.post('/api/config/scenes/:sceneId/hue-scene', (req, res) => {
   const apartmentId = req.body.apartmentId || config.apartments[0]?.id;
   const scope = req.body.scope || 'apartment';
-  const { hueSceneId } = req.body;
+  const { hueSceneId, hueSceneName } = req.body;
   if (!hueSceneId) {
     res.status(400).json({ success: false, error: 'hueSceneId required' });
     return;
@@ -1004,6 +1015,7 @@ app.post('/api/config/scenes/:sceneId/hue-scene', (req, res) => {
   }
 
   scene.hueSceneId = hueSceneId;
+  if (hueSceneName) scene.hueSceneName = hueSceneName;
   saveConfig();
   res.json({ success: true });
 });

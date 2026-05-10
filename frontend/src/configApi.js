@@ -139,11 +139,11 @@ export const unlinkHueRoom = async (roomId, { apartmentId, scope = 'apartment' }
   return res.json();
 };
 
-export const linkHueScene = async (sceneId, hueSceneId, { apartmentId, scope = 'apartment' } = {}) => {
+export const linkHueScene = async (sceneId, hueSceneId, { apartmentId, scope = 'apartment', hueSceneName } = {}) => {
   const res = await fetch(`${API_BASE}/config/scenes/${sceneId}/hue-scene`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apartmentId, scope, hueSceneId })
+    body: JSON.stringify({ apartmentId, scope, hueSceneId, hueSceneName })
   });
   return res.json();
 };

@@ -65,6 +65,7 @@ export default function Connections({
   const [apartmentSlug, setApartmentSlug] = useState(apartment.slug);
   const [ip, setIp] = useState(config.knxIp || '');
   const [port, setPort] = useState(config.knxPort || 3671);
+  const [knxLocalInterface, setKnxLocalInterface] = useState(config.knxLocalInterface || '');
   const [hueBridgeIp, setHueBridgeIp] = useState(config.hue?.bridgeIp || '');
   const [hueError, setHueError] = useState('');
   const [newApartmentName, setNewApartmentName] = useState('');
@@ -108,6 +109,7 @@ export default function Connections({
     setApartmentSlug(apartment.slug);
     setIp(config.knxIp || '');
     setPort(config.knxPort || 3671);
+    setKnxLocalInterface(config.knxLocalInterface || '');
     setHueBridgeIp(config.hue?.bridgeIp || '');
     setHouseGroupAddressBook(Array.isArray(config.importedGroupAddresses) ? config.importedGroupAddresses : []);
     setHouseGroupAddressFileName(config.importedGroupAddressesFileName || '');
@@ -129,6 +131,7 @@ export default function Connections({
     apartmentSlug !== apartment.slug ||
     ip !== (config.knxIp || '') ||
     normalizedPort !== (config.knxPort || 3671) ||
+    knxLocalInterface !== (config.knxLocalInterface || '') ||
     sunTriggerGa !== (config.sunTrigger?.groupAddress || '') ||
     sunTriggerDayValue !== (config.sunTrigger?.dayValue ?? 1)
   );
@@ -147,6 +150,7 @@ export default function Connections({
         slug: overrides.apartmentSlug ?? apartmentSlug,
         knxIp: overrides.ip ?? ip,
         knxPort: overrides.port ?? Number(port),
+        knxLocalInterface: overrides.knxLocalInterface ?? knxLocalInterface,
         sunTrigger: {
           groupAddress: overrides.sunTriggerGa ?? sunTriggerGa,
           dayValue: overrides.sunTriggerDayValue ?? sunTriggerDayValue,
@@ -170,6 +174,7 @@ export default function Connections({
       nextApartmentSlugInput !== apartment.slug ||
       nextIp !== (config.knxIp || '') ||
       nextPort !== (config.knxPort || 3671) ||
+      (overrides.knxLocalInterface ?? knxLocalInterface) !== (config.knxLocalInterface || '') ||
       nextSunTriggerGa !== (config.sunTrigger?.groupAddress || '') ||
       nextSunTriggerDayValue !== (config.sunTrigger?.dayValue ?? 1)
     );
@@ -476,6 +481,11 @@ export default function Connections({
               <div className="settings-field">
                 <label className="settings-field-label">KNX Port</label>
                 <input className="form-input" type="number" value={port} placeholder="3671" onChange={(event) => setPort(event.target.value)} onBlur={commitApartmentSettings} />
+              </div>
+              <div className="settings-field">
+                <label className="settings-field-label">Local Network Interface <span style={{ fontWeight: 400, opacity: 0.6, fontSize: '0.78rem' }}>(optional, e.g. eth0)</span></label>
+                <input className="form-input" value={knxLocalInterface} placeholder="Leave empty for auto-detect" onChange={(event) => setKnxLocalInterface(event.target.value)} onBlur={commitApartmentSettings} />
+                <p style={{ margin: '0.35rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Set this to the interface name connected to your KNX network (e.g. <code>eth0</code>). Required on devices with multiple network interfaces (Raspberry Pi with WiFi + Ethernet) when KNX updates are not received.</p>
               </div>
             </div>
             <div className="connections-card-actions">
