@@ -456,3 +456,145 @@ describe('Dashboard — Functions section heading', () => {
     expect(screen.getByText('Functions')).toBeInTheDocument();
   });
 });
+
+// ── BlindsCard — frame-click toggle ───────────────────────────────────────────
+
+describe('Dashboard — blind frame-click toggle', () => {
+  it('sends 100% when frame is clicked and current position is 0%', async () => {
+    renderDashboard({
+      rooms: [ROOM_WITH_BLIND],
+      deviceStates: { '2/0/1': 0 },
+    });
+
+    // Click the function name label (part of the frame, not the slider)
+    fireEvent.click(screen.getByText('Blinds'));
+
+    await waitFor(() => {
+      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'percentage',
+        value: 100,
+      }));
+    });
+  });
+
+  it('sends 0% when frame is clicked and current position is > 0%', async () => {
+    renderDashboard({
+      rooms: [ROOM_WITH_BLIND],
+      deviceStates: { '2/0/1': 75 },
+    });
+
+    fireEvent.click(screen.getByText('Blinds'));
+
+    await waitFor(() => {
+      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'percentage',
+        value: 0,
+      }));
+    });
+  });
+
+  it('does NOT toggle when the slider input itself is clicked', async () => {
+    renderDashboard({
+      rooms: [ROOM_WITH_BLIND],
+      deviceStates: { '2/0/1': 50 },
+    });
+
+    const slider = screen.getByRole('slider');
+    fireEvent.click(slider);
+
+    // triggerAction should not have been called from a frame click
+    expect(api.triggerAction).not.toHaveBeenCalled();
+  });
+});
+
+// ── DimmerCard ────────────────────────────────────────────────────────────────
+
+const DIMMER_FUNC = {
+  id: 'f4', name: 'Ceiling Dimmer', type: 'dimmer',
+  groupAddress: '3/0/0', statusGroupAddress: '3/0/1',
+};
+
+const ROOM_WITH_DIMMER = {
+  id: 'r4', name: 'Bedroom',
+  sceneGroupAddress: '', scenes: [],
+  functions: [DIMMER_FUNC],
+};
+
+describe('Dashboard — dimmer widget', () => {
+  it('renders dimmer widget with function name', () => {
+    renderDashboard({ rooms: [ROOM_WITH_DIMMER] });
+    expect(screen.getByText('Ceiling Dimmer')).toBeInTheDocument();
+  });
+
+  it('renders a slider for the dimmer', () => {
+    renderDashboard({ rooms: [ROOM_WITH_DIMMER] });
+    expect(screen.getByRole('slider')).toBeInTheDocument();
+  });
+
+  it('initializes slider to current ist-position from deviceStates', () => {
+    renderDashboard({
+      rooms: [ROOM_WITH_DIMMER],
+      deviceStates: { '3/0/1': 40 },
+    });
+    expect(screen.getByRole('slider')).toHaveValue('40');
+  });
+
+  it('sends dimmer action with correct value when slider is released', async () => {
+    renderDashboard({ rooms: [ROOM_WITH_DIMMER] });
+    const slider = screen.getByRole('slider');
+
+    fireEvent.change(slider, { target: { value: '70' } });
+    fireEvent.pointerUp(slider);
+
+    await waitFor(() => {
+      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'dimmer',
+        value: 70,
+      }));
+    });
+  });
+
+  it('sends 100% when frame is clicked and current position is 0%', async () => {
+    renderDashboard({
+      rooms: [ROOM_WITH_DIMMER],
+      deviceStates: { '3/0/1': 0 },
+    });
+
+    fireEvent.click(screen.getByText('Ceiling Dimmer'));
+
+    await waitFor(() => {
+      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'dimmer',
+        value: 100,
+      }));
+    });
+  });
+
+  it('sends 0% when frame is clicked and current position is > 0%', async () => {
+    renderDashboard({
+      rooms: [ROOM_WITH_DIMMER],
+      deviceStates: { '3/0/1': 60 },
+    });
+
+    fireEvent.click(screen.getByText('Ceiling Dimmer'));
+
+    await waitFor(() => {
+      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'dimmer',
+        value: 0,
+      }));
+    });
+  });
+
+  it('does NOT toggle when the slider input itself is clicked', async () => {
+    renderDashboard({
+      rooms: [ROOM_WITH_DIMMER],
+      deviceStates: { '3/0/1': 50 },
+    });
+
+    const slider = screen.getByRole('slider');
+    fireEvent.click(slider);
+
+    expect(api.triggerAction).not.toHaveBeenCalled();
+  });
+});
