@@ -18,7 +18,7 @@ echo "  1. Check and install necessary system tools (git, curl, build-essential)
 echo "  2. Detect Node.js, and if missing, install the Node.js v20 LTS release."
 echo "  3. Clone the KNX Web App repository into $INSTALL_DIR."
 echo "     (If an existing installation is found, it will be updated safely while preserving your config.json)."
-echo "  4. Build and install the Frontend and Backend dependencies."
+echo "  4. Build the Frontend and install only the Backend runtime dependencies."
 echo "  5. Set up the application to run as a systemd background service."
 echo "  6. Install global command-line utilities (knx-start, knx-stop, knx-log, etc.)."
 echo ""
@@ -82,7 +82,7 @@ npm run build
 
 echo "=> Installing Backend dependencies..."
 cd "$APP_DIR/backend"
-npm ci || npm install
+NODE_ENV=production npm ci --omit=dev || NODE_ENV=production npm install --omit=dev
 
 # Set up Systemd Service
 echo "=> Configuring Background Service (systemd)..."

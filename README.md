@@ -110,6 +110,7 @@ What it does:
 - installs Node.js if needed
 - clones or updates the repo into `~/.knx-web-app`
 - builds the frontend
+- installs only the backend runtime dependencies needed for the service
 - registers the app as a `systemd` service
 
 Convenience commands installed by the script:
