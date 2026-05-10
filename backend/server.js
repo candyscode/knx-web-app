@@ -230,6 +230,13 @@ function buildKnxTrackingMaps(apartmentId) {
     apartmentGaSet.add(alarm.statusGroupAddress);
   });
 
+  if (apartment?.sunTrigger?.groupAddress) {
+    apartmentStatusGAs.add(apartment.sunTrigger.groupAddress);
+    gaToType[apartment.sunTrigger.groupAddress] = 'sun';
+    gaToDpt[apartment.sunTrigger.groupAddress] = 'DPT1.001';
+    apartmentGaSet.add(apartment.sunTrigger.groupAddress);
+  }
+
   (config.building.sharedInfos || []).forEach((info) => {
     if (!info?.statusGroupAddress) return;
     sharedInfoStatusGAs.add(info.statusGroupAddress);

@@ -133,9 +133,13 @@ class KnxService {
               if (onConnectCallback) onConnectCallback();
             },
             event: (evt, src, dest, value) => {
-              let parsedValue = value;
               const type = this.gaToType[dest];
               const dptString = this.gaToDpt[dest];
+
+              // If the GA is completely untracked by the app, we have no business parsing or emitting it
+              if (!type && !dptString) return;
+
+              let parsedValue = value;
 
               if (Buffer.isBuffer(value)) {
                 if (dptString) {
@@ -155,6 +159,8 @@ class KnxService {
                 } else if (value.length === 1) {
                   if (type === 'percentage') {
                     parsedValue = Math.round((value[0] / 255) * 100);
+                  } else if (type === 'scene') {
+                    parsedValue = value[0] & 0x3F;
                   } else {
                     if (value[0] === 1) parsedValue = true;
                     else if (value[0] === 0) parsedValue = false;
