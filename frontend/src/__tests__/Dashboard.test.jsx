@@ -414,37 +414,36 @@ describe('Dashboard — Hue lamp function', () => {
 });
 
 describe('Dashboard — blind slider', () => {
-  it('renders blind widget with slider', () => {
-    renderDashboard({ rooms: [ROOM_WITH_BLIND] });
-    const slider = screen.getByRole('slider');
-    expect(slider).toBeInTheDocument();
-  });
-
   it('shows blind function name', () => {
     renderDashboard({ rooms: [ROOM_WITH_BLIND] });
     expect(screen.getByText('Blinds')).toBeInTheDocument();
   });
 
-  it('initializes slider to current ist-position from deviceStates', () => {
+  it('shows current position label from deviceStates', () => {
     renderDashboard({
       rooms: [ROOM_WITH_BLIND],
       deviceStates: { '2/0/1': 75 },
     });
-    const slider = screen.getByRole('slider');
-    expect(slider).toHaveValue('75');
+    expect(screen.getByText('75%')).toBeInTheDocument();
   });
 
-  it('sends percentage action when slider is released', async () => {
-    renderDashboard({ rooms: [ROOM_WITH_BLIND] });
-    const slider = screen.getByRole('slider');
+  it('sends percentage action when dragging the blind widget', async () => {
+    renderDashboard({ rooms: [ROOM_WITH_BLIND], deviceStates: { '2/0/1': 0 } });
 
-    fireEvent.change(slider, { target: { value: '60' } });
-    fireEvent.pointerUp(slider);
+    const track = document.querySelector('.blinds-window');
+    track.setPointerCapture = vi.fn();
+    track.getBoundingClientRect = vi.fn(() => ({
+      top: 0, left: 0, width: 160, height: 160, right: 160, bottom: 160,
+    }));
+
+    fireEvent.pointerDown(track, { pointerId: 1, clientX: 80, clientY: 0 });
+    fireEvent.pointerMove(track, { pointerId: 1, clientX: 80, clientY: 80 }); // 80/160 = 50%
+    fireEvent.pointerUp(track, { pointerId: 1, clientX: 80, clientY: 80 });
 
     await waitFor(() => {
       expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
         type: 'percentage',
-        value: 60,
+        value: 50,
       }));
     });
   });
@@ -466,7 +465,6 @@ describe('Dashboard — blind frame-click toggle', () => {
       deviceStates: { '2/0/1': 0 },
     });
 
-    // Click the function name label (part of the frame, not the slider)
     fireEvent.click(screen.getByText('Blinds'));
 
     await waitFor(() => {
@@ -493,16 +491,19 @@ describe('Dashboard — blind frame-click toggle', () => {
     });
   });
 
-  it('does NOT toggle when the slider input itself is clicked', async () => {
+  it('does NOT toggle when the widget track itself is clicked', async () => {
     renderDashboard({
       rooms: [ROOM_WITH_BLIND],
       deviceStates: { '2/0/1': 50 },
     });
 
-    const slider = screen.getByRole('slider');
-    fireEvent.click(slider);
+    const track = document.querySelector('.blinds-window');
+    track.setPointerCapture = vi.fn();
+    track.getBoundingClientRect = vi.fn(() => ({
+      top: 0, left: 0, width: 160, height: 160, right: 160, bottom: 160,
+    }));
+    fireEvent.click(track);
 
-    // triggerAction should not have been called from a frame click
     expect(api.triggerAction).not.toHaveBeenCalled();
   });
 });
@@ -526,30 +527,31 @@ describe('Dashboard — dimmer widget', () => {
     expect(screen.getByText('Ceiling Dimmer')).toBeInTheDocument();
   });
 
-  it('renders a slider for the dimmer', () => {
-    renderDashboard({ rooms: [ROOM_WITH_DIMMER] });
-    expect(screen.getByRole('slider')).toBeInTheDocument();
-  });
-
-  it('initializes slider to current ist-position from deviceStates', () => {
+  it('shows current position label from deviceStates', () => {
     renderDashboard({
       rooms: [ROOM_WITH_DIMMER],
       deviceStates: { '3/0/1': 40 },
     });
-    expect(screen.getByRole('slider')).toHaveValue('40');
+    expect(screen.getByText('40%')).toBeInTheDocument();
   });
 
-  it('sends dimmer action with correct value when slider is released', async () => {
-    renderDashboard({ rooms: [ROOM_WITH_DIMMER] });
-    const slider = screen.getByRole('slider');
+  it('sends dimmer action when dragging the dimmer widget', async () => {
+    renderDashboard({ rooms: [ROOM_WITH_DIMMER], deviceStates: { '3/0/1': 0 } });
 
-    fireEvent.change(slider, { target: { value: '70' } });
-    fireEvent.pointerUp(slider);
+    const track = document.querySelector('.dimmer-track');
+    track.setPointerCapture = vi.fn();
+    track.getBoundingClientRect = vi.fn(() => ({
+      top: 0, left: 0, width: 200, height: 160, right: 200, bottom: 160,
+    }));
+
+    fireEvent.pointerDown(track, { pointerId: 1, clientX: 0, clientY: 80 });
+    fireEvent.pointerMove(track, { pointerId: 1, clientX: 100, clientY: 80 }); // 100/200 = 50%
+    fireEvent.pointerUp(track, { pointerId: 1, clientX: 100, clientY: 80 });
 
     await waitFor(() => {
       expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
         type: 'dimmer',
-        value: 70,
+        value: 50,
       }));
     });
   });
@@ -586,15 +588,21 @@ describe('Dashboard — dimmer widget', () => {
     });
   });
 
-  it('does NOT toggle when the slider input itself is clicked', async () => {
+  it('does NOT toggle when the widget track itself is clicked', async () => {
     renderDashboard({
       rooms: [ROOM_WITH_DIMMER],
       deviceStates: { '3/0/1': 50 },
     });
 
-    const slider = screen.getByRole('slider');
-    fireEvent.click(slider);
+    const track = document.querySelector('.dimmer-track');
+    track.setPointerCapture = vi.fn();
+    track.getBoundingClientRect = vi.fn(() => ({
+      top: 0, left: 0, width: 200, height: 160, right: 200, bottom: 160,
+    }));
+    fireEvent.click(track);
 
     expect(api.triggerAction).not.toHaveBeenCalled();
   });
 });
+
+

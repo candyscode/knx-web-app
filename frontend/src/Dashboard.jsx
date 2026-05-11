@@ -9,6 +9,8 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
   const [sollPosition, setSollPosition] = useState(istPosition !== undefined ? istPosition : 0);
   const initializedRef = useRef(false);
   const softwareCommandActiveRef = useRef(false);
+  const dragRef = useRef(null);
+  const trackRef = useRef(null);
 
   useEffect(() => {
     if (istPosition === undefined) return;
@@ -21,29 +23,44 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
     if (isMoving === false && softwareCommandActiveRef.current) softwareCommandActiveRef.current = false;
   }, [isMoving]);
 
-  const handlePointerUp = () => {
+  const sendValue = (value) => {
     softwareCommandActiveRef.current = true;
-    onAction({ ...func, value: sollPosition });
+    onAction({ ...func, value });
     if (!func.movingGroupAddress) {
       clearTimeout(softwareCommandActiveRef._timeout);
       softwareCommandActiveRef._timeout = setTimeout(() => { softwareCommandActiveRef.current = false; }, 180000);
     }
+  };
+
+  const handlePointerDown = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragRef.current = { startY: e.clientY, startValue: sollPosition, moved: false, rect };
+  };
+
+  const handlePointerMove = (e) => {
+    if (!dragRef.current) return;
+    const dy = e.clientY - dragRef.current.startY;
+    if (Math.abs(dy) > 5) dragRef.current.moved = true;
+    const next = Math.max(0, Math.min(100, Math.round(dragRef.current.startValue + (dy / dragRef.current.rect.height) * 100)));
+    setSollPosition(next);
+  };
+
+  const handlePointerUp = () => {
+    if (!dragRef.current) return;
+    if (dragRef.current.moved) sendValue(sollPosition);
+    dragRef.current = null;
   };
 
   const handleFrameClick = (e) => {
-    if (e.target.tagName === 'INPUT') return; // ignore slider touches
+    if (trackRef.current && trackRef.current.contains(e.target)) return;
     const next = sollPosition === 0 ? 100 : 0;
     setSollPosition(next);
-    softwareCommandActiveRef.current = true;
-    onAction({ ...func, value: next });
-    if (!func.movingGroupAddress) {
-      clearTimeout(softwareCommandActiveRef._timeout);
-      softwareCommandActiveRef._timeout = setTimeout(() => { softwareCommandActiveRef.current = false; }, 180000);
-    }
+    sendValue(next);
   };
 
   return (
-    <div className="action-btn" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={handleFrameClick}>
+    <div className="action-btn action-btn--widget" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={handleFrameClick}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
         <Blinds size={18} color="var(--accent-color)" />
         <span style={{ fontWeight: '600' }}>{func.name}</span>
@@ -52,13 +69,17 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
         )}
       </div>
       <div className="blinds-widget">
-        <div className="blinds-window">
+        <div
+          ref={trackRef}
+          className="blinds-window"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={{ cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
+        >
           <div className="blinds-glass" />
           <div className="blinds-curtain" style={{ height: `${sollPosition}%` }} />
           <div className="dimmer-label">{sollPosition}%</div>
-          <input type="range" className="blinds-slider" min="0" max="100" value={sollPosition}
-            onChange={e => setSollPosition(parseInt(e.target.value, 10))}
-            onPointerUp={handlePointerUp} onTouchEnd={handlePointerUp} />
         </div>
         <div className="blinds-indicator-bar" title={`Ist-Position: ${istPosition}%`}>
           <div className="blinds-indicator-fill" style={{ height: `${istPosition}%` }} />
@@ -73,6 +94,8 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
   const [sollPosition, setSollPosition] = useState(istPosition !== undefined ? istPosition : 0);
   const initializedRef = useRef(false);
   const lockRef = useRef(false);
+  const dragRef = useRef(null);
+  const trackRef = useRef(null);
 
   useEffect(() => {
     if (istPosition === undefined) return;
@@ -81,41 +104,63 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
     setSollPosition(istPosition);
   }, [istPosition]);
 
-  const handlePointerUp = () => {
+  const sendValue = (value) => {
     lockRef.current = true;
-    onAction({ ...func, value: sollPosition });
+    onAction({ ...func, value });
     clearTimeout(lockRef._timeout);
     lockRef._timeout = setTimeout(() => { lockRef.current = false; }, 5000);
+  };
+
+  const handlePointerDown = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragRef.current = { startX: e.clientX, startValue: sollPosition, moved: false, rect };
+  };
+
+  const handlePointerMove = (e) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    if (Math.abs(dx) > 5) dragRef.current.moved = true;
+    const next = Math.max(0, Math.min(100, Math.round(dragRef.current.startValue + (dx / dragRef.current.rect.width) * 100)));
+    setSollPosition(next);
+  };
+
+  const handlePointerUp = () => {
+    if (!dragRef.current) return;
+    if (dragRef.current.moved) sendValue(sollPosition);
+    dragRef.current = null;
   };
 
   const handleFrameClick = (e) => {
-    if (e.target.tagName === 'INPUT') return; // ignore slider touches
+    if (trackRef.current && trackRef.current.contains(e.target)) return;
     const next = sollPosition === 0 ? 100 : 0;
     setSollPosition(next);
-    lockRef.current = true;
-    onAction({ ...func, value: next });
-    clearTimeout(lockRef._timeout);
-    lockRef._timeout = setTimeout(() => { lockRef.current = false; }, 5000);
+    sendValue(next);
   };
 
   return (
-    <div className="action-btn" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={handleFrameClick}>
+    <div className="action-btn action-btn--widget" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={handleFrameClick}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
         <Lightbulb size={18} color="var(--accent-color)" />
         <span style={{ fontWeight: '600' }}>{func.name}</span>
       </div>
       <div className="dimmer-widget">
-        <div className="dimmer-track">
+        <div
+          ref={trackRef}
+          className="dimmer-track"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={{ cursor: 'ew-resize', touchAction: 'none', userSelect: 'none' }}
+        >
           <div className="dimmer-fill" style={{ width: `${sollPosition}%` }} />
           <div className="dimmer-label">{sollPosition}%</div>
-          <input type="range" className="dimmer-slider" min="0" max="100" value={sollPosition}
-            onChange={e => setSollPosition(parseInt(e.target.value, 10))}
-            onPointerUp={handlePointerUp} onTouchEnd={handlePointerUp} />
         </div>
       </div>
     </div>
   );
 };
+
 
 // ── Room Card ─────────────────────────────────────────────
 function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction, handleSceneAction }) {
