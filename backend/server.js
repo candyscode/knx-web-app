@@ -620,10 +620,7 @@ function getActionContext(apartmentId, scope = 'apartment') {
 }
 
 async function triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumber) {
-  const actionContext = getActionContext(apartmentId, scope);
-  if (!actionContext?.context?.hueService?.isPaired) return;
-
-  const rooms = scope === 'shared' ? getRoomsForSharedScope() : getRoomsForApartmentScope(actionContext.apartmentId);
+  const rooms = scope === 'shared' ? getRoomsForSharedScope() : getRoomsForApartmentScope(apartmentId);
 
   for (const room of rooms) {
     if (room.sceneGroupAddress !== groupAddress) continue;
@@ -634,12 +631,59 @@ async function triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumb
     if (!scene) return;
 
     const isOff = scene.name && /^(aus|off)$/i.test(scene.name.trim());
-    if (isOff && room.hueRoomId) {
-      await actionContext.context.hueService.turnOffRoom(room.hueRoomId);
-    } else if (scene.hueSceneId) {
-      await actionContext.context.hueService.triggerScene(scene.hueSceneId);
+
+    if (scope === 'shared') {
+      // Determine which apartment's Hue bridge owns this shared room.
+      // The primary source of truth is the apartment that was selected when
+      // the shared area was created (ownerApartmentId on the area).
+      // Fallback to hueApartmentId on the room if it was set explicitly.
+      let ownerAptId = null;
+      for (const area of (config.building.sharedAreas || [])) {
+        if (area.rooms?.some(r => r.id === room.id)) {
+          ownerAptId = area.ownerApartmentId;
+          break;
+        }
+      }
+      if (!ownerAptId) ownerAptId = room.hueApartmentId;
+
+      if (ownerAptId) {
+        // Guard: only the owner apartment may execute the Hue action.
+        // Multiple apartments receive the same shared GA event (KNX bus delivers
+        // events to every subscriber). Without this guard, each apartment's
+        // callback would trigger its own Hue bridge — calling the wrong bridge.
+        if (apartmentId !== ownerAptId) return;
+
+        const ctx = apartmentContexts.get(ownerAptId);
+        if (!ctx?.hueService?.isPaired) return;
+
+        if (isOff && room.hueRoomId) {
+          await ctx.hueService.turnOffRoom(room.hueRoomId);
+        } else if (scene.hueSceneId) {
+          await ctx.hueService.triggerScene(scene.hueSceneId);
+        }
+      } else if (scene.hueSceneId) {
+        // No explicit owner: hueSceneId is globally unique per bridge, so we try
+        // all paired bridges — only the one that knows the scene will succeed.
+        // This is safe because wrong bridges simply return 404 (caught below).
+        for (const apt of config.apartments) {
+          const ctx = apartmentContexts.get(apt.id);
+          if (!ctx?.hueService?.isPaired) continue;
+          try { await ctx.hueService.triggerScene(scene.hueSceneId); } catch { /* wrong bridge, skip */ }
+        }
+      }
+      // isOff without ownerAptId: hueRoomId is not globally unique across
+      // bridges — skip Hue to avoid calling the wrong bridge. KNX still fires.
+      return;
+    } else {
+      const actionContext = getActionContext(apartmentId, scope);
+      if (!actionContext?.context?.hueService?.isPaired) return;
+      if (isOff && room.hueRoomId) {
+        await actionContext.context.hueService.turnOffRoom(room.hueRoomId);
+      } else if (scene.hueSceneId) {
+        await actionContext.context.hueService.triggerScene(scene.hueSceneId);
+      }
+      return;
     }
-    return;
   }
 }
 

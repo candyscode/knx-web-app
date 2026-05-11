@@ -104,6 +104,7 @@ function normalizeArea(area, index = 0) {
     ...area,
     id: typeof area.id === 'string' ? area.id : `area_${Date.now()}_${index}`,
     name: typeof area.name === 'string' ? area.name : `Area ${index + 1}`,
+    ownerApartmentId: typeof area.ownerApartmentId === 'string' ? area.ownerApartmentId : undefined,
     rooms: Array.isArray(area.rooms) ? area.rooms.map(normalizeRoom) : [],
   };
 }
