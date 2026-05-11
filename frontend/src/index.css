@@ -237,6 +237,11 @@ body {
   transform: scale(0.97);
 }
 
+/* Widget cards (Blinds/Dimmer) should not scale during drag */
+.action-btn--widget:active {
+  transform: none;
+}
+
 .action-icon {
   color: var(--accent-color);
   background: rgba(59, 130, 246, 0.1);
