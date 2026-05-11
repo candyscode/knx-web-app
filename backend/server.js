@@ -621,6 +621,7 @@ function getActionContext(apartmentId, scope = 'apartment') {
 
 async function triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumber) {
   const rooms = scope === 'shared' ? getRoomsForSharedScope() : getRoomsForApartmentScope(apartmentId);
+  logger.info('Triggering linked Hue scene', { apartmentId, scope, groupAddress, sceneNumber, roomCount: rooms.length });
 
   for (const room of rooms) {
     if (room.sceneGroupAddress !== groupAddress) continue;
@@ -628,15 +629,15 @@ async function triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumb
     const scene = (room.scenes || []).find(
       (entry) => entry.sceneNumber === sceneNumber && entry.category !== 'shade'
     );
-    if (!scene) return;
+    if (!scene) {
+      logger.info('No Hue scene matched', { groupAddress, sceneNumber });
+      return;
+    }
 
     const isOff = scene.name && /^(aus|off)$/i.test(scene.name.trim());
+    logger.info('Matched KNX scene', { sceneName: scene.name, isOff, roomName: room.name, scope });
 
     if (scope === 'shared') {
-      // Determine which apartment's Hue bridge owns this shared room.
-      // The primary source of truth is the apartment that was selected when
-      // the shared area was created (ownerApartmentId on the area).
-      // Fallback to hueApartmentId on the room if it was set explicitly.
       let ownerAptId = null;
       for (const area of (config.building.sharedAreas || [])) {
         if (area.rooms?.some(r => r.id === room.id)) {
@@ -645,35 +646,30 @@ async function triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumb
         }
       }
       if (!ownerAptId) ownerAptId = room.hueApartmentId;
+      logger.info('Determined owner apartment for shared area', { ownerAptId, currentApartmentId: apartmentId });
 
       if (ownerAptId) {
-        // Guard: only the owner apartment may execute the Hue action.
-        // Multiple apartments receive the same shared GA event (KNX bus delivers
-        // events to every subscriber). Without this guard, each apartment's
-        // callback would trigger its own Hue bridge — calling the wrong bridge.
-        if (apartmentId !== ownerAptId) return;
-
         const ctx = apartmentContexts.get(ownerAptId);
-        if (!ctx?.hueService?.isPaired) return;
-
-        if (isOff && room.hueRoomId) {
-          await ctx.hueService.turnOffRoom(room.hueRoomId);
-        } else if (scene.hueSceneId) {
-          await ctx.hueService.triggerScene(scene.hueSceneId);
+        if (ctx?.hueService?.isPaired) {
+          if (isOff && room.hueRoomId) {
+            logger.info('Turning off Hue room', { hueRoomId: room.hueRoomId });
+            await ctx.hueService.turnOffRoom(room.hueRoomId);
+          } else if (scene.hueSceneId) {
+            logger.info('Triggering Hue scene', { hueSceneId: scene.hueSceneId });
+            await ctx.hueService.triggerScene(scene.hueSceneId);
+          }
         }
       } else if (scene.hueSceneId) {
-        // No explicit owner: hueSceneId is globally unique per bridge, so we try
-        // all paired bridges — only the one that knows the scene will succeed.
-        // This is safe because wrong bridges simply return 404 (caught below).
+        logger.info('No explicit owner, broadcasting Hue scene trigger to all paired bridges');
         for (const apt of config.apartments) {
           const ctx = apartmentContexts.get(apt.id);
           if (!ctx?.hueService?.isPaired) continue;
           try { await ctx.hueService.triggerScene(scene.hueSceneId); } catch { /* wrong bridge, skip */ }
         }
+      } else {
+        logger.info('isOff requested but no ownerAptId determined. Skipping to avoid wrong bridge.');
       }
-      // isOff without ownerAptId: hueRoomId is not globally unique across
-      // bridges — skip Hue to avoid calling the wrong bridge. KNX still fires.
-      return;
+      continue;
     } else {
       const actionContext = getActionContext(apartmentId, scope);
       if (!actionContext?.context?.hueService?.isPaired) return;
@@ -688,6 +684,7 @@ async function triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumb
 }
 
 async function handleExternalSceneTrigger(apartmentId, scope, groupAddress, sceneNumber) {
+  logger.info('Handling external scene trigger', { apartmentId, scope, groupAddress, sceneNumber });
   await triggerLinkedHueScene(apartmentId, scope, groupAddress, sceneNumber);
 }
 
