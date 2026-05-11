@@ -462,12 +462,16 @@ function applyConfigPatch(payload) {
   if (!payload || typeof payload !== 'object') return;
 
   if (Array.isArray(payload.apartments) || payload.building || payload.version === 2) {
+    const previousPassword = config.building?.configurationPassword || '';
     const importedConfig = normalizeConfigShape(payload);
     logger.info('Applying full config replacement', {
       apartmentCount: importedConfig.apartments.length,
       apartments: summarizeApartments(importedConfig.apartments),
     });
-    config = normalizeConfigShape(payload);
+    config = importedConfig;
+    if (previousPassword && !config.building.configurationPassword) {
+      config.building.configurationPassword = previousPassword;
+    }
     return;
   }
 
