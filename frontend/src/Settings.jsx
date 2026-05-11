@@ -317,7 +317,14 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
   };
 
   const handleAddFloor = (name, scope = 'apartment') => {
-    const newFloor = { id: `floor_${Date.now()}`, name, rooms: [], isShared: scope === 'shared' };
+    const newFloor = { 
+      id: `floor_${Date.now()}`, 
+      name, 
+      rooms: [], 
+      isShared: scope === 'shared',
+      // If it's a shared area, link it to the currently selected apartment's Hue bridge
+      ...(scope === 'shared' && { ownerApartmentId: apartment.id })
+    };
     const updated = commitFloorsState([...floorsRef.current, newFloor]);
     setActiveFloorId(newFloor.id);
     saveFloors(updated);
@@ -734,7 +741,13 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
     try {
       const res = await linkHueRoom(roomId, hueRoom.id, { apartmentId: apartment.id, scope, hueRoomName: hueRoom.name });
       if (res.success) {
-        updateRoom(floorId, roomId, { hueRoomId: hueRoom.id, hueRoomName: hueRoom.name });
+        // Also persist hueApartmentId so the backend knows which bridge owns this Hue room.
+        // This is critical for shared-area rooms where multiple bridges exist.
+        updateRoom(floorId, roomId, {
+          hueRoomId: hueRoom.id,
+          hueRoomName: hueRoom.name,
+          hueApartmentId: apartment.id,
+        });
         addToast(`Linked Hue room "${hueRoom.name}"`, 'success');
       } else addToast('Link failed: ' + (res.error || ''), 'error');
     } catch { addToast('Could not reach backend', 'error'); }
@@ -746,7 +759,7 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
     const scope = floor?.isShared ? 'shared' : 'apartment';
     try {
       await unlinkHueRoom(roomId, { apartmentId: apartment.id, scope });
-      updateRoom(floorId, roomId, { hueRoomId: null, hueRoomName: null });
+      updateRoom(floorId, roomId, { hueRoomId: null, hueRoomName: null, hueApartmentId: null });
       addToast('Hue room unlinked', 'success');
     } catch { addToast('Unlink failed', 'error'); }
   };
