@@ -433,8 +433,8 @@ describe('Hue Bridge routes', () => {
       const res = await request(app).get('/api/hue/rooms');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      // 2 rooms out of 3 groups (1 entertainment zone filtered)
-      expect(res.body.rooms).toHaveLength(2);
+      // 2 rooms out of 3 groups (1 entertainment zone filtered), plus our new pseudo-room '0'
+      expect(res.body.rooms).toHaveLength(3);
       res.body.rooms.forEach(r => expect(r).toHaveProperty('name'));
     });
   });
