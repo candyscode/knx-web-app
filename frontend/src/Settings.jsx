@@ -1145,11 +1145,13 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
               filteredHueRooms.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No Hue rooms found.</p> : (
                 <div className="hue-lamp-list">
                   {filteredHueRooms.map(hr => (
-                    <button key={hr.id} className="hue-lamp-item" onClick={() => selectHueRoom(hr)}>
+                    <button key={hr.id} className="hue-lamp-item" onClick={() => selectHueRoom(hr)} style={hr.id === '0' ? { border: '1px solid var(--accent-color)', background: 'rgba(59, 130, 246, 0.05)' } : {}}>
                       <Lightbulb size={18} style={{ color: 'var(--accent-color)' }} />
                       <div style={{ flex: 1, textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{hr.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{hr.lights.length} light{hr.lights.length !== 1 ? 's' : ''}</div>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: hr.id === '0' ? 'var(--accent-color)' : 'inherit' }}>{hr.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {hr.id === '0' ? 'Alle verknüpften Leuchten im System' : `${hr.lights.length} light${hr.lights.length !== 1 ? 's' : ''}`}
+                        </div>
                       </div>
                       <Plus size={16} style={{ color: 'var(--accent-color)' }} />
                     </button>
