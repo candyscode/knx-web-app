@@ -123,9 +123,12 @@ describe('getRooms()', () => {
     fetchMock.mockResponseOnce(JSON.stringify(HUE_GROUPS));
     const result = await makePairedService().getRooms();
     expect(result.success).toBe(true);
-    // HUE_GROUPS has 2 rooms + 1 entertainment zone
-    expect(result.rooms).toHaveLength(2);
-    result.rooms.forEach(r => expect(HUE_GROUPS[r.id].type).toBe('Room'));
+    // HUE_GROUPS has 2 rooms + 1 entertainment zone, plus our new pseudo-room '0'
+    expect(result.rooms).toHaveLength(3);
+    result.rooms.forEach(r => {
+      if (r.id === '0') return;
+      expect(HUE_GROUPS[r.id].type).toBe('Room');
+    });
   });
 });
 
