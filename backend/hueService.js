@@ -184,6 +184,12 @@ class HueService {
           lights: g.lights || [],
         }));
 
+      rooms.unshift({
+        id: '0',
+        name: 'Gesamtes Gebäude (Alle Leuchten)',
+        lights: [],
+      });
+
       return { success: true, rooms };
     } catch (err) {
       console.error('Failed to get Hue rooms:', err.message);
