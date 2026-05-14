@@ -499,8 +499,15 @@ body {
   );
   box-shadow: 0 4px 6px rgba(0,0,0,0.5);
   transition: height 0.1s linear;
-  border-bottom: 4px solid #f8fafc;
   z-index: 2;
+}
+
+.blinds-widget:not(.interactive) .blinds-curtain {
+  border-bottom: none;
+}
+
+.blinds-widget.interactive .blinds-curtain {
+  border-bottom: 8px solid #f8fafc;
 }
 
 .blinds-indicator-bar {
@@ -557,14 +564,21 @@ body {
 
 .dimmer-fill {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
-  height: 100%;
-  background: linear-gradient(to right, #111827, #f97316);
-  box-shadow: 4px 0 6px rgba(0,0,0,0.5);
-  transition: width 0.1s linear;
-  border-right: 4px solid #fb923c;
+  width: 100%;
+  background: linear-gradient(to top, #111827, #f97316);
+  box-shadow: 0 -4px 6px rgba(0,0,0,0.5);
+  transition: height 0.1s linear;
   z-index: 2;
+}
+
+.dimmer-widget:not(.interactive) .dimmer-fill {
+  border-top: none;
+}
+
+.dimmer-widget.interactive .dimmer-fill {
+  border-top: 8px solid #fb923c;
 }
 
 .dimmer-label {
@@ -584,17 +598,90 @@ body {
 
 .dimmer-slider {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
+  top: 50%;
+  left: 50%;
+  width: 160px;
   height: 100%;
   margin: 0;
   padding: 0;
+  transform: translate(-50%, -50%) rotate(90deg);
   opacity: 0;
-  cursor: ew-resize;
+  cursor: ns-resize;
   z-index: 10;
   touch-action: none;
 }
+
+/* ── Widget Interactive Modal ─────────────────── */
+.widget-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  touch-action: none;
+}
+
+.widget-modal-content {
+  width: 100%;
+  max-width: 400px;
+  height: 80vh;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+  background: #1e293b;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+.widget-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.widget-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.widget-modal-close {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 50%;
+  width: 40px; height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+}
+
+.widget-modal-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.blinds-widget.interactive {
+  height: 100%;
+  margin-top: 0;
+}
+
+.dimmer-widget.interactive {
+  height: 100%;
+  margin-top: 0;
+}
+
 
 /* ── Scene Pills (Dashboard) ────────────────────── */
 .scene-pills {
