@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { triggerAction, triggerHueAction } from './configApi';
 import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen } from 'lucide-react';
 import FloorTabs from './components/FloorTabs';
@@ -7,6 +8,7 @@ import GlobalInfoWidget from './components/GlobalInfoWidget';
 // ── Blinds Card ───────────────────────────────────────────
 const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
   const [sollPosition, setSollPosition] = useState(istPosition !== undefined ? istPosition : 0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const initializedRef = useRef(false);
   const softwareCommandActiveRef = useRef(false);
   const dragRef = useRef(null);
@@ -23,6 +25,15 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
     if (isMoving === false && softwareCommandActiveRef.current) softwareCommandActiveRef.current = false;
   }, [isMoving]);
 
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isModalOpen]);
+
   const sendValue = (value) => {
     softwareCommandActiveRef.current = true;
     onAction({ ...func, value });
@@ -32,13 +43,15 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
     }
   };
 
-  const handlePointerDown = (e) => {
+
+
+  const handlePointerDownModal = (e) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     const rect = e.currentTarget.getBoundingClientRect();
     dragRef.current = { startY: e.clientY, startValue: sollPosition, moved: false, rect };
   };
 
-  const handlePointerMove = (e) => {
+  const handlePointerMoveModal = (e) => {
     if (!dragRef.current) return;
     const dy = e.clientY - dragRef.current.startY;
     if (Math.abs(dy) > 5) dragRef.current.moved = true;
@@ -46,52 +59,81 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
     setSollPosition(next);
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUpModal = (e) => {
+    if (e && e.pointerId && e.currentTarget && e.currentTarget.hasPointerCapture && e.currentTarget.hasPointerCapture(e.pointerId)) {
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
     if (!dragRef.current) return;
     if (dragRef.current.moved) sendValue(sollPosition);
     dragRef.current = null;
   };
 
-  const handleFrameClick = (e) => {
-    if (trackRef.current && trackRef.current.contains(e.target)) return;
-    const next = sollPosition === 0 ? 100 : 0;
-    setSollPosition(next);
-    sendValue(next);
-  };
-
   return (
-    <div className="action-btn action-btn--widget" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={handleFrameClick}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <Blinds size={18} color="var(--accent-color)" />
-        <span style={{ fontWeight: '600' }}>{func.name}</span>
-        {isMoving && !!func.movingGroupAddress && (
-          <span style={{ fontSize: '0.7rem', color: 'var(--accent-color)', marginLeft: 'auto', animation: 'pulse 1s infinite' }}>⬆⬇ fährt…</span>
-        )}
-      </div>
-      <div className="blinds-widget">
-        <div
-          ref={trackRef}
-          className="blinds-window"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          style={{ cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
-        >
-          <div className="blinds-glass" />
-          <div className="blinds-curtain" style={{ height: `${sollPosition}%` }} />
-          <div className="dimmer-label">{sollPosition}%</div>
+    <>
+      <div
+        className="action-btn action-btn--widget"
+        style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }}
+        onClick={() => setIsModalOpen(true)}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', pointerEvents: 'none' }}>
+          <Blinds size={18} color="var(--accent-color)" />
+          <span style={{ fontWeight: '600' }}>{func.name}</span>
+          {isMoving && !!func.movingGroupAddress && (
+            <span style={{ fontSize: '0.7rem', color: 'var(--accent-color)', marginLeft: 'auto', animation: 'pulse 1s infinite' }}>⬆⬇ fährt…</span>
+          )}
         </div>
-        <div className="blinds-indicator-bar" title={`Ist-Position: ${istPosition}%`}>
-          <div className="blinds-indicator-fill" style={{ height: `${istPosition}%` }} />
+        <div className="blinds-widget" style={{ pointerEvents: 'none' }}>
+          <div className="blinds-window">
+            <div className="blinds-glass" />
+            <div className="blinds-curtain" style={{ height: `${istPosition !== undefined ? istPosition : sollPosition}%` }} />
+            <div className="dimmer-label">{istPosition !== undefined ? istPosition : sollPosition}%</div>
+          </div>
         </div>
       </div>
-    </div>
+
+      {isModalOpen && createPortal(
+        <div className="widget-modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="widget-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="widget-modal-header">
+              <div className="widget-modal-title">
+                <Blinds size={24} color="var(--accent-color)" />
+                {func.name}
+              </div>
+              <button className="widget-modal-close" onClick={() => setIsModalOpen(false)}>✕</button>
+            </div>
+            <div className="widget-modal-body">
+              <div className="blinds-widget interactive" style={{ marginTop: 0, width: '100%', height: '100%', maxWidth: '300px' }}>
+                <div
+                  ref={trackRef}
+                  className="blinds-window"
+                  onPointerDown={handlePointerDownModal}
+                  onPointerMove={handlePointerMoveModal}
+                  onPointerUp={handlePointerUpModal}
+                  onPointerCancel={handlePointerUpModal}
+                  onLostPointerCapture={handlePointerUpModal}
+                  style={{ cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
+                >
+                  <div className="blinds-glass" />
+                  <div className="blinds-curtain" style={{ height: `${sollPosition}%` }} />
+                  <div className="dimmer-label">{sollPosition}%</div>
+                </div>
+                <div className="blinds-indicator-bar" title={`Ist-Position: ${istPosition}%`}>
+                  <div className="blinds-indicator-fill" style={{ height: `${istPosition}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 };
 
 // ── Dimmer Card ───────────────────────────────────────────
 const DimmerCard = ({ func, istPosition, onAction }) => {
   const [sollPosition, setSollPosition] = useState(istPosition !== undefined ? istPosition : 0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const initializedRef = useRef(false);
   const lockRef = useRef(false);
   const dragRef = useRef(null);
@@ -104,6 +146,15 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
     setSollPosition(istPosition);
   }, [istPosition]);
 
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isModalOpen]);
+
   const sendValue = (value) => {
     lockRef.current = true;
     onAction({ ...func, value });
@@ -111,53 +162,82 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
     lockRef._timeout = setTimeout(() => { lockRef.current = false; }, 5000);
   };
 
-  const handlePointerDown = (e) => {
+
+
+  const handlePointerDownModal = (e) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     const rect = e.currentTarget.getBoundingClientRect();
-    dragRef.current = { startX: e.clientX, startValue: sollPosition, moved: false, rect };
+    dragRef.current = { startY: e.clientY, startValue: sollPosition, moved: false, rect };
   };
 
-  const handlePointerMove = (e) => {
+  const handlePointerMoveModal = (e) => {
     if (!dragRef.current) return;
-    const dx = e.clientX - dragRef.current.startX;
-    if (Math.abs(dx) > 5) dragRef.current.moved = true;
-    const next = Math.max(0, Math.min(100, Math.round(dragRef.current.startValue + (dx / dragRef.current.rect.width) * 100)));
+    const dy = e.clientY - dragRef.current.startY;
+    if (Math.abs(dy) > 5) dragRef.current.moved = true;
+    const next = Math.max(0, Math.min(100, Math.round(dragRef.current.startValue - (dy / dragRef.current.rect.height) * 100)));
     setSollPosition(next);
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUpModal = (e) => {
+    if (e && e.pointerId && e.currentTarget && e.currentTarget.hasPointerCapture && e.currentTarget.hasPointerCapture(e.pointerId)) {
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
     if (!dragRef.current) return;
     if (dragRef.current.moved) sendValue(sollPosition);
     dragRef.current = null;
   };
 
-  const handleFrameClick = (e) => {
-    if (trackRef.current && trackRef.current.contains(e.target)) return;
-    const next = sollPosition === 0 ? 100 : 0;
-    setSollPosition(next);
-    sendValue(next);
-  };
-
   return (
-    <div className="action-btn action-btn--widget" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={handleFrameClick}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <Lightbulb size={18} color="var(--accent-color)" />
-        <span style={{ fontWeight: '600' }}>{func.name}</span>
-      </div>
-      <div className="dimmer-widget">
-        <div
-          ref={trackRef}
-          className="dimmer-track"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          style={{ cursor: 'ew-resize', touchAction: 'none', userSelect: 'none' }}
-        >
-          <div className="dimmer-fill" style={{ width: `${sollPosition}%` }} />
-          <div className="dimmer-label">{sollPosition}%</div>
+    <>
+      <div
+        className="action-btn action-btn--widget"
+        style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }}
+        onClick={() => setIsModalOpen(true)}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', pointerEvents: 'none' }}>
+          <Lightbulb size={18} color="var(--accent-color)" />
+          <span style={{ fontWeight: '600' }}>{func.name}</span>
+        </div>
+        <div className="dimmer-widget" style={{ pointerEvents: 'none' }}>
+          <div className="dimmer-track">
+            <div className="dimmer-fill" style={{ height: `${istPosition !== undefined ? istPosition : sollPosition}%` }} />
+            <div className="dimmer-label">{istPosition !== undefined ? istPosition : sollPosition}%</div>
+          </div>
         </div>
       </div>
-    </div>
+
+      {isModalOpen && createPortal(
+        <div className="widget-modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="widget-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="widget-modal-header">
+              <div className="widget-modal-title">
+                <Lightbulb size={24} color="var(--accent-color)" />
+                {func.name}
+              </div>
+              <button className="widget-modal-close" onClick={() => setIsModalOpen(false)}>✕</button>
+            </div>
+            <div className="widget-modal-body">
+              <div className="dimmer-widget interactive" style={{ marginTop: 0, width: '100%', height: '100%', maxWidth: '300px' }}>
+                <div
+                  ref={trackRef}
+                  className="dimmer-track"
+                  onPointerDown={handlePointerDownModal}
+                  onPointerMove={handlePointerMoveModal}
+                  onPointerUp={handlePointerUpModal}
+                  onPointerCancel={handlePointerUpModal}
+                  onLostPointerCapture={handlePointerUpModal}
+                  style={{ cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
+                >
+                  <div className="dimmer-fill" style={{ height: `${sollPosition}%` }} />
+                  <div className="dimmer-label">{sollPosition}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 };
 
