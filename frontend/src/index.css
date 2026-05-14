@@ -508,6 +508,7 @@ body {
 
 .blinds-widget.interactive .blinds-curtain {
   border-bottom: 8px solid #f8fafc;
+  transition: none;
 }
 
 .blinds-indicator-bar {
@@ -579,6 +580,7 @@ body {
 
 .dimmer-widget.interactive .dimmer-fill {
   border-top: 8px solid #fb923c;
+  transition: none;
 }
 
 .dimmer-label {
