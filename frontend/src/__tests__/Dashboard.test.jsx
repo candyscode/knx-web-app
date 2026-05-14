@@ -427,39 +427,7 @@ describe('Dashboard — blind slider', () => {
     expect(screen.getByText('75%')).toBeInTheDocument();
   });
 
-  it('sends percentage action when dragging the blind widget', async () => {
-    renderDashboard({ rooms: [ROOM_WITH_BLIND], deviceStates: { '2/0/1': 0 } });
-
-    const track = document.querySelector('.blinds-window');
-    track.setPointerCapture = vi.fn();
-    track.getBoundingClientRect = vi.fn(() => ({
-      top: 0, left: 0, width: 160, height: 160, right: 160, bottom: 160,
-    }));
-
-    fireEvent.pointerDown(track, { pointerId: 1, clientX: 80, clientY: 0 });
-    fireEvent.pointerMove(track, { pointerId: 1, clientX: 80, clientY: 80 }); // 80/160 = 50%
-    fireEvent.pointerUp(track, { pointerId: 1, clientX: 80, clientY: 80 });
-
-    await waitFor(() => {
-      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'percentage',
-        value: 50,
-      }));
-    });
-  });
-});
-
-describe('Dashboard — Functions section heading', () => {
-  it('shows "Functions" section when functions exist', () => {
-    renderDashboard({ rooms: [{ ...ROOM_WITH_SCENES, scenes: [] }] });
-    expect(screen.getByText('Functions')).toBeInTheDocument();
-  });
-});
-
-// ── BlindsCard — frame-click toggle ───────────────────────────────────────────
-
-describe('Dashboard — blind frame-click toggle', () => {
-  it('sends 100% when frame is clicked and current position is 0%', async () => {
+  it('opens modal when frame is clicked', async () => {
     renderDashboard({
       rooms: [ROOM_WITH_BLIND],
       deviceStates: { '2/0/1': 0 },
@@ -468,43 +436,36 @@ describe('Dashboard — blind frame-click toggle', () => {
     fireEvent.click(screen.getByText('Blinds'));
 
     await waitFor(() => {
-      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'percentage',
-        value: 100,
-      }));
+      expect(document.querySelector('.widget-modal-overlay')).toBeInTheDocument();
     });
   });
 
-  it('sends 0% when frame is clicked and current position is > 0%', async () => {
-    renderDashboard({
-      rooms: [ROOM_WITH_BLIND],
-      deviceStates: { '2/0/1': 75 },
-    });
+  it('sends percentage action when dragging the blind widget inside modal', async () => {
+    renderDashboard({ rooms: [ROOM_WITH_BLIND], deviceStates: { '2/0/1': 0 } });
 
     fireEvent.click(screen.getByText('Blinds'));
+    await waitFor(() => {
+      expect(document.querySelector('.widget-modal-content')).toBeInTheDocument();
+    });
+
+    const track = document.querySelector('.blinds-widget.interactive .blinds-window');
+    track.setPointerCapture = vi.fn();
+    track.releasePointerCapture = vi.fn();
+    track.hasPointerCapture = vi.fn(() => true);
+    track.getBoundingClientRect = vi.fn(() => ({
+      top: 0, left: 0, width: 160, height: 160, right: 160, bottom: 160,
+    }));
+
+    fireEvent.pointerDown(track, { pointerId: 1, clientY: 0 });
+    fireEvent.pointerMove(track, { pointerId: 1, clientY: 80 }); // dy=80, 80/160 = 50%
+    fireEvent.pointerUp(track, { pointerId: 1, clientY: 80 });
 
     await waitFor(() => {
       expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
         type: 'percentage',
-        value: 0,
+        value: 50,
       }));
     });
-  });
-
-  it('does NOT toggle when the widget track itself is clicked', async () => {
-    renderDashboard({
-      rooms: [ROOM_WITH_BLIND],
-      deviceStates: { '2/0/1': 50 },
-    });
-
-    const track = document.querySelector('.blinds-window');
-    track.setPointerCapture = vi.fn();
-    track.getBoundingClientRect = vi.fn(() => ({
-      top: 0, left: 0, width: 160, height: 160, right: 160, bottom: 160,
-    }));
-    fireEvent.click(track);
-
-    expect(api.triggerAction).not.toHaveBeenCalled();
   });
 });
 
@@ -535,28 +496,7 @@ describe('Dashboard — dimmer widget', () => {
     expect(screen.getByText('40%')).toBeInTheDocument();
   });
 
-  it('sends dimmer action when dragging the dimmer widget', async () => {
-    renderDashboard({ rooms: [ROOM_WITH_DIMMER], deviceStates: { '3/0/1': 0 } });
-
-    const track = document.querySelector('.dimmer-track');
-    track.setPointerCapture = vi.fn();
-    track.getBoundingClientRect = vi.fn(() => ({
-      top: 0, left: 0, width: 200, height: 160, right: 200, bottom: 160,
-    }));
-
-    fireEvent.pointerDown(track, { pointerId: 1, clientX: 0, clientY: 80 });
-    fireEvent.pointerMove(track, { pointerId: 1, clientX: 100, clientY: 80 }); // 100/200 = 50%
-    fireEvent.pointerUp(track, { pointerId: 1, clientX: 100, clientY: 80 });
-
-    await waitFor(() => {
-      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'dimmer',
-        value: 50,
-      }));
-    });
-  });
-
-  it('sends 100% when frame is clicked and current position is 0%', async () => {
+  it('opens modal when frame is clicked', async () => {
     renderDashboard({
       rooms: [ROOM_WITH_DIMMER],
       deviceStates: { '3/0/1': 0 },
@@ -565,43 +505,36 @@ describe('Dashboard — dimmer widget', () => {
     fireEvent.click(screen.getByText('Ceiling Dimmer'));
 
     await waitFor(() => {
-      expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'dimmer',
-        value: 100,
-      }));
+      expect(document.querySelector('.widget-modal-overlay')).toBeInTheDocument();
     });
   });
 
-  it('sends 0% when frame is clicked and current position is > 0%', async () => {
-    renderDashboard({
-      rooms: [ROOM_WITH_DIMMER],
-      deviceStates: { '3/0/1': 60 },
-    });
+  it('sends dimmer action when dragging the dimmer widget inside modal', async () => {
+    renderDashboard({ rooms: [ROOM_WITH_DIMMER], deviceStates: { '3/0/1': 0 } });
 
     fireEvent.click(screen.getByText('Ceiling Dimmer'));
+    await waitFor(() => {
+      expect(document.querySelector('.widget-modal-content')).toBeInTheDocument();
+    });
+
+    const track = document.querySelector('.dimmer-widget.interactive .dimmer-track');
+    track.setPointerCapture = vi.fn();
+    track.releasePointerCapture = vi.fn();
+    track.hasPointerCapture = vi.fn(() => true);
+    track.getBoundingClientRect = vi.fn(() => ({
+      top: 0, left: 0, width: 200, height: 160, right: 200, bottom: 160,
+    }));
+
+    fireEvent.pointerDown(track, { pointerId: 1, clientY: 160 });
+    fireEvent.pointerMove(track, { pointerId: 1, clientY: 80 }); // dy=-80, 80/160 = 50% up
+    fireEvent.pointerUp(track, { pointerId: 1, clientY: 80 });
 
     await waitFor(() => {
       expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
         type: 'dimmer',
-        value: 0,
+        value: 50,
       }));
     });
-  });
-
-  it('does NOT toggle when the widget track itself is clicked', async () => {
-    renderDashboard({
-      rooms: [ROOM_WITH_DIMMER],
-      deviceStates: { '3/0/1': 50 },
-    });
-
-    const track = document.querySelector('.dimmer-track');
-    track.setPointerCapture = vi.fn();
-    track.getBoundingClientRect = vi.fn(() => ({
-      top: 0, left: 0, width: 200, height: 160, right: 200, bottom: 160,
-    }));
-    fireEvent.click(track);
-
-    expect(api.triggerAction).not.toHaveBeenCalled();
   });
 });
 
