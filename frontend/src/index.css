@@ -151,10 +151,12 @@ body {
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
 }
 
-.room-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.15);
+@media (hover: hover) {
+  .room-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
 }
 
 .room-header {
@@ -212,10 +214,21 @@ body {
   font-weight: 500;
 }
 
-.action-btn:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
-  transform: scale(1.03);
+@media (hover: hover) {
+  .action-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: scale(1.03);
+  }
+}
+
+@media (hover: none) {
+  .action-btn:focus,
+  .action-btn:focus-visible {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+  }
 }
 
 .action-icon-wrapper {
@@ -707,11 +720,13 @@ body {
   white-space: nowrap;
 }
 
-.scene-pill:hover {
-  background: rgba(59, 130, 246, 0.18);
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .scene-pill:hover {
+    background: rgba(59, 130, 246, 0.18);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+    transform: translateY(-1px);
+  }
 }
 
 .scene-pill:active {
@@ -739,10 +754,12 @@ body {
   border-color: rgba(168, 85, 247, 0.3);
 }
 
-.shade-pill:hover {
-  background: rgba(168, 85, 247, 0.18);
-  border-color: rgba(168, 85, 247, 0.5);
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.15);
+@media (hover: hover) {
+  .shade-pill:hover {
+    background: rgba(168, 85, 247, 0.18);
+    border-color: rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.15);
+  }
 }
 
 .shade-pill:active {
