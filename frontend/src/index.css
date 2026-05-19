@@ -465,7 +465,6 @@ body {
   height: 160px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 8px;
-  margin-top: 1rem;
   display: flex;
   overflow: hidden;
   box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
@@ -550,7 +549,6 @@ body {
   height: 160px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 8px;
-  margin-top: 1rem;
   display: flex;
   overflow: hidden;
   box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);

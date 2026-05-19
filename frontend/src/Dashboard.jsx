@@ -75,7 +75,7 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
         style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }}
         onClick={() => setIsModalOpen(true)}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', pointerEvents: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', pointerEvents: 'none' }}>
           <Blinds size={18} color="var(--accent-color)" />
           <span style={{ fontWeight: '600' }}>{func.name}</span>
           {isMoving && !!func.movingGroupAddress && (
@@ -194,7 +194,7 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
         style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }}
         onClick={() => setIsModalOpen(true)}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', pointerEvents: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', pointerEvents: 'none' }}>
           <Lightbulb size={18} color="var(--accent-color)" />
           <span style={{ fontWeight: '600' }}>{func.name}</span>
         </div>
