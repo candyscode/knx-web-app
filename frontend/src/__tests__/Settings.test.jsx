@@ -43,8 +43,8 @@ vi.mock('../components/CollapsibleRoomCard', () => ({
       <button onClick={() => handleAddScene?.(floorId, room.id, 'shade')}>
         Add Shade Scene
       </button>
-      <button onClick={() => handleAddFunction?.(floorId, room.id)}>
-        Add Function
+      <button onClick={() => handleAddFunction?.(floorId, room.id, 'socket')}>
+        Add Socket Widget
       </button>
       {room.scenes?.[0] && (
         <button
@@ -279,7 +279,7 @@ describe('Settings — merged multi-apartment area view', () => {
     });
   });
 
-  it('adds a function even when a legacy room has no functions array yet', async () => {
+  it('adds a function with a specific type from the widget catalog', async () => {
     const user = userEvent.setup();
     renderSettings({
       ...FULL_CONFIG,
@@ -298,7 +298,7 @@ describe('Settings — merged multi-apartment area view', () => {
       ],
     });
 
-    await user.click(screen.getByRole('button', { name: 'Add Function' }));
+    await user.click(screen.getByRole('button', { name: 'Add Socket Widget' }));
 
     await waitFor(() => {
       expect(api.updateConfig).toHaveBeenCalledWith(expect.objectContaining({
@@ -313,7 +313,7 @@ describe('Settings — merged multi-apartment area view', () => {
                     id: 'room-1',
                     functions: expect.arrayContaining([
                       expect.objectContaining({
-                        type: 'switch',
+                        type: 'socket',
                         groupAddress: '',
                       }),
                     ]),

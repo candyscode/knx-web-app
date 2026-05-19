@@ -11,7 +11,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronDown, GripVertical, Trash2, Lightbulb, Plus,
-  FileText, HelpCircle, Sparkles, Lock, Pencil
+  HelpCircle, Sparkles, Lock, LockOpen, Pencil,
+  Blinds, SlidersHorizontal, Power, Plug, Play, Search, X, LayoutGrid
 } from 'lucide-react';
 import { getSelectOption } from '../iconSelectUtils';
 import { KNXGroupAddressModal } from './KNXGroupAddressModal';
@@ -22,11 +23,147 @@ export const ICON_OPTIONS = [
   { value: 'lock', label: 'Lock', Icon: Lock },
 ];
 export const TYPE_OPTIONS = [
-  { value: 'scene', label: 'Scene', dpt: 'DPT 17.001' },
-  { value: 'switch', label: 'Switch', dpt: 'DPT 1.001' },
-  { value: 'percentage', label: 'Blind', dpt: 'DPT 5.001' },
-  { value: 'dimmer', label: 'Dimmer', dpt: 'DPT 5.001' },
+  { value: 'scene',      label: 'Scene',          dpt: 'DPT 17.001' },
+  { value: 'switch',     label: 'Switch',          dpt: 'DPT 1.001'  },
+  { value: 'light',      label: 'Light',           dpt: 'DPT 1.001'  },
+  { value: 'lock',       label: 'Lock',            dpt: 'DPT 1.001'  },
+  { value: 'socket',     label: 'Socket',          dpt: 'DPT 1.001'  },
+  { value: 'percentage', label: 'Blind / Shade',   dpt: 'DPT 5.001'  },
+  { value: 'dimmer',     label: 'Dimmer',          dpt: 'DPT 5.001'  },
 ];
+
+// Icon per type — used in card headers & dashboard
+export function getTypeIcon(type, size = 16) {
+  switch (type) {
+    case 'dimmer':     return <SlidersHorizontal size={size} />;
+    case 'percentage': return <Blinds size={size} />;
+    case 'light':      return <Lightbulb size={size} />;
+    case 'switch':     return <Power size={size} />;
+    case 'socket':     return <Plug size={size} />;
+    case 'lock':       return <Lock size={size} />;
+    case 'scene':      return <Play size={size} />;
+    default:           return <Power size={size} />;
+  }
+}
+
+const WIDGET_CATALOG = [
+  {
+    type: 'dimmer',
+    label: 'Dimmer',
+    description: 'Controls a dimmable light or device with a percentage value.',
+    dpt: 'DPT 5.001 (0–100 %)',
+    icon: SlidersHorizontal,
+    color: '#f97316',
+  },
+  {
+    type: 'percentage',
+    label: 'Blind / Shade',
+    description: 'Controls motorised blinds or shades. Supports moving status feedback.',
+    dpt: 'DPT 5.001 (0–100 %)',
+    icon: Blinds,
+    color: '#818cf8',
+  },
+  {
+    type: 'light',
+    label: 'Light',
+    description: 'Binary on/off control for a light. Shows a bulb icon that fills when on.',
+    dpt: 'DPT 1.001 (0 / 1)',
+    icon: Lightbulb,
+    color: '#facc15',
+  },
+  {
+    type: 'socket',
+    label: 'Switch / Socket',
+    description: 'Generic binary switch or socket. Shows a plug icon. Supports state inversion.',
+    dpt: 'DPT 1.001 (0 / 1)',
+    icon: Plug,
+    color: '#34d399',
+  },
+  {
+    type: 'lock',
+    label: 'Lock',
+    description: 'Shows a padlock icon. Toggle between locked and unlocked states.',
+    dpt: 'DPT 1.001 (0 / 1)',
+    icon: Lock,
+    color: '#f87171',
+  },
+  {
+    type: 'scene',
+    label: 'Scene',
+    description: 'Triggers a KNX scene by sending a scene number on a group address.',
+    dpt: 'DPT 17.001 (scene number)',
+    icon: Play,
+    color: '#60a5fa',
+  },
+  {
+    type: 'hue',
+    label: 'Hue Lamp',
+    description: 'Adds a Philips Hue light from your linked bridge. Requires a paired Hue bridge.',
+    dpt: 'Philips Hue API',
+    icon: Lightbulb,
+    color: '#a78bfa',
+    action: 'hue',
+  },
+];
+
+// ── Widget Catalog Modal ──────────────────────────────────
+function WidgetCatalogModal({ onClose, onSelect, onHue, huePaired }) {
+  const [query, setQuery] = useState('');
+  const visible = WIDGET_CATALOG.filter(w => w.action !== 'hue' || huePaired);
+  const filtered = visible.filter(w =>
+    w.label.toLowerCase().includes(query.toLowerCase()) ||
+    w.description.toLowerCase().includes(query.toLowerCase())
+  );
+  return createPortal(
+    <div className="widget-modal-overlay" onClick={onClose}>
+      <div className="catalog-modal" onClick={e => e.stopPropagation()}>
+        <div className="catalog-modal-header">
+          <div className="catalog-modal-title">
+            <LayoutGrid size={20} />
+            Widget Catalog
+          </div>
+          <button className="widget-modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="catalog-search-wrap">
+          <Search size={15} className="catalog-search-icon" />
+          <input
+            className="catalog-search-input"
+            placeholder="Search widgets…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div className="catalog-grid">
+          {filtered.map(w => {
+            const Icon = w.icon;
+            const handleClick = () => {
+              if (w.action === 'hue') { onHue?.(); }
+              else { onSelect(w.type); }
+              onClose();
+            };
+            return (
+              <button key={w.type} className="catalog-tile" onClick={handleClick}>
+                <div className="catalog-tile-icon" style={{ color: w.color, background: `${w.color}1a` }}>
+                  <Icon size={28} />
+                </div>
+                <div className="catalog-tile-body">
+                  <div className="catalog-tile-label">{w.label}</div>
+                  <div className="catalog-tile-desc">{w.description}</div>
+                  <div className="catalog-tile-dpt">{w.dpt}</div>
+                </div>
+              </button>
+            );
+          })}
+          {filtered.length === 0 && (
+            <p style={{ color: 'var(--text-secondary)', gridColumn: '1/-1', textAlign: 'center', padding: '2rem 0' }}>No widgets match your search.</p>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 const GA_TOOLTIPS = {
   action: 'The group address this function writes to on the KNX bus.',
   scene: 'Scene number to activate (1–64). The bus value is automatically offset by −1.',
@@ -235,6 +372,9 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
   const isHue = func.type === 'hue';
   const upd = key => val => handleUpdateFunction(room.id, func.id, key, val);
+  // Which types have a binary (on/off) toggle + status GA
+  const isBinary = ['switch', 'light', 'lock', 'socket'].includes(func.type);
+  const typeLabel = TYPE_OPTIONS.find(o => o.value === func.type)?.label || func.type;
   return (
     <div ref={setNodeRef} style={style} className={`function-card ${isHue ? 'hue-card' : ''}`}>
       <div className="func-card-header">
@@ -246,7 +386,10 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
           </div>
         ) : (
           <div className="func-card-title">
-            <span className="func-type-badge">{TYPE_OPTIONS.find(o => o.value === func.type)?.label || func.type}</span>
+            <span className="func-type-badge func-type-badge--icon">
+              {getTypeIcon(func.type, 13)}
+              {typeLabel}
+            </span>
             <span className="func-name-preview">{func.name || <em style={{ opacity: 0.4 }}>Unnamed</em>}</span>
           </div>
         )}
@@ -265,11 +408,7 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
               <div className="settings-field func-field-name">
                 <label className="settings-field-label">Name</label>
                 <input className="form-input" value={func.name}
-                  onChange={e => handleUpdateFunction(room.id, func.id, 'name', e.target.value)} onBlur={persistRoomChanges} placeholder="e.g. Lock Door" />
-              </div>
-              <div className="settings-field func-field-type">
-                <label className="settings-field-label">Type</label>
-                <TypeSelect value={func.type} onChange={(value) => handleUpdateFunction(room.id, func.id, 'type', value, { saveImmediately: true })} />
+                  onChange={e => handleUpdateFunction(room.id, func.id, 'name', e.target.value)} onBlur={persistRoomChanges} placeholder="e.g. Ceiling Light" />
               </div>
             </div>
             <div className="func-ga-fields">
@@ -279,24 +418,21 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
               {func.type === 'scene' && (
                 <GAField label="Scene Number" tooltipKey="scene" value={func.sceneNumber} onChange={upd('sceneNumber')} onCommit={persistRoomChanges} placeholder="1–64" type="number" min={1} max={64} />
               )}
-              {(func.type === 'switch' || func.type === 'percentage' || func.type === 'dimmer') && (
+              {(isBinary || func.type === 'percentage' || func.type === 'dimmer') && (
                 <GAField label="Feedback GA" tooltipKey="feedback" value={func.statusGroupAddress} onChange={upd('statusGroupAddress')} onCommit={persistRoomChanges} placeholder="e.g. 1/5/1" browseLabel="Search ETS addresses for feedback GA"
                   matchedAddressName={resolveGroupAddressName?.(func.statusGroupAddress)}
                   onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: func.type, target: { kind: 'field', functionId: func.id, field: 'statusGroupAddress' }, helperText: 'Select a compatible feedback GA.' })} />
               )}
-              {func.type === 'switch' && (
+              {isBinary && (
                 <div className="settings-field">
-                  <label className="settings-field-label">Icon</label>
-                  <div className="icon-select-stack">
-                    <IconSelect value={func.iconType || 'lightbulb'} onChange={(value) => handleUpdateFunction(room.id, func.id, 'iconType', value, { saveImmediately: true })} />
-                    <label className="icon-invert-card">
-                      <input type="checkbox" checked={!!func.invertIcon} onChange={e => handleUpdateFunction(room.id, func.id, 'invertIcon', e.target.checked, { saveImmediately: true })} />
-                      <div className="icon-invert-copy">
-                        <span className="icon-invert-title">Invert icon state</span>
-                        <span className="icon-invert-hint">Swap which icon is shown for OFF / ON.</span>
-                      </div>
-                    </label>
-                  </div>
+                  <label className="settings-field-label">Icon behaviour</label>
+                  <label className="icon-invert-card" style={{ marginTop: '0.25rem' }}>
+                    <input type="checkbox" checked={!!func.invertIcon} onChange={e => handleUpdateFunction(room.id, func.id, 'invertIcon', e.target.checked, { saveImmediately: true })} />
+                    <div className="icon-invert-copy">
+                      <span className="icon-invert-title">Invert icon state</span>
+                      <span className="icon-invert-hint">Swap which icon is shown for OFF / ON.</span>
+                    </div>
+                  </label>
                 </div>
               )}
               {func.type === 'percentage' && (
@@ -329,6 +465,7 @@ function CollapsibleRoomCard({
   const [internalExpanded, setInternalExpanded] = useState(import.meta.env.MODE === 'test');
   const [renamingRoom, setRenamingRoom] = useState(false);
   const [roomNameDraft, setRoomNameDraft] = useState(room.name);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const roomNameInputRef = useRef(null);
   const isExpandedControlled = expanded !== undefined;
   const isExpanded = isExpandedControlled ? expanded : internalExpanded;
@@ -526,18 +663,19 @@ function CollapsibleRoomCard({
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', marginBottom: '0.5rem' }}>No additional functions configured.</p>
             )}
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-              <button className="btn-secondary-sm" type="button" onClick={(e) => { e.stopPropagation(); handleAddFunction(floorId, room.id); }}>
-                <Plus size={13} /> Add Function
+              <button className="btn-secondary-sm" type="button"
+                onClick={(e) => { e.stopPropagation(); setCatalogOpen(true); }}>
+                <LayoutGrid size={13} /> Add from widget catalog
               </button>
-              <button className="btn-secondary-sm" type="button" onClick={(e) => { e.stopPropagation(); openGroupAddressModal({ roomId: room.id, floorId, title: 'Select group address', mode: 'any', target: { kind: 'addFunction' }, helperText: 'Select a compatible ETS group address.' }); }}>
-                <FileText size={13} /> Select from ETS
-              </button>
-              {hueStatus && hueStatus.paired && (
-                <button className="btn-secondary-sm btn-purple-sm" type="button" onClick={(e) => { e.stopPropagation(); openHueLampModal(room.id, floorId); }}>
-                  <Lightbulb size={13} /> Add Hue Lamp
-                </button>
-              )}
             </div>
+            {catalogOpen && (
+              <WidgetCatalogModal
+                onClose={() => setCatalogOpen(false)}
+                onSelect={(type) => handleAddFunction(floorId, room.id, type)}
+                onHue={() => openHueLampModal(room.id, floorId)}
+                huePaired={!!(hueStatus && hueStatus.paired)}
+              />
+            )}
           </div>
 
         </div>

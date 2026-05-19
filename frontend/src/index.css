@@ -471,6 +471,15 @@ body {
   transform: translateX(24px);
 }
 
+.action-hint {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.02em;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
 /* Blinds Widget */
 .blinds-widget {
   position: relative;
@@ -1504,6 +1513,143 @@ body {
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
   flex-shrink: 0;
+}
+
+.func-type-badge--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Widget Catalog Modal ─────────────────────────────── */
+.catalog-modal {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  background: #1e293b;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.8);
+  overflow: hidden;
+}
+
+.catalog-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 0;
+}
+
+.catalog-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.catalog-search-wrap {
+  position: relative;
+  margin: 1rem 1.5rem 0.75rem;
+}
+
+.catalog-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.catalog-search-input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem 0.6rem 2.25rem;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.catalog-search-input:focus {
+  outline: none;
+  border-color: rgba(59,130,246,0.4);
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0 1.5rem 1.5rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 480px) {
+  .catalog-grid { grid-template-columns: 1fr; }
+}
+
+.catalog-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+@media (hover: hover) {
+  .catalog-tile:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.18);
+    transform: translateY(-2px);
+  }
+}
+
+.catalog-tile-icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.catalog-tile-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.catalog-tile-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.catalog-tile-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 0.35rem;
+}
+
+.catalog-tile-dpt {
+  font-size: 0.7rem;
+  color: var(--accent-color);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .hue-badge {
