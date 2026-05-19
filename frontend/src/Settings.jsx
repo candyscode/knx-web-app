@@ -476,9 +476,9 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
   };
 
   // ── Function handlers ────────────────────────────────────
-  const handleAddFunction = async (floorId, roomId) => {
+  const handleAddFunction = async (floorId, roomId, type = 'switch') => {
     const updated = updateFloorRooms(floorId, rooms => rooms.map(r => r.id !== roomId ? r : {
-      ...r, functions: [...(r.functions || []), { id: Date.now().toString(), name: '', type: 'switch', groupAddress: '' }]
+      ...r, functions: [...(r.functions || []), { id: Date.now().toString(), name: '', type, groupAddress: '' }]
     }));
     setExpandedRoomIds((prev) => {
       const next = new Set(prev);
@@ -487,6 +487,7 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
     });
     try { await saveFloors(updated); } catch { addToast('Failed to add function', 'error'); }
   };
+
 
   const handleUpdateFunction = (roomId, funcId, key, val, options = {}) => {
     for (const f of floorsRef.current) {

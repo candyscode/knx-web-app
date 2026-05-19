@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { triggerAction, triggerHueAction } from './configApi';
-import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen } from 'lucide-react';
+import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen, Play, Plug, Power, SlidersHorizontal } from 'lucide-react';
 import FloorTabs from './components/FloorTabs';
 import GlobalInfoWidget from './components/GlobalInfoWidget';
 
@@ -253,11 +253,19 @@ function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction
   const parsedRoomTemperature = hasRoomTemperature ? Number(roomTemperatureValue) : null;
   const showRoomTemperature = Number.isFinite(parsedRoomTemperature);
 
-  const renderSwitchIcon = (func, isOn) => {
-    if (func.type === 'scene') return <Gamepad2 size={24} />;
-    let effectiveIsOn = func.invertIcon ? !isOn : isOn;
-    if ((func.iconType || 'lightbulb') === 'lock') return effectiveIsOn ? <Lock size={24} /> : <LockOpen size={24} />;
-    return <Lightbulb size={24} fill={effectiveIsOn ? 'currentColor' : 'none'} />;
+  const renderFuncIcon = (func, isOn) => {
+    const effective = func.invertIcon ? !isOn : isOn;
+    switch (func.type) {
+      case 'scene':  return <Play size={24} />;
+      case 'light':  return <Lightbulb size={24} fill={effective ? 'currentColor' : 'none'} />;
+      case 'lock':   return effective ? <Lock size={24} /> : <LockOpen size={24} />;
+      case 'socket': return <Plug size={24} />;
+      case 'switch': {
+        if ((func.iconType || 'lightbulb') === 'lock') return effective ? <Lock size={24} /> : <LockOpen size={24} />;
+        return <Lightbulb size={24} fill={effective ? 'currentColor' : 'none'} />;
+      }
+      default:       return <Power size={24} />;
+    }
   };
 
   return (
@@ -328,13 +336,15 @@ function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction
                   </button>
                 );
               }
-              const isSwitch = func.type === 'switch';
-              const isOn = isSwitch ? !!deviceStates[func.statusGroupAddress] : false;
+              // Binary types: switch, light, lock, socket, scene
+              const isBinary = ['switch', 'light', 'lock', 'socket'].includes(func.type);
+              const isOn = isBinary ? !!deviceStates[func.statusGroupAddress] : false;
               return (
-                <button key={func.id} className={`action-btn ${isSwitch && isOn ? 'active' : ''}`} onClick={() => handleAction(func)}>
-                  <div className="action-icon-wrapper">{renderSwitchIcon(func, isOn)}</div>
+                <button key={func.id} className={`action-btn ${isBinary && isOn ? 'active' : ''}`} onClick={() => handleAction(func)}>
+                  <div className="action-icon-wrapper">{renderFuncIcon(func, isOn)}</div>
                   <span className="action-name">{func.name}</span>
-                  {isSwitch && <div className={`toggle-switch ${isOn ? 'active' : ''}`}><div className="toggle-knob" /></div>}
+                  {isBinary && <div className={`toggle-switch ${isOn ? 'active' : ''}`}><div className="toggle-knob" /></div>}
+                  {func.type === 'scene' && <span className="action-hint">Tap to apply</span>}
                 </button>
               );
             })}

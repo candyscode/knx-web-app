@@ -33,6 +33,19 @@ const BLIND_FUNC = {
   groupAddress: '2/0/0', statusGroupAddress: '2/0/1',
 };
 
+const NEW_TYPES_FUNCS = [
+  { id: 'f_light', name: 'Ceiling Light', type: 'light', groupAddress: '4/0/0', statusGroupAddress: '4/0/1' },
+  { id: 'f_lock', name: 'Front Door', type: 'lock', groupAddress: '4/1/0', statusGroupAddress: '4/1/1' },
+  { id: 'f_socket', name: 'TV Socket', type: 'socket', groupAddress: '4/2/0', statusGroupAddress: '4/2/1' },
+  { id: 'f_scene', name: 'Movie Mode', type: 'scene', groupAddress: '4/3/0', sceneNumber: 3 },
+];
+
+const ROOM_WITH_NEW_TYPES = {
+  id: 'r_new', name: 'New Types Room',
+  sceneGroupAddress: '', scenes: [],
+  functions: NEW_TYPES_FUNCS,
+};
+
 const ROOM_WITH_SCENES = {
   id: 'r1',
   name: 'Living Room',
@@ -361,6 +374,27 @@ describe('Dashboard — switch function', () => {
       expect(setDeviceStates).toHaveBeenCalledTimes(2);
     });
     expect(addToast).toHaveBeenCalledWith(expect.stringContaining('Failed'), 'error');
+  });
+});
+
+describe('Dashboard — new widget types', () => {
+  it('renders light, lock, socket, and scene widgets', () => {
+    renderDashboard({ rooms: [ROOM_WITH_NEW_TYPES] });
+    expect(screen.getByText('Ceiling Light')).toBeInTheDocument();
+    expect(screen.getByText('Front Door')).toBeInTheDocument();
+    expect(screen.getByText('TV Socket')).toBeInTheDocument();
+    expect(screen.getByText('Movie Mode')).toBeInTheDocument();
+  });
+
+  it('shows the "Tap to apply" hint for scene widgets instead of a toggle', () => {
+    renderDashboard({ rooms: [ROOM_WITH_NEW_TYPES] });
+    expect(screen.getByText('Tap to apply')).toBeInTheDocument();
+    
+    // Light, lock, socket should have a toggle (they are binary types)
+    // The scene does not have a toggle class (we test this indirectly by counting toggles if needed, 
+    // or just asserting the hint is present).
+    const sceneBtn = screen.getByText('Movie Mode').closest('button');
+    expect(sceneBtn.querySelector('.toggle-switch')).not.toBeInTheDocument();
   });
 });
 
