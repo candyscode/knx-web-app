@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { triggerAction, triggerHueAction } from './configApi';
-import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen, Play, Plug, Power, SlidersHorizontal } from 'lucide-react';
+import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen, Play, Plug, Power, SlidersHorizontal, Plus, Minus, X } from 'lucide-react';
 import FloorTabs from './components/FloorTabs';
 import GlobalInfoWidget from './components/GlobalInfoWidget';
 
@@ -241,17 +241,116 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
   );
 };
 
+// ── Room Temperature Modal ────────────────────────────────
+const RoomTemperatureModal = ({ room, currentTemp, targetTemp, currentShift, heatingCoolingStatus, onClose, onAction }) => {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  useEffect(() => {
+    if (room.roomHeatingCoolingStatusGroupAddress && heatingCoolingStatus === undefined) {
+      onAction({
+        type: 'read',
+        groupAddress: room.roomHeatingCoolingStatusGroupAddress
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  const handleAdjust = (delta) => {
+    if (targetTemp === undefined) return;
+    const newShift = (currentShift || 0) + delta;
+    
+    // We send the absolute shift (DPT 9.002) to the shift GA
+    onAction({
+      type: 'temperature_shift',
+      groupAddress: room.roomSetpointShiftGroupAddress,
+      value: newShift
+    });
+  };
+
+  let modalBg = '#1e293b'; // default background
+  let modeText = null;
+  if (heatingCoolingStatus === 1) {
+    modalBg = '#4f2a32'; // pastel red for dark mode
+    modeText = 'Heating Mode';
+  } else if (heatingCoolingStatus === 0) {
+    modalBg = '#1c2636'; // slight bluish
+    modeText = 'Cooling Mode';
+  }
+
+  return createPortal(
+    <div className="widget-modal-overlay" onClick={onClose}>
+      <div className="widget-modal-content" onClick={e => e.stopPropagation()} style={{ width: '320px', height: 'auto', padding: '1.5rem', textAlign: 'center', position: 'relative', backgroundColor: modalBg }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          <X size={24} />
+        </button>
+        <h3 style={{ margin: '0 2rem 0.2rem 2rem', fontSize: '1.2rem', fontWeight: 500, lineHeight: '1.3' }}>{room.name} Temperature Control</h3>
+        {modeText && <div style={{ fontSize: '0.8rem', color: heatingCoolingStatus === 1 ? '#ef4444' : '#3b82f6', marginBottom: '0.5rem' }}>{modeText}</div>}
+        
+        <div style={{ margin: '1.5rem 0' }}>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Current Temperature</div>
+          <div style={{ fontSize: '3rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+            {currentTemp !== undefined ? `${currentTemp.toFixed(1)}°` : '--°'}
+          </div>
+        </div>
+
+        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button 
+            className="btn-secondary icon-btn" 
+            style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => handleAdjust(-0.5)}
+            disabled={targetTemp === undefined}
+          >
+            <Minus size={20} />
+          </button>
+          
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Target Setpoint</span>
+            <span style={{ fontSize: '1.4rem', fontWeight: 500 }}>
+              {targetTemp !== undefined ? `${targetTemp.toFixed(1)}°` : '--°'}
+            </span>
+          </div>
+
+          <button 
+            className="btn-secondary icon-btn" 
+            style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => handleAdjust(0.5)}
+            disabled={targetTemp === undefined}
+          >
+            <Plus size={20} />
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 
 // ── Room Card ─────────────────────────────────────────────
-function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction, handleSceneAction }) {
+function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction, handleSceneAction, addToast }) {
   const roomScenes = room.scenes || [];
   const hasScenes = roomScenes.length > 0;
   const roomFunctions = room.functions || [];
   const hasFunctions = roomFunctions.length > 0;
+  
   const roomTemperatureValue = room.roomTemperatureGroupAddress ? deviceStates[room.roomTemperatureGroupAddress] : undefined;
+  const targetTempValue = room.roomSetpointStatusGroupAddress ? deviceStates[room.roomSetpointStatusGroupAddress] : undefined;
+  const shiftStatusValue = room.roomSetpointShiftStatusGroupAddress ? deviceStates[room.roomSetpointShiftStatusGroupAddress] : undefined;
+  const heatingCoolingStatusValue = room.roomHeatingCoolingStatusGroupAddress ? deviceStates[room.roomHeatingCoolingStatusGroupAddress] : undefined;
+  
   const hasRoomTemperature = room.roomTemperatureGroupAddress && roomTemperatureValue !== undefined && roomTemperatureValue !== null && roomTemperatureValue !== '';
   const parsedRoomTemperature = hasRoomTemperature ? Number(roomTemperatureValue) : null;
   const showRoomTemperature = Number.isFinite(parsedRoomTemperature);
+  
+  const isInteractiveHeating = Boolean(
+    room.roomSetpointShiftGroupAddress && 
+    room.roomSetpointStatusGroupAddress && 
+    room.roomSetpointShiftStatusGroupAddress
+  );
+  const [isHeatingModalOpen, setIsHeatingModalOpen] = useState(false);
 
   const renderFuncIcon = (func, isOn) => {
     const effective = func.invertIcon ? !isOn : isOn;
@@ -269,13 +368,26 @@ function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction
   };
 
   return (
-    <div className="room-card">
-      <div className="room-header">
-        <h2 title={room.name}>{room.name}</h2>
-        {showRoomTemperature && (
-          <span className="room-temperature-badge">{parsedRoomTemperature.toFixed(1)} °C</span>
-        )}
-      </div>
+    <>
+      <div className="room-card">
+        <div className="room-header">
+          <h2 title={room.name}>{room.name}</h2>
+          {showRoomTemperature && (
+            <span 
+              className={`room-temperature-badge interactive`}
+              onClick={() => {
+                if (isInteractiveHeating) {
+                  setIsHeatingModalOpen(true);
+                } else {
+                  addToast("Temperature control not set up for this room", "info");
+                }
+              }}
+              title={isInteractiveHeating ? "Adjust Temperature" : "Current Temperature"}
+            >
+              {parsedRoomTemperature.toFixed(1)} °C
+            </span>
+          )}
+        </div>
 
       {hasScenes && (
         <div className="scene-categories">
@@ -356,6 +468,19 @@ function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction
         <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No functions available</div>
       )}
     </div>
+
+    {isHeatingModalOpen && (
+      <RoomTemperatureModal
+        room={room}
+        currentTemp={parsedRoomTemperature}
+        targetTemp={targetTempValue !== undefined ? Number(targetTempValue) : undefined}
+        currentShift={shiftStatusValue !== undefined ? Number(shiftStatusValue) : 0}
+        heatingCoolingStatus={heatingCoolingStatusValue !== undefined ? Number(heatingCoolingStatusValue) : undefined}
+        onClose={() => setIsHeatingModalOpen(false)}
+        onAction={handleAction}
+      />
+    )}
+    </>
   );
 }
 
@@ -491,7 +616,8 @@ export default function Dashboard({
               deviceStates={deviceStates} hueStates={hueStates}
               handleAction={(func) => handleAction(func, activeFloor?.isShared ? 'shared' : 'apartment')}
               handleHueAction={(func) => handleHueAction(func, activeFloor?.isShared ? 'shared' : 'apartment')}
-              handleSceneAction={(selectedRoom, scene) => handleSceneAction(selectedRoom, scene, activeFloor?.isShared ? 'shared' : 'apartment')} />
+              handleSceneAction={(selectedRoom, scene) => handleSceneAction(selectedRoom, scene, activeFloor?.isShared ? 'shared' : 'apartment')}
+              addToast={addToast} />
           ))}
         </div>
       )}

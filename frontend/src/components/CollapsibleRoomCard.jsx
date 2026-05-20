@@ -568,26 +568,118 @@ function CollapsibleRoomCard({
                 onChange={(val) => updateRoom(floorId, room.id, { sceneGroupAddress: val })} placeholder="e.g. 3/5/0"
                 onBrowse={() => openGroupAddressModal({ roomId: room.id, floorId, title: 'Select Scene Group Address', mode: 'scene', target: { kind: 'sceneGA' }, helperText: 'Select a scene or 1-byte value ETS group address.' })} />
             </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <GAField
-                label="Room Temperature GA"
-                tooltipKey="roomTemperature"
-                value={room.roomTemperatureGroupAddress || ''}
-                matchedAddressName={resolveGroupAddressName?.(room.roomTemperatureGroupAddress)}
-                browseLabel="Search ETS addresses for room temperature GA"
-                onCommit={persistRoomChanges}
-                onChange={(val) => updateRoom(floorId, room.id, { roomTemperatureGroupAddress: val })}
-                placeholder="e.g. 4/1/7"
-                onBrowse={() => openGroupAddressModal({
-                  roomId: room.id,
-                  floorId,
-                  title: 'Select Room Temperature Group Address',
-                  mode: 'any',
-                  dptFilter: '9.',
-                  target: { kind: 'roomTemperatureGA' },
-                  helperText: 'Select a compatible room temperature ETS group address.',
-                })}
-              />
+            <div className="room-section temperature-section" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', marginBottom: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <h4 className="section-label" style={{ marginBottom: '0.25rem' }}>Temperature Control</h4>
+              <p className="section-subtitle" style={{ marginBottom: '1rem' }}>
+                If you only provide the Room Temperature GA, the dashboard will only display the current temperature. 
+                Provide all four GAs (including Status Setpoint Shift) to enable the interactive heating control modal.
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <GAField
+                  label="Room Temperature GA"
+                  tooltipKey="roomTemperature"
+                  value={room.roomTemperatureGroupAddress || ''}
+                  matchedAddressName={resolveGroupAddressName?.(room.roomTemperatureGroupAddress)}
+                  browseLabel="Search ETS addresses for room temperature GA"
+                  onCommit={persistRoomChanges}
+                  onChange={(val) => updateRoom(floorId, room.id, { roomTemperatureGroupAddress: val })}
+                  placeholder="e.g. 4/1/7 (DPT 9.001)"
+                  onBrowse={() => openGroupAddressModal({
+                    roomId: room.id,
+                    floorId,
+                    title: 'Select Room Temperature Group Address',
+                    mode: 'any',
+                    dptFilter: '9.',
+                    target: { kind: 'roomTemperatureGA' },
+                    helperText: 'Select a compatible room temperature ETS group address.',
+                  })}
+                />
+                
+                <GAField
+                  label="Setpoint Shift GA"
+                  tooltipKey="setpointShift"
+                  optional
+                  value={room.roomSetpointShiftGroupAddress || ''}
+                  matchedAddressName={resolveGroupAddressName?.(room.roomSetpointShiftGroupAddress)}
+                  browseLabel="Search ETS addresses for setpoint shift GA"
+                  onCommit={persistRoomChanges}
+                  onChange={(val) => updateRoom(floorId, room.id, { roomSetpointShiftGroupAddress: val })}
+                  placeholder="e.g. 4/1/8 (DPT 9.002)"
+                  onBrowse={() => openGroupAddressModal({
+                    roomId: room.id,
+                    floorId,
+                    title: 'Select Setpoint Shift Group Address',
+                    mode: 'any',
+                    dptFilter: '9.',
+                    target: { kind: 'field', field: 'roomSetpointShiftGroupAddress', isRoomField: true },
+                    helperText: 'Select the setpoint shift GA (Sollwertverschiebung DPT 9.002).',
+                  })}
+                />
+                
+                <GAField
+                  label="Setpoint Status GA"
+                  tooltipKey="setpointStatus"
+                  optional
+                  value={room.roomSetpointStatusGroupAddress || ''}
+                  matchedAddressName={resolveGroupAddressName?.(room.roomSetpointStatusGroupAddress)}
+                  browseLabel="Search ETS addresses for setpoint status GA"
+                  onCommit={persistRoomChanges}
+                  onChange={(val) => updateRoom(floorId, room.id, { roomSetpointStatusGroupAddress: val })}
+                  placeholder="e.g. 4/1/9 (DPT 9.001)"
+                  onBrowse={() => openGroupAddressModal({
+                    roomId: room.id,
+                    floorId,
+                    title: 'Select Setpoint Status Group Address',
+                    mode: 'any',
+                    dptFilter: '9.',
+                    target: { kind: 'field', field: 'roomSetpointStatusGroupAddress', isRoomField: true },
+                    helperText: 'Select the setpoint status GA (Status Sollwert DPT 9.001).',
+                  })}
+                />
+                
+                <GAField
+                  label="Setpoint Shift Status GA"
+                  tooltipKey="setpointShiftStatus"
+                  optional
+                  value={room.roomSetpointShiftStatusGroupAddress || ''}
+                  matchedAddressName={resolveGroupAddressName?.(room.roomSetpointShiftStatusGroupAddress)}
+                  browseLabel="Search ETS addresses for setpoint shift status GA"
+                  onCommit={persistRoomChanges}
+                  onChange={(val) => updateRoom(floorId, room.id, { roomSetpointShiftStatusGroupAddress: val })}
+                  placeholder="e.g. 4/1/10 (DPT 9.002)"
+                  onBrowse={() => openGroupAddressModal({
+                    roomId: room.id,
+                    floorId,
+                    title: 'Select Setpoint Shift Status Group Address',
+                    mode: 'any',
+                    dptFilter: '9.',
+                    target: { kind: 'field', field: 'roomSetpointShiftStatusGroupAddress', isRoomField: true },
+                    helperText: 'Select the setpoint shift status GA (Status Sollwertverschiebung DPT 9.002).',
+                  })}
+                />
+                
+                <GAField
+                  label="Status Heating / Cooling GA"
+                  tooltipKey="heatingCoolingStatus"
+                  optional
+                  value={room.roomHeatingCoolingStatusGroupAddress || ''}
+                  matchedAddressName={resolveGroupAddressName?.(room.roomHeatingCoolingStatusGroupAddress)}
+                  browseLabel="Search ETS addresses for heating/cooling status GA"
+                  onCommit={persistRoomChanges}
+                  onChange={(val) => updateRoom(floorId, room.id, { roomHeatingCoolingStatusGroupAddress: val })}
+                  placeholder="e.g. 4/1/11 (DPT 1.100) (1=Heating, 0=Cooling)"
+                  onBrowse={() => openGroupAddressModal({
+                    roomId: room.id,
+                    floorId,
+                    title: 'Select Status Heating / Cooling Group Address',
+                    mode: 'any',
+                    dptFilter: '1.',
+                    target: { kind: 'field', field: 'roomHeatingCoolingStatusGroupAddress', isRoomField: true },
+                    helperText: 'Select the heating / cooling status GA (1=Heating, 0=Cooling).',
+                  })}
+                />
+              </div>
             </div>
             {hueStatus && hueStatus.paired && (
               <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

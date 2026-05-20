@@ -900,9 +900,13 @@ export default function Settings({ fullConfig, apartment, config, fetchConfig, a
       for (const f of floorsRef.current) {
         const room = f.rooms.find(r => r.id === roomId);
         if (room) {
-          updated = updateFloorRooms(f.id, rooms => rooms.map(r => r.id !== roomId ? r : {
-            ...r, functions: (r.functions || []).map(fn => fn.id !== target.functionId ? fn : { ...fn, [target.field]: groupAddress.address })
-          }));
+          if (target.isRoomField) {
+            updated = updateRoom(f.id, roomId, { [target.field]: groupAddress.address });
+          } else {
+            updated = updateFloorRooms(f.id, rooms => rooms.map(r => r.id !== roomId ? r : {
+              ...r, functions: (r.functions || []).map(fn => fn.id !== target.functionId ? fn : { ...fn, [target.field]: groupAddress.address })
+            }));
+          }
           break;
         }
       }
