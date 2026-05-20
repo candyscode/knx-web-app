@@ -191,6 +191,17 @@ body {
   white-space: nowrap;
 }
 
+.room-temperature-badge.interactive {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.room-temperature-badge.interactive:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: scale(1.05);
+}
+
 .functions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

@@ -192,6 +192,29 @@ function buildKnxTrackingMaps(apartmentId) {
         gaToDpt[room.roomTemperatureGroupAddress] = 'DPT9.001';
         scopedSet.add(room.roomTemperatureGroupAddress);
       }
+      if (room.roomSetpointShiftGroupAddress) {
+        gaToType[room.roomSetpointShiftGroupAddress] = 'temperature_shift';
+        gaToDpt[room.roomSetpointShiftGroupAddress] = 'DPT9.002';
+        scopedSet.add(room.roomSetpointShiftGroupAddress);
+      }
+      if (room.roomSetpointStatusGroupAddress) {
+        statusSet.add(room.roomSetpointStatusGroupAddress);
+        gaToType[room.roomSetpointStatusGroupAddress] = 'info';
+        gaToDpt[room.roomSetpointStatusGroupAddress] = 'DPT9.001';
+        scopedSet.add(room.roomSetpointStatusGroupAddress);
+      }
+      if (room.roomSetpointShiftStatusGroupAddress) {
+        statusSet.add(room.roomSetpointShiftStatusGroupAddress);
+        gaToType[room.roomSetpointShiftStatusGroupAddress] = 'info';
+        gaToDpt[room.roomSetpointShiftStatusGroupAddress] = 'DPT9.002';
+        scopedSet.add(room.roomSetpointShiftStatusGroupAddress);
+      }
+      if (room.roomHeatingCoolingStatusGroupAddress) {
+        statusSet.add(room.roomHeatingCoolingStatusGroupAddress);
+        gaToType[room.roomHeatingCoolingStatusGroupAddress] = 'info';
+        gaToDpt[room.roomHeatingCoolingStatusGroupAddress] = 'DPT1';
+        scopedSet.add(room.roomHeatingCoolingStatusGroupAddress);
+      }
 
       (room.functions || []).forEach((func) => {
         if (func.statusGroupAddress) {
@@ -890,6 +913,10 @@ app.post('/api/action', async (req, res) => {
       await triggerLinkedHueScene(actionContext.apartmentId, scope, groupAddress, sceneNumber);
     } else if (type === 'percentage' || type === 'dimmer') {
       actionContext.context.knxService.writeGroupValue(groupAddress, value, 'DPT5.001');
+    } else if (type === 'temperature_shift') {
+      actionContext.context.knxService.writeGroupValue(groupAddress, value, 'DPT9.002');
+    } else if (type === 'read') {
+      actionContext.context.knxService.requestStatus(groupAddress);
     } else {
       actionContext.context.knxService.writeGroupValue(
         groupAddress,

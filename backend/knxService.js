@@ -248,18 +248,18 @@ class KnxService {
       throw new Error('Not connected to KNX bus');
     }
     
-    if (dpt === 'DPT5.001') {
-      try {
+    try {
+      if (dpt === 'DPT5.001') {
         this.connection.write(groupAddress, value, 'DPT5.001');
-      } catch (e) {
-        throw new Error(`Failed to write percentage to ${groupAddress}: ` + e.message);
-      }
-    } else {
-      try {
+      } else if (dpt === 'DPT9.002') {
+        this.connection.write(groupAddress, value, 'DPT9.002');
+      } else if (dpt === 'DPT1' || !dpt) {
         this.connection.write(groupAddress, value ? 1 : 0, 'DPT1');
-      } catch (e) {
-        throw new Error(`Failed to write boolean to ${groupAddress}: ` + e.message);
+      } else {
+        this.connection.write(groupAddress, value, dpt);
       }
+    } catch (e) {
+      throw new Error(`Failed to write ${dpt || 'boolean'} to ${groupAddress}: ` + e.message);
     }
   }
 
