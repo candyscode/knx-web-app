@@ -212,6 +212,18 @@ describe('KnxService — unit', () => {
       service.writeGroupValue('2/0/0', 75, 'DPT5.001');
       expect(mockConn.write).toHaveBeenCalledWith('2/0/0', 75, 'DPT5.001');
     });
+
+    it('writes DPT9.002 correctly', () => {
+      const mockConn = getConnectedService();
+      service.writeGroupValue('4/1/1', -1.5, 'DPT9.002');
+      expect(mockConn.write).toHaveBeenCalledWith('4/1/1', -1.5, 'DPT9.002');
+    });
+
+    it('passes arbitrary DPTs to the connection write method', () => {
+      const mockConn = getConnectedService();
+      service.writeGroupValue('4/1/1', 22.5, 'DPT9.001');
+      expect(mockConn.write).toHaveBeenCalledWith('4/1/1', 22.5, 'DPT9.001');
+    });
   });
 
   // ── writeScene() ───────────────────────────────────────────────────────────

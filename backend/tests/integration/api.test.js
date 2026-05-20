@@ -297,11 +297,22 @@ describe('POST /api/config', () => {
   });
 
   it('updates rooms in config', async () => {
-    const newRooms = [{ id: 'r2', name: 'Küche', scenes: [], functions: [] }];
+    const newRooms = [{ 
+      id: 'r2', 
+      name: 'Küche', 
+      roomTemperatureGroupAddress: '4/1/1',
+      roomSetpointShiftGroupAddress: '4/1/2',
+      roomSetpointStatusGroupAddress: '4/1/3',
+      roomHeatingCoolingStatusGroupAddress: '4/1/4',
+      scenes: [], 
+      functions: [] 
+    }];
     const res = await request(app).post('/api/config').send({ rooms: newRooms });
     expect(res.status).toBe(200);
     expect(res.body.config.rooms).toHaveLength(1);
     expect(res.body.config.rooms[0].name).toBe('Küche');
+    expect(res.body.config.rooms[0].roomTemperatureGroupAddress).toBe('4/1/1');
+    expect(res.body.config.rooms[0].roomHeatingCoolingStatusGroupAddress).toBe('4/1/4');
   });
 
   it('updates globals in config', async () => {
@@ -381,6 +392,28 @@ describe('POST /api/action', () => {
       .post('/api/action')
       .send({ groupAddress: '1/0/0', type: 'switch', value: true });
     expect(mockConn.write).toHaveBeenCalledWith('1/0/0', 1, 'DPT1');
+  });
+
+  it('returns 200 for temperature_shift action when KNX connected', async () => {
+    const mockConn = { write: jest.fn(), read: jest.fn(), Disconnect: jest.fn() };
+    knxService.connection = mockConn;
+    knxService.isConnected = true;
+
+    await request(app)
+      .post('/api/action')
+      .send({ groupAddress: '4/1/1', type: 'temperature_shift', value: 1.5 });
+    expect(mockConn.write).toHaveBeenCalledWith('4/1/1', 1.5, 'DPT9.002');
+  });
+
+  it('returns 200 for read action when KNX connected', async () => {
+    const mockConn = { write: jest.fn(), read: jest.fn(), Disconnect: jest.fn() };
+    knxService.connection = mockConn;
+    knxService.isConnected = true;
+
+    await request(app)
+      .post('/api/action')
+      .send({ groupAddress: '4/1/2', type: 'read' });
+    expect(mockConn.read).toHaveBeenCalledWith('4/1/2');
   });
 });
 

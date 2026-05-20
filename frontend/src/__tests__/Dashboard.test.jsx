@@ -572,4 +572,102 @@ describe('Dashboard — dimmer widget', () => {
   });
 });
 
+describe('Dashboard — Room Temperature Control', () => {
+  const HEATING_ROOM = {
+    id: 'heating_1',
+    name: 'Bathroom',
+    roomTemperatureGroupAddress: '4/1/1',
+    roomSetpointShiftGroupAddress: '4/1/2',
+    roomSetpointStatusGroupAddress: '4/1/3',
+    roomSetpointShiftStatusGroupAddress: '4/1/5',
+    roomHeatingCoolingStatusGroupAddress: '4/1/4',
+    scenes: [],
+    functions: [],
+  };
+
+  it('renders interactive badge when room temperature is available', () => {
+    renderDashboard({
+      rooms: [HEATING_ROOM],
+      deviceStates: { '4/1/1': 22.5 }
+    });
+    const badge = screen.getByText('22.5 °C');
+    expect(badge).toHaveClass('interactive');
+  });
+
+  it('shows toast when clicking badge if heating control GAs are missing', async () => {
+    const user = userEvent.setup();
+    renderDashboard({
+      rooms: [{ id: 'r1', name: 'R1', roomTemperatureGroupAddress: '4/1/1' }],
+      deviceStates: { '4/1/1': 22.5 }
+    });
+    
+    await user.click(screen.getByText('22.5 °C'));
+    
+    expect(addToast).toHaveBeenCalledWith('Temperature control not set up for this room', 'info');
+    expect(document.querySelector('.widget-modal-overlay')).not.toBeInTheDocument();
+  });
+
+  it('opens modal and triggers read request if heating/cooling status is undefined', async () => {
+    const user = userEvent.setup();
+    renderDashboard({
+      rooms: [HEATING_ROOM],
+      deviceStates: { '4/1/1': 22.5, '4/1/3': 21.0 } // 4/1/4 missing
+    });
+    
+    await user.click(screen.getByText('22.5 °C'));
+    
+    expect(document.querySelector('.widget-modal-overlay')).toBeInTheDocument();
+    expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'read',
+      groupAddress: '4/1/4'
+    }));
+  });
+
+  it('shows Heating Mode UI and sends correct shift on + click', async () => {
+    const user = userEvent.setup();
+    renderDashboard({
+      rooms: [HEATING_ROOM],
+      // currentShift is undefined here, fallback is 0
+      deviceStates: { '4/1/1': 22.5, '4/1/3': 21.0, '4/1/4': 1 }
+    });
+    
+    await user.click(screen.getByText('22.5 °C'));
+    
+    expect(screen.getByText('Bathroom Temperature Control')).toBeInTheDocument();
+    expect(screen.getByText('Heating Mode')).toBeInTheDocument();
+    
+    // Check background color applied via style in modal content
+    const modalContent = document.querySelector('.widget-modal-content');
+    expect(modalContent.style.backgroundColor).toBe('rgb(79, 42, 50)'); // #4f2a32
+
+    // Click +
+    const plusBtn = document.querySelector('button .lucide-plus').parentElement;
+    await user.click(plusBtn);
+    
+    expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'temperature_shift',
+      groupAddress: '4/1/2',
+      value: 0.5
+    }));
+  });
+
+  it('shows Cooling Mode UI and handles undefined target temp gracefully', async () => {
+    const user = userEvent.setup();
+    renderDashboard({
+      rooms: [HEATING_ROOM],
+      deviceStates: { '4/1/1': 22.5, '4/1/4': 0 } // target setpoint missing
+    });
+    
+    await user.click(screen.getByText('22.5 °C'));
+    
+    expect(screen.getByText('Cooling Mode')).toBeInTheDocument();
+    const modalContent = document.querySelector('.widget-modal-content');
+    expect(modalContent.style.backgroundColor).toBe('rgb(28, 38, 54)'); // #1c2636
+    
+    // Minus and Plus buttons should be disabled because targetTemp is undefined
+    const minusBtn = document.querySelector('button .lucide-minus').parentElement;
+    expect(minusBtn).toBeDisabled();
+  });
+});
+
 
