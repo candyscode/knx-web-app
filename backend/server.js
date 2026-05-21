@@ -916,7 +916,7 @@ app.post('/api/action', async (req, res) => {
     } else if (type === 'temperature_shift') {
       actionContext.context.knxService.writeGroupValue(groupAddress, value, 'DPT9.002');
     } else if (type === 'read') {
-      actionContext.context.knxService.requestStatus(groupAddress);
+      actionContext.context.knxService.readStatus(groupAddress);
     } else {
       actionContext.context.knxService.writeGroupValue(
         groupAddress,
