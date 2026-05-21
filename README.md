@@ -6,11 +6,12 @@ Each apartment can have:
 - its own KNX IP gateway
 - its own optional Philips Hue bridge
 - its own ETS XML import
-- its own private areas, rooms, scenes, functions, and alarms
+- its own private floors, rooms, scenes, functions, routines, and alarms
 
 In addition, the app supports a building-wide **Main Line** scope for:
 - **Central Information** such as outside temperature, wind speed, or brightness
-- **Shared areas** such as garden or garage that appear in all apartments
+- **Shared floors** such as garden or garage that appear in all apartments
+- **Sun Trigger** for sunrise/sunset automations
 
 The app is designed for installations where the Main Line does **not** have its own IP gateway and is instead reached through one selected apartment gateway.
 
@@ -27,7 +28,9 @@ The app is designed for installations where the Main Line does **not** have its 
 - [Apartment URLs](#apartment-urls)
 - [Using the Dashboard](#using-the-dashboard)
 - [Using Rooms](#using-rooms)
+- [Automations (Routines)](#automations-routines)
 - [Using Setup](#using-setup)
+- [Configuration Protection](#configuration-protection)
 - [ETS XML Strategy](#ets-xml-strategy)
 - [Philips Hue Integration](#philips-hue-integration)
 - [Config Export & Import](#config-export--import)
@@ -43,13 +46,13 @@ The app is designed for installations where the Main Line does **not** have its 
 KNX Control separates the building into two scopes:
 
 - **Apartment scope**
-  Each apartment has its own KNX gateway, optional Hue bridge, ETS XML, private areas, and apartment alarms.
+  Each apartment has its own KNX gateway, optional Hue bridge, ETS XML, private floors, routines, and apartment alarms.
 - **Main Line scope**
-  Central KNX values and shared areas are configured once for the whole building and are accessed through one selected apartment gateway.
+  Central KNX values and shared floors are configured once for the whole building and are accessed through one selected apartment gateway.
 
 This matches real KNX installations where:
 - apartments sit on separate lines
-- the Main Line contains central values or common areas
+- the Main Line contains central values or common floors/areas
 - line couplers allow selected telegrams through
 - there is no dedicated IP gateway on the Main Line
 
@@ -77,7 +80,7 @@ This matches real KNX installations where:
 - **Persistence**: `backend/config.json`
 - **KNX**: one live KNX context per apartment
 - **Hue**: one optional Hue context per apartment
-- **Main Line**: central values and shared areas are stored once on building level and are read through the selected apartment gateway
+- **Main Line**: central values and shared floors are stored once on building level and are read through the selected apartment gateway
 
 ---
 
@@ -171,6 +174,7 @@ Each apartment stores:
 - optional `hue`
 - private `floors`
 - `alarms`
+- `automations`
 - apartment ETS import
 
 ### Building
@@ -179,15 +183,16 @@ The building stores:
 
 - `sharedAccessApartmentId`
 - `sharedUsesApartmentImportedGroupAddresses`
-- `sharedAreas`
+- `sharedAreas` (Shared Floors)
 - `sharedInfos`
 - dedicated Main Line ETS import
+- configuration password
 
 ### Practical meaning
 
 - **Central Information** is configured once for the whole building
 - **Apartment Alarms** stay apartment-specific
-- **Shared areas** are shown in every apartment, but stored only once
+- **Shared floors** are shown in every apartment, but stored only once
 - the **Main Line** does not have its own gateway in the model
 - one apartment gateway is chosen as the technical access path to the Main Line
 
@@ -211,6 +216,7 @@ Examples:
 - `/wohnung-west`
 - `/wohnung-ost/rooms`
 - `/wohnung-west/connections`
+- `/wohnung-ost/automation`
 
 This means you can bookmark apartment dashboards directly.
 
@@ -223,25 +229,35 @@ Each apartment dashboard shows:
 - the currently selected apartment
 - **Central Information**
 - **Apartment Alarms**
-- private apartment areas
-- shared areas
+- private apartment floors
+- shared floors
 
 ### Room cards
 
 A room card can contain:
 
-- light scenes
-- shade scenes
-- KNX functions
-- Hue functions
-- an optional room temperature badge
+- **Widgets**: light scenes, shade scenes, KNX functions, Hue functions
+- **Temperature Control**: An optional room temperature badge and thermostat control popup.
 
-The room temperature badge is shown only when:
+The room temperature control is shown only when:
 
 1. a room temperature GA is configured
 2. a valid KNX value has been received
 
-If there is no valid value, the badge is hidden completely.
+When configured, tapping the temperature badge opens a thermostat popup to adjust the setpoint and view the heating/cooling status.
+
+### Widget Catalog
+
+When configuring a room, you can add various interactive widgets via the Widget Catalog:
+
+- **Dimmer:** Percentage control for lights (0-100%).
+- **Blind / Shade:** Up/down/stop controls and position slider.
+- **Light:** Simple binary on/off.
+- **Switch / Socket:** Binary control, can be inverted.
+- **Lock:** Secure binary toggle for locks.
+- **Scene:** Trigger a predefined KNX scene number.
+- **Binary Mode Selector:** Toggles between two named states (e.g., Heating/Cooling).
+- **Hue Lamp:** Directly control Philips Hue lights.
 
 ### Central Information
 
@@ -253,12 +269,12 @@ Central information is intended for values like:
 
 These values are configured once and shown in all apartments.
 
-### Shared areas in the dashboard
+### Shared floors in the dashboard
 
-Shared areas still use the label **Shared** in the area tabs, because that label describes the UX correctly:
-the area can be used from multiple apartments.
+Shared floors still use the label **Shared** in the floor tabs, because that label describes the UX correctly:
+the floor can be used from multiple apartments.
 
-The underlying KNX setup for these areas is still documented as **Main Line** in Setup and README.
+The underlying KNX setup for these floors is still documented as **Main Line** in Setup and README.
 
 ---
 
@@ -266,43 +282,30 @@ The underlying KNX setup for these areas is still documented as **Main Line** in
 
 The `Rooms` section has two modes:
 
-- **Rooms**
+- **Floors & Rooms**
 - **Global Info & Alarms**
 
-Inside the `Global Info & Alarms` panel, the content is now split into:
+Inside the `Global Info & Alarms` panel, the content is split into:
 
 - **Central Information**
 - **Apartment Alarms**
 
-### Areas
+### Floors
 
-- Areas are displayed as tabs
-- Areas can be reordered with drag and drop
-- The tab-shaped **Add Area** control opens a modal
+- Floors are displayed as tabs
+- Floors can be reordered with drag and drop
+- The tab-shaped **Add Floor** control opens a modal
 - In that modal you can create either:
-  - a private area
-  - a **Shared area for all apartments**
+  - a private floor
+  - a **Shared floor for all apartments**
 
-Shared areas appear in all apartments.
+Shared floors appear in all apartments.
 
 ### Rooms
 
-- Rooms belong to the currently selected area
-- Rooms can be moved between areas
+- Rooms belong to the currently selected floor
+- Rooms can be moved between floors
 - Delete confirmations use the app's custom modal, not browser alerts
-
-### Scenes
-
-- Each room has one **Scene GA**
-- All scenes in the room share that GA
-- Scene numbers are entered as `1-64`
-- The app automatically converts them to KNX `DPT 17.001` bus values
-
-### Room temperature
-
-- Every room can have an optional **Room Temperature GA**
-- The picker is filtered to `DPT 9.x`
-- If a compatible value is available, the dashboard shows it at the top right of the room card
 
 ### Group address helpers
 
@@ -310,6 +313,28 @@ Whenever a group address is entered manually or selected via ETS browse:
 
 - the app tries to match it against the imported ETS XML
 - the matching ETS name is shown below the field
+
+---
+
+## Automations (Routines)
+
+Each apartment has a dedicated **Automation** page to run scheduled routines.
+
+### Routine Triggers
+
+- **Time-based:** Runs every day at a specific time (e.g., 08:00).
+- **Sun-based:** Runs at Sunrise or Sunset. 
+  *Note: Sun-based triggers require a building-wide Sun Trigger Group Address (configured in Setup under Main Line Setup).*
+
+### Routine Actions
+
+You can add multiple actions to a routine:
+- Trigger KNX scenes
+- Toggle KNX functions (lights, shades, etc.)
+- Trigger Hue scenes
+- Toggle Hue lights
+
+Routines can be temporarily disabled using the toggle switch. They support drag-and-drop ordering for execution priority.
 
 ---
 
@@ -339,13 +364,8 @@ Use this section for building-wide KNX data:
   Choose which apartment gateway can listen to telegrams from the Main Line.
 - **Main Line ETS XML**
   Upload the ETS export that contains central group addresses and Main Line addresses.
-
-Examples:
-
-- outside temperature
-- wind speed
-- garage
-- garden
+- **Sun Trigger GA**
+  Configure the group address used to detect Day/Night status for sunrise and sunset routines.
 
 ### Important behavior of the Main Line ETS XML card
 
@@ -376,6 +396,18 @@ From here you can:
 
 ---
 
+## Configuration Protection
+
+To prevent unauthorized changes, you can enable a **Configuration Password** in Setup.
+When enabled, the password protects:
+- **Rooms:** Managing floors, rooms, and widgets.
+- **Setup:** Gateway settings, ETS XML, and Hue pairing.
+- **Automation:** Creating and editing routines.
+
+A single password protects the configuration for the entire house. Once unlocked, the session remains open while the app is active in the browser.
+
+---
+
 ## ETS XML Strategy
 
 There are two ETS XML layers:
@@ -393,7 +425,7 @@ Used for:
 Used for:
 
 - Central Information
-- shared areas that live on the Main Line
+- shared floors that live on the Main Line
 - other central KNX group addresses
 
 ### Optional shortcut
@@ -424,9 +456,9 @@ Hue is configured per apartment.
 4. Press the physical link button on the bridge
 5. Click **Pair**
 
-### Hue in shared areas
+### Hue in shared floors
 
-Shared areas can contain Hue-linked rooms or scenes as well.
+Shared floors can contain Hue-linked rooms or scenes as well.
 Those use the same apartment context that provides the Main Line access.
 
 ---
@@ -444,11 +476,12 @@ The full export includes everything:
 - slugs
 - KNX IPs and ports
 - Hue config
-- private areas
-- shared areas
+- private floors
+- shared floors
 - rooms
 - scenes
 - functions
+- routines
 - apartment alarms
 - Central Information
 - ETS XML imports
@@ -480,6 +513,7 @@ knx-web-app/
     │   ├── Dashboard.jsx
     │   ├── Settings.jsx
     │   ├── Connections.jsx
+    │   ├── Automation.jsx
     │   ├── appModel.js
     │   ├── configApi.js
     │   ├── components/
@@ -519,7 +553,7 @@ In the UI and README, this `shared` scope is presented as:
 
 - **Main Line** for KNX setup
 - **Central Information** for building-wide values
-- **Shared areas** for areas visible in all apartments
+- **Shared floors** for floors visible in all apartments
 
 ### Hue
 
@@ -575,8 +609,10 @@ There is explicit regression coverage for:
 - ETS XML selection and DPT filtering
 - dashboard rendering for central values
 - room temperatures
-- area ordering across private and shared areas
+- floor ordering across private and shared floors
 - config import/export
+- automations and schedules
+- configuration protection
 
 ---
 
@@ -589,8 +625,9 @@ There is no separate Main Line IP gateway in the model.
 That means:
 
 - Central Information
-- shared areas
+- shared floors
 - Main Line ETS browsing
+- Sun Trigger (Day/Night status)
 
 all depend on the apartment selected in **Main Line Access**.
 
