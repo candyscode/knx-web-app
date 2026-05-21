@@ -244,7 +244,7 @@ export function KNXGroupAddressModal({
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: topLevelRangeOptions.length > 1 ? 'minmax(180px, 220px) minmax(0, 1fr)' : '1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: topLevelRangeOptions.length > 1 ? 'minmax(180px, 220px) minmax(0, 1fr)' : '1fr', gap: '0.75rem', marginBottom: '1rem', alignItems: 'end' }}>
           {topLevelRangeOptions.length > 1 && (
             <div>
               <label className="settings-field-label" style={{ marginBottom: '0.35rem', display: 'block' }}>
@@ -263,25 +263,17 @@ export function KNXGroupAddressModal({
               </select>
             </div>
           )}
-          <div>
-            <label
-              className="settings-field-label"
-              style={{ marginBottom: '0.35rem', display: 'block', visibility: 'hidden' }}
-            >
-              Search
-            </label>
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input
-                className="form-input"
-                style={{ paddingLeft: '2.5rem' }}
-                type="text"
-                placeholder="Search by name, address, DPT or room"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                disabled={visibleAddresses.length === 0}
-              />
-            </div>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input
+              className="form-input"
+              style={{ paddingLeft: '2.5rem' }}
+              type="text"
+              placeholder="Search by name, address, DPT or room"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              disabled={visibleAddresses.length === 0}
+            />
           </div>
         </div>
 
