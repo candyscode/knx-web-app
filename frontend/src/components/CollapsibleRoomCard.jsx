@@ -12,7 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronDown, GripVertical, Trash2, Lightbulb, Plus,
   HelpCircle, Sparkles, Lock, LockOpen, Pencil,
-  Blinds, SlidersHorizontal, Power, Plug, Play, Search, X, LayoutGrid
+  Blinds, SlidersHorizontal, Power, Plug, Play, Search, X, LayoutGrid, ArrowLeftRight
 } from 'lucide-react';
 import { getSelectOption } from '../iconSelectUtils';
 import { KNXGroupAddressModal } from './KNXGroupAddressModal';
@@ -23,26 +23,28 @@ export const ICON_OPTIONS = [
   { value: 'lock', label: 'Lock', Icon: Lock },
 ];
 export const TYPE_OPTIONS = [
-  { value: 'scene',      label: 'Scene',          dpt: 'DPT 17.001' },
-  { value: 'switch',     label: 'Switch',          dpt: 'DPT 1.001'  },
-  { value: 'light',      label: 'Light',           dpt: 'DPT 1.001'  },
-  { value: 'lock',       label: 'Lock',            dpt: 'DPT 1.001'  },
-  { value: 'socket',     label: 'Socket',          dpt: 'DPT 1.001'  },
-  { value: 'percentage', label: 'Blind / Shade',   dpt: 'DPT 5.001'  },
-  { value: 'dimmer',     label: 'Dimmer',          dpt: 'DPT 5.001'  },
+  { value: 'scene',           label: 'Scene',          dpt: 'DPT 17.001' },
+  { value: 'switch',          label: 'Switch',         dpt: 'DPT 1.001'  },
+  { value: 'light',           label: 'Light',          dpt: 'DPT 1.001'  },
+  { value: 'lock',            label: 'Lock',           dpt: 'DPT 1.001'  },
+  { value: 'socket',          label: 'Socket',         dpt: 'DPT 1.001'  },
+  { value: 'percentage',      label: 'Blind / Shade',  dpt: 'DPT 5.001'  },
+  { value: 'dimmer',          label: 'Dimmer',         dpt: 'DPT 5.001'  },
+  { value: 'binary_selector', label: 'Binary Selector',dpt: 'DPT 1.001'  },
 ];
 
 // Icon per type — used in card headers & dashboard
 export function getTypeIcon(type, size = 16) {
   switch (type) {
-    case 'dimmer':     return <SlidersHorizontal size={size} />;
-    case 'percentage': return <Blinds size={size} />;
-    case 'light':      return <Lightbulb size={size} />;
-    case 'switch':     return <Power size={size} />;
-    case 'socket':     return <Plug size={size} />;
-    case 'lock':       return <Lock size={size} />;
-    case 'scene':      return <Play size={size} />;
-    default:           return <Power size={size} />;
+    case 'dimmer':          return <SlidersHorizontal size={size} />;
+    case 'percentage':      return <Blinds size={size} />;
+    case 'light':           return <Lightbulb size={size} />;
+    case 'switch':          return <Power size={size} />;
+    case 'socket':          return <Plug size={size} />;
+    case 'lock':            return <Lock size={size} />;
+    case 'scene':           return <Play size={size} />;
+    case 'binary_selector': return <ArrowLeftRight size={size} />;
+    default:                return <Power size={size} />;
   }
 }
 
@@ -94,6 +96,14 @@ const WIDGET_CATALOG = [
     dpt: 'DPT 17.001 (scene number)',
     icon: Play,
     color: '#60a5fa',
+  },
+  {
+    type: 'binary_selector',
+    label: 'Binary Mode Selector',
+    description: 'Toggles between two named states (0 or 1), like Cooling and Heating.',
+    dpt: 'DPT 1.001 (0 / 1)',
+    icon: ArrowLeftRight,
+    color: '#2dd4bf',
   },
   {
     type: 'hue',
@@ -418,7 +428,7 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
               {func.type === 'scene' && (
                 <GAField label="Scene Number" tooltipKey="scene" value={func.sceneNumber} onChange={upd('sceneNumber')} onCommit={persistRoomChanges} placeholder="1–64" type="number" min={1} max={64} />
               )}
-              {(isBinary || func.type === 'percentage' || func.type === 'dimmer') && (
+              {(isBinary || func.type === 'percentage' || func.type === 'dimmer' || func.type === 'binary_selector') && (
                 <GAField label="Feedback GA" tooltipKey="feedback" value={func.statusGroupAddress} onChange={upd('statusGroupAddress')} onCommit={persistRoomChanges} placeholder="e.g. 1/5/1" browseLabel="Search ETS addresses for feedback GA"
                   matchedAddressName={resolveGroupAddressName?.(func.statusGroupAddress)}
                   onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: func.type, target: { kind: 'field', functionId: func.id, field: 'statusGroupAddress' }, helperText: 'Select a compatible feedback GA.' })} />
@@ -439,6 +449,18 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
                 <GAField label="Moving GA" tooltipKey="moving" optional value={func.movingGroupAddress} onChange={upd('movingGroupAddress')} onCommit={persistRoomChanges} placeholder="e.g. 1/5/2" browseLabel="Search ETS addresses for moving GA"
                   matchedAddressName={resolveGroupAddressName?.(func.movingGroupAddress)}
                   onBrowse={() => openGroupAddressModal({ roomId: room.id, title: 'Select group address', mode: 'percentage', target: { kind: 'field', functionId: func.id, field: 'movingGroupAddress' }, helperText: 'Select a compatible moving GA.' })} />
+              )}
+              {func.type === 'binary_selector' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                  <div className="settings-field">
+                    <label className="settings-field-label">Label for 0 (Off)</label>
+                    <input className="form-input" value={func.labelOff || ''} onChange={e => handleUpdateFunction(room.id, func.id, 'labelOff', e.target.value)} onBlur={persistRoomChanges} placeholder="e.g. Cooling" />
+                  </div>
+                  <div className="settings-field">
+                    <label className="settings-field-label">Label for 1 (On)</label>
+                    <input className="form-input" value={func.labelOn || ''} onChange={e => handleUpdateFunction(room.id, func.id, 'labelOn', e.target.value)} onBlur={persistRoomChanges} placeholder="e.g. Heating" />
+                  </div>
+                </div>
               )}
             </div>
           </>

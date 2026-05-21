@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { triggerAction, triggerHueAction } from './configApi';
-import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen, Play, Plug, Power, SlidersHorizontal, Plus, Minus, X } from 'lucide-react';
+import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen, Play, Plug, Power, SlidersHorizontal, Plus, Minus, X, ArrowLeftRight } from 'lucide-react';
 import FloorTabs from './components/FloorTabs';
 import GlobalInfoWidget from './components/GlobalInfoWidget';
 
@@ -127,6 +127,33 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
         document.body
       )}
     </>
+  );
+};
+
+// ── Binary Selector Card ──────────────────────────────────
+const BinarySelectorCard = ({ func, currentState, onAction }) => {
+  const isOn = !!currentState;
+  return (
+    <div className="action-btn action-btn--widget" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', pointerEvents: 'none' }}>
+        <ArrowLeftRight size={18} color="var(--accent-color)" />
+        <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{func.name}</span>
+      </div>
+      <div className="binary-selector-container">
+        <button 
+          className={`binary-selector-btn ${!isOn ? 'active' : ''}`} 
+          onClick={() => onAction({ ...func, value: 0 })}
+        >
+          {func.labelOff || 'Off'}
+        </button>
+        <button 
+          className={`binary-selector-btn ${isOn ? 'active' : ''}`} 
+          onClick={() => onAction({ ...func, value: 1 })}
+        >
+          {func.labelOn || 'On'}
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -359,6 +386,7 @@ function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction
       case 'light':  return <Lightbulb size={24} fill={effective ? 'currentColor' : 'none'} />;
       case 'lock':   return effective ? <Lock size={24} /> : <LockOpen size={24} />;
       case 'socket': return <Plug size={24} />;
+      case 'binary_selector': return <ArrowLeftRight size={24} />;
       case 'switch': {
         if ((func.iconType || 'lightbulb') === 'lock') return effective ? <Lock size={24} /> : <LockOpen size={24} />;
         return <Lightbulb size={24} fill={effective ? 'currentColor' : 'none'} />;
@@ -428,6 +456,13 @@ function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction
                   <BlindsCard key={func.id} func={func}
                     istPosition={deviceStates[func.statusGroupAddress] !== undefined ? deviceStates[func.statusGroupAddress] : 0}
                     isMoving={func.movingGroupAddress ? deviceStates[func.movingGroupAddress] : undefined}
+                    onAction={handleAction} />
+                );
+              }
+              if (func.type === 'binary_selector') {
+                return (
+                  <BinarySelectorCard key={func.id} func={func}
+                    currentState={deviceStates[func.statusGroupAddress]}
                     onAction={handleAction} />
                 );
               }
