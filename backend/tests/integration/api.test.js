@@ -136,8 +136,12 @@ function buildApp(configPath) {
     try {
       if (type === 'scene') {
         knxService.writeScene(groupAddress, sceneNumber);
-      } else if (type === 'percentage') {
+      } else if (type === 'percentage' || type === 'dimmer') {
         knxService.writeGroupValue(groupAddress, value, 'DPT5.001');
+      } else if (type === 'temperature_shift') {
+        knxService.writeGroupValue(groupAddress, value, 'DPT9.002');
+      } else if (type === 'read') {
+        knxService.readStatus(groupAddress);
       } else {
         knxService.writeGroupValue(groupAddress, !!(value === true || value === 1 || value === '1'), 'DPT1');
       }

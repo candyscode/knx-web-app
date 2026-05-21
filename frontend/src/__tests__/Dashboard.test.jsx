@@ -38,6 +38,7 @@ const NEW_TYPES_FUNCS = [
   { id: 'f_lock', name: 'Front Door', type: 'lock', groupAddress: '4/1/0', statusGroupAddress: '4/1/1' },
   { id: 'f_socket', name: 'TV Socket', type: 'socket', groupAddress: '4/2/0', statusGroupAddress: '4/2/1' },
   { id: 'f_scene', name: 'Movie Mode', type: 'scene', groupAddress: '4/3/0', sceneNumber: 3 },
+  { id: 'f_binary', name: 'AC Mode', type: 'binary_selector', groupAddress: '4/4/0', statusGroupAddress: '4/4/1', labelOff: 'Cooling', labelOn: 'Heating' },
 ];
 
 const ROOM_WITH_NEW_TYPES = {
@@ -395,6 +396,61 @@ describe('Dashboard — new widget types', () => {
     // or just asserting the hint is present).
     const sceneBtn = screen.getByText('Movie Mode').closest('button');
     expect(sceneBtn.querySelector('.toggle-switch')).not.toBeInTheDocument();
+  });
+});
+
+describe('Dashboard — binary selector', () => {
+  it('renders binary selector with custom labels', () => {
+    renderDashboard({ rooms: [ROOM_WITH_NEW_TYPES] });
+    expect(screen.getByText('AC Mode')).toBeInTheDocument();
+    expect(screen.getByText('Cooling')).toBeInTheDocument();
+    expect(screen.getByText('Heating')).toBeInTheDocument();
+  });
+
+  it('highlights the correct button based on state', () => {
+    const { rerender } = render(
+      <Dashboard
+        apartment={{ id: 'apartment_1', name: 'Wohnung 1' }}
+        config={{ apartmentId: 'apartment_1', floors: [{ id: 'f1', rooms: [ROOM_WITH_NEW_TYPES] }], sharedInfos: [], alarms: [] }}
+        deviceStates={{ '4/4/1': false }}
+        setDeviceStates={vi.fn()} addToast={addToast}
+      />
+    );
+    expect(screen.getByText('Cooling')).toHaveClass('active');
+    expect(screen.getByText('Heating')).not.toHaveClass('active');
+
+    rerender(
+      <Dashboard
+        apartment={{ id: 'apartment_1', name: 'Wohnung 1' }}
+        config={{ apartmentId: 'apartment_1', floors: [{ id: 'f1', rooms: [ROOM_WITH_NEW_TYPES] }], sharedInfos: [], alarms: [] }}
+        deviceStates={{ '4/4/1': true }}
+        setDeviceStates={vi.fn()} addToast={addToast}
+      />
+    );
+    expect(screen.getByText('Cooling')).not.toHaveClass('active');
+    expect(screen.getByText('Heating')).toHaveClass('active');
+  });
+
+  it('triggers action with value 0 when off-button is clicked', async () => {
+    const user = userEvent.setup();
+    renderDashboard({ rooms: [ROOM_WITH_NEW_TYPES] });
+    await user.click(screen.getByText('Cooling'));
+    expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'binary_selector',
+      groupAddress: '4/4/0',
+      value: 0
+    }));
+  });
+
+  it('triggers action with value 1 when on-button is clicked', async () => {
+    const user = userEvent.setup();
+    renderDashboard({ rooms: [ROOM_WITH_NEW_TYPES] });
+    await user.click(screen.getByText('Heating'));
+    expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'binary_selector',
+      groupAddress: '4/4/0',
+      value: 1
+    }));
   });
 });
 
