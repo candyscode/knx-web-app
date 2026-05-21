@@ -306,28 +306,9 @@ function App() {
   return (
     <div className="app-container">
       <header className="header">
-        <div className="header-brand">
-          <h1>KNX Control</h1>
-          {normalizedConfig.apartments.length > 0 && (
-            <select
-              className="app-apartment-switcher"
-              value={apartment?.slug || ''}
-              onChange={(event) => navigateTo(event.target.value, route.section)}
-            >
-              {normalizedConfig.apartments.map((entry) => (
-                <option key={entry.id} value={entry.slug}>{entry.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        <div className="header-controls">
-          <div className={`status-badge ${currentKnxStatus.connected ? 'status-connected' : 'status-disconnected'}`}>
-            {currentKnxStatus.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
-            <div className="status-dot" />
-            <span className="nav-link-text">{apartment?.name || 'Apartment'} {currentKnxStatus.connected ? 'Connected' : 'Offline'}</span>
-          </div>
-
+        {/* Row 1: Title left, Nav right */}
+        <div className="header-row">
+          <h1 className="header-title">KNX Control</h1>
           <nav className="nav-links glass-panel" style={{ padding: '0.5rem', display: 'flex', gap: '0.5rem' }}>
             <button
               id="nav-dashboard"
@@ -362,6 +343,29 @@ function App() {
               <Bot size={18} /><span className="nav-link-text"> Automation</span>
             </button>
           </nav>
+        </div>
+
+        {/* Row 2: Dropdown left, Status Indicator directly to its right */}
+        <div className="header-row">
+          <div className="header-row-right">
+            {normalizedConfig.apartments.length > 0 && (
+              <select
+                className="app-apartment-switcher"
+                value={apartment?.slug || ''}
+                onChange={(event) => navigateTo(event.target.value, route.section)}
+              >
+                {normalizedConfig.apartments.map((entry) => (
+                  <option key={entry.id} value={entry.slug}>{entry.name}</option>
+                ))}
+              </select>
+            )}
+
+            <div className={`status-badge ${currentKnxStatus.connected ? 'status-connected' : 'status-disconnected'}`}>
+              {currentKnxStatus.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
+              <div className="status-dot" />
+              <span className="nav-link-text">{apartment?.name || 'Apartment'} {currentKnxStatus.connected ? 'Connected' : 'Offline'}</span>
+            </div>
+          </div>
         </div>
       </header>
 
