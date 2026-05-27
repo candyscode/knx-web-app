@@ -36,6 +36,7 @@ The app is designed for installations where the Main Line does **not** have its 
 - [Config Export & Import](#config-export--import)
 - [Project Structure](#project-structure)
 - [API Reference](#api-reference)
+- [Flutter Companion App](#flutter-companion-app)
 - [Testing](#testing)
 - [Operational Notes](#operational-notes)
 
@@ -63,19 +64,20 @@ This matches real KNX installations where:
 ```text
 ┌─────────────────────┐      HTTP / WebSocket      ┌─────────────────────┐
 │ Browser (React UI)  │ ◄────────────────────────► │ Backend (Node.js)   │
-│ Apartment URLs      │                            │ Port 3001           │
-└─────────────────────┘                            └──────────┬──────────┘
-                                                              │
-                                            KNX IP (UDP 3671) │ HTTP (local LAN)
-                                                      ┌───────┴────────┐
-                                                      │                │
-                                          ┌───────────┴──────┐ ┌──────┴──────────┐
+│ Apartment URLs      │          │                 │ Port 3001           │
+└─────────────────────┘          │                 └──────────┬──────────┘
+                                 │                            │
+┌─────────────────────┐          │          KNX IP (UDP 3671) │ HTTP (local LAN)
+│ Mobile (Flutter App)│ ◄────────┘                    ┌───────┴────────┐
+│ Native iOS/Android  │                               │                │
+└─────────────────────┘                   ┌───────────┴──────┐ ┌──────┴──────────┐
                                           │ Apartment KNX    │ │ Apartment Hue   │
                                           │ Gateways         │ │ Bridges         │
                                           └──────────────────┘ └─────────────────┘
 ```
 
 - **Frontend**: React + Vite
+- **Mobile**: Flutter (Native Android & iOS)
 - **Backend**: Express + Socket.IO
 - **Persistence**: `backend/config.json`
 - **KNX**: one live KNX context per apartment
@@ -507,21 +509,21 @@ knx-web-app/
 │   ├── configModel.js
 │   ├── config.json
 │   └── package.json
-└── frontend/
-    ├── src/
-    │   ├── App.jsx
-    │   ├── Dashboard.jsx
-    │   ├── Settings.jsx
-    │   ├── Connections.jsx
-    │   ├── Automation.jsx
-    │   ├── appModel.js
-    │   ├── configApi.js
-    │   ├── components/
-    │   ├── __tests__/
-    │   ├── index.css
-    │   └── main.jsx
-    ├── index.html
-    └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── Dashboard.jsx
+│   │   ├── ...
+│   ├── index.html
+│   └── package.json
+└── flutter-app/
+    ├── lib/
+    │   ├── main.dart
+    │   ├── core/
+    │   ├── features/
+    │   └── shared/
+    ├── pubspec.yaml
+    └── ...
 ```
 
 ---
@@ -582,6 +584,28 @@ In the UI and README, this `shared` scope is presented as:
 | `hue_status` | `{ apartmentId, scope, paired, bridgeIp }` | Hue status |
 | `hue_states` | `{ apartmentId, scope, states }` | Hue state snapshot |
 | `hue_state_update` | `{ apartmentId, scope, lightId, on }` | Single Hue update |
+
+---
+
+## Flutter Companion App
+
+In addition to the web app, there is a **native Flutter companion app** for iOS and Android, located in the `flutter-app/` directory.
+
+### Features
+- Native UI mirroring the web app layout with smooth animations.
+- Real-time KNX and Hue communication via Socket.IO.
+- Local persistence and caching via Hive.
+- Complete apartment control (Dimming, Blinds, HVAC, Automations, Scenes).
+
+### Running the App
+
+```bash
+cd flutter-app
+flutter pub get
+flutter run
+```
+
+*Make sure to configure the backend URL in `flutter-app/.env` (e.g. `BACKEND_URL=http://<local-ip>:3001`).*
 
 ---
 

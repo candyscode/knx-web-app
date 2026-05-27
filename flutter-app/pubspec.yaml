@@ -1,0 +1,67 @@
+name: knx_control
+description: KNX Control — Native Flutter companion app for the KNX Smart Home system.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── State Management ──────────────────────────────────────
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # ── Navigation ────────────────────────────────────────────
+  go_router: ^14.2.0
+
+  # ── Networking ────────────────────────────────────────────
+  dio: ^5.4.3
+  web_socket_channel: ^3.0.0
+  socket_io_client: ^2.0.3+1
+
+  # ── Local Persistence (cache + offline) ───────────────────
+  hive_flutter: ^1.1.0
+  shared_preferences: ^2.2.3
+
+  # ── UI & Animation ────────────────────────────────────────
+  shimmer: ^3.0.0
+  flutter_animate: ^4.5.0
+  lucide_icons: ^0.257.0
+  flutter_native_splash: ^2.4.0
+
+  # ── Utilities ─────────────────────────────────────────────
+  flutter_dotenv: ^5.1.0
+  intl: ^0.19.0
+  equatable: ^2.0.5
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  riverpod_generator: ^2.4.0
+  build_runner: ^2.4.9
+  mocktail: ^1.0.3
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/fonts/
+    - .env
+    - .env.production
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

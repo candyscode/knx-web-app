@@ -1,0 +1,34 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.g.dart
+*.freezed.dart
+
+# Environment files — do NOT commit real URLs/secrets
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/google-services.json
+
+# macOS
+macos/Pods/
+
+# Generated
+pubspec.lock

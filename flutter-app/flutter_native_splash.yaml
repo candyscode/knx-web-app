@@ -1,0 +1,24 @@
+# flutter_native_splash configuration
+# Run: dart run flutter_native_splash:create
+
+flutter_native_splash:
+  # Background matches AppColors.bgBase = #0F1117
+  color: "#0F1117"
+  color_dark: "#0F1117"
+
+  # Use a simple icon-style image (replace with your real icon asset)
+  # image: assets/splash_logo.png
+  # image_dark: assets/splash_logo.png
+
+  # Keep the splash visible until we manually dismiss it (FlutterNativeSplash.remove())
+  android_12:
+    color: "#0F1117"
+    color_dark: "#0F1117"
+
+  # iOS
+  ios: true
+  android: true
+  web: false
+
+  # Fullscreen splash (no status bar)
+  fullscreen: false
