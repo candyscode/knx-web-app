@@ -105,9 +105,9 @@ const IMPORTED_MULTI_APARTMENT_CONFIG = {
 };
 
 describe('App — rendering', () => {
-  it('renders the KNX Control header', async () => {
+  it('renders the apartment switcher in the header', async () => {
     await act(async () => { render(<App />); });
-    expect(screen.getByText(/KNX Control/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('combobox')[0]).toBeInTheDocument();
   });
 
   it('shows Dashboard content by default', async () => {
@@ -389,32 +389,35 @@ describe('App — configuration lock', () => {
 });
 
 describe('App — KNX status badge', () => {
-  it('shows offline badge initially', async () => {
+  it('shows disconnected badge initially', async () => {
     await act(async () => { render(<App />); });
-    expect(screen.getByText(/offline/i)).toBeInTheDocument();
+    const badge = document.querySelector('.status-badge');
+    expect(badge).toHaveClass('status-disconnected');
   });
 
-  it('updates to Connected when knx_status socket event fires', async () => {
+  it('updates to connected class when knx_status socket event fires with connected=true', async () => {
     await act(async () => { render(<App />); });
 
     await act(async () => {
       triggerSocketEvent('knx_status', { apartmentId: 'apartment_1', scope: 'apartment', connected: true, msg: 'Connected successfully to bus' });
     });
 
-    expect(screen.getByText(/connected/i)).toBeInTheDocument();
+    const badge = document.querySelector('.status-badge');
+    expect(badge).toHaveClass('status-connected');
   });
 
-  it('shows Offline when knx_status fires with connected=false', async () => {
+  it('shows disconnected class when knx_status fires with connected=false', async () => {
     await act(async () => { render(<App />); });
 
     await act(async () => {
       triggerSocketEvent('knx_status', { apartmentId: 'apartment_1', scope: 'apartment', connected: false, msg: 'Disconnected from bus' });
     });
 
-    expect(screen.getByText(/offline/i)).toBeInTheDocument();
+    const badge = document.querySelector('.status-badge');
+    expect(badge).toHaveClass('status-disconnected');
   });
 
-  it('shows the current apartment status when multiple apartment statuses exist', async () => {
+  it('shows the correct badge class when switching apartments', async () => {
     const user = userEvent.setup();
     vi.mocked((await import('../configApi')).getConfig).mockResolvedValueOnce({
       version: 2,
@@ -460,10 +463,12 @@ describe('App — KNX status badge', () => {
       triggerSocketEvent('knx_status', { apartmentId: 'apartment_2', scope: 'apartment', connected: true, msg: 'connected' });
     });
 
-    expect(screen.getByText(/Wohnung Ost Offline/i)).toBeInTheDocument();
+    // Wohnung Ost is active — its status is disconnected
+    expect(document.querySelector('.status-badge')).toHaveClass('status-disconnected');
 
+    // Switch to Wohnung West (connected)
     await user.selectOptions(screen.getAllByRole('combobox')[0], 'wohnung-west');
-    expect(screen.getByText(/Wohnung West Connected/i)).toBeInTheDocument();
+    expect(document.querySelector('.status-badge')).toHaveClass('status-connected');
   });
 });
 
