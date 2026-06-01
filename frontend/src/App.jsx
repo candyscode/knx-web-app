@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
-import { Home, Settings as SettingsIcon, Wifi, WifiOff, Plug, Bot } from 'lucide-react';
+import { Home, Settings as SettingsIcon, Wifi, WifiOff, Plug, Bot, ChevronDown } from 'lucide-react';
 import Dashboard from './Dashboard';
 import Settings from './Settings';
 import Connections from './Connections';
@@ -303,67 +303,85 @@ function App() {
     }));
   };
 
+  const PAGE_TITLES = {
+    dashboard: 'Wohnung',
+    rooms: 'Räume',
+    connections: 'Setup',
+    automation: 'Routinen',
+  };
+
+  const NAV_TABS = [
+    { section: 'dashboard', label: 'Home',      Icon: Home },
+    { section: 'rooms',     label: 'Rooms',     Icon: SettingsIcon },
+    { section: 'automation',label: 'Routinen',  Icon: Bot },
+    { section: 'connections',label: 'Setup',    Icon: Plug },
+  ];
+
   return (
     <div className="app-container">
-      <header className="header">
-        {/* Single row: Dropdown + compact indicator left, Nav right */}
-        <div className="header-row">
-          <div className="header-left">
-            {normalizedConfig.apartments.length > 0 && (
+      {/* ── Warm sticky header ── */}
+      <header className="app-header">
+        <div className="app-header-row">
+          {/* Left: apartment pill switcher */}
+          <div className="apt-switcher-pill">
+            <div className="apt-switcher-icon">
+              <Home size={12} color="#fff" />
+            </div>
+            <div className="apt-switcher-text">
+              <span className="apt-switcher-eyebrow">Apartment</span>
+              <span className="apt-switcher-name">{apartment?.name || '—'}</span>
+            </div>
+            {normalizedConfig.apartments.length > 1 && (
+              <ChevronDown size={12} className="apt-switcher-chevron" />
+            )}
+            {normalizedConfig.apartments.length > 1 && (
               <select
-                className="app-apartment-switcher"
+                className="apt-switcher-select"
                 value={apartment?.slug || ''}
-                onChange={(event) => navigateTo(event.target.value, route.section)}
+                onChange={(e) => navigateTo(e.target.value, route.section)}
+                aria-label="Select apartment"
               >
                 {normalizedConfig.apartments.map((entry) => (
                   <option key={entry.id} value={entry.slug}>{entry.name}</option>
                 ))}
               </select>
             )}
-
-            <div className={`status-badge status-badge--compact ${currentKnxStatus.connected ? 'status-connected' : 'status-disconnected'}`}>
-              {currentKnxStatus.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
-              <div className="status-dot" />
-            </div>
           </div>
 
-          <nav className="nav-links glass-panel" style={{ padding: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-            <button
-              id="nav-dashboard"
-              className={`nav-link ${route.section === 'dashboard' ? 'active' : ''}`}
-              onClick={() => apartment && navigateTo(apartment.slug, 'dashboard')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
-            >
-              <Home size={18} /><span className="nav-link-text"> Dashboard</span>
-            </button>
-            <button
-              id="nav-settings"
-              className={`nav-link ${route.section === 'rooms' ? 'active' : ''}`}
-              onClick={() => apartment && navigateTo(apartment.slug, 'rooms')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
-            >
-              <SettingsIcon size={18} /><span className="nav-link-text"> Rooms</span>
-            </button>
-            <button
-              id="nav-connections"
-              className={`nav-link ${route.section === 'connections' ? 'active' : ''}`}
-              onClick={() => apartment && navigateTo(apartment.slug, 'connections')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
-            >
-              <Plug size={18} /><span className="nav-link-text"> Setup</span>
-            </button>
-            <button
-              id="nav-automation"
-              className={`nav-link ${route.section === 'automation' ? 'active' : ''}`}
-              onClick={() => apartment && navigateTo(apartment.slug, 'automation')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem' }}
-            >
-              <Bot size={18} /><span className="nav-link-text"> Automation</span>
-            </button>
-          </nav>
+          {/* Right: KNX status pill + desktop nav */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className={`knx-status-pill ${currentKnxStatus.connected ? 'connected' : 'disconnected'}`}>
+              {currentKnxStatus.connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+              <span>{currentKnxStatus.connected ? 'Online' : 'Offline'}</span>
+            </div>
+
+            {/* Desktop horizontal nav */}
+            <nav className="nav-links glass-panel" style={{ padding: '0.4rem' }}>
+              {NAV_TABS.map(({ section, label, Icon }) => (
+                <button
+                  key={section}
+                  id={`nav-${section}`}
+                  className={`nav-link ${route.section === section ? 'active' : ''}`}
+                  onClick={() => apartment && navigateTo(apartment.slug, section)}
+                >
+                  <Icon size={17} />
+                  <span className="nav-link-text">{label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Page title — shown on mobile only (hidden on desktop via CSS) */}
+        <div className="app-header-title-row">
+          <h1 className="app-page-title">
+            {PAGE_TITLES[route.section] || route.section}
+          </h1>
+          <span className="app-header-date">
+            {new Date().toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}
+          </span>
         </div>
       </header>
-
 
       <main className={shouldMaskProtectedSection ? 'app-main app-main-locked' : 'app-main'}>
         {apartment && apartmentConfig && route.section === 'dashboard' && (
@@ -420,6 +438,25 @@ function App() {
           />
         )}
       </main>
+
+      {/* ── Bottom tab bar (mobile) ── */}
+      <nav className="bottom-tab-bar" aria-label="Main navigation">
+        {NAV_TABS.map(({ section, label, Icon }) => {
+          const active = route.section === section;
+          return (
+            <button
+              key={section}
+              className={`bottom-tab ${active ? 'active' : ''}`}
+              onClick={() => apartment && navigateTo(apartment.slug, section)}
+              aria-current={active ? 'page' : undefined}
+            >
+              {active && <span className="bottom-tab-glow" aria-hidden="true" />}
+              <Icon size={20} color={active ? '#f3eadc' : '#7a6e60'} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       <div className="toast-container">
         {toasts.map((toast) => (
