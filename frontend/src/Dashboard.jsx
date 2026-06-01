@@ -1,20 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { triggerAction, triggerHueAction } from './configApi';
-import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen, Play, Plug, Power, SlidersHorizontal, Plus, Minus, X, ArrowLeftRight } from 'lucide-react';
+import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen, Play, Plug, Power, SlidersHorizontal, Plus, Minus, X, ArrowLeftRight, Thermometer } from 'lucide-react';
 import FloorTabs from './components/FloorTabs';
 import GlobalInfoWidget from './components/GlobalInfoWidget';
 
-const AURA_COLORS = [
-  'rgba(255, 138, 61, 0.28)',
-  'rgba(255, 93, 143, 0.24)',
-  'rgba(79, 169, 255, 0.22)',
-  'rgba(111, 201, 156, 0.22)',
-  'rgba(255, 122, 77, 0.26)',
-  'rgba(110, 147, 184, 0.24)',
-  'rgba(162, 133, 255, 0.22)',
-  'rgba(77, 208, 197, 0.22)',
-];
+const AURAS = {
+  amber:    { c1: '#ff8a3d', c2: '#c66a35' },
+  rose:     { c1: '#ff5d8f', c2: '#8a3a78' },
+  sky:      { c1: '#4fa9ff', c2: '#3964c8' },
+  sage:     { c1: '#6fc99c', c2: '#3f7a68' },
+  sunset:   { c1: '#ff7a4d', c2: '#b34a52' },
+  slate:    { c1: '#6e93b8', c2: '#3b5070' },
+  lavender: { c1: '#a285ff', c2: '#5e479c' },
+  aqua:     { c1: '#4dd0c5', c2: '#2a7080' },
+};
+const AURA_KEYS = ['amber','rose','sky','sage','sunset','slate','lavender','aqua'];
+
+const hexAlpha = (hex, alpha) => {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 
 // ── Blinds Card ───────────────────────────────────────────
 const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
@@ -369,7 +377,8 @@ const RoomTemperatureModal = ({ room, currentTemp, targetTemp, currentShift, hea
 
 // ── Room Card ─────────────────────────────────────────────
 function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, handleHueAction, handleSceneAction, addToast }) {
-  const auraColor = AURA_COLORS[roomIndex % AURA_COLORS.length];
+  const auraKey = AURA_KEYS[roomIndex % AURA_KEYS.length];
+  const aura = AURAS[auraKey];
   const roomScenes = room.scenes || [];
   const hasScenes = roomScenes.length > 0;
   const roomFunctions = room.functions || [];
@@ -409,125 +418,233 @@ function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, hand
 
   return (
     <>
-      <div className="room-card">
-        <div className="room-aura" style={{ '--aura-color': auraColor }} />
-        <div className="room-header">
-          <h2 title={room.name}>{room.name}</h2>
-          {showRoomTemperature && (
-            <span 
-              className={`room-temperature-badge interactive`}
-              onClick={() => {
-                if (isInteractiveHeating) {
-                  setIsHeatingModalOpen(true);
-                } else {
-                  addToast("Temperature control not set up for this room", "info");
-                }
-              }}
-              title={isInteractiveHeating ? "Adjust Temperature" : "Current Temperature"}
-            >
-              {parsedRoomTemperature.toFixed(1)} °C
-            </span>
-          )}
+      <div className="room-card" style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
+        borderRadius: 18,
+        padding: 'var(--pad-card, 18px)',
+        position: 'relative',
+        overflow: 'hidden',
+        marginBottom: 0,
+        boxShadow: '0 1px 0 rgba(255,222,184,0.04) inset, 0 12px 30px -22px rgba(0,0,0,0.6)',
+        cursor: 'default',
+      }}>
+        {/* Aura — soft bloom top-left */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 18, overflow: 'hidden' }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: `radial-gradient(140% 80% at 0% 0%, ${hexAlpha(aura.c1, 0.23)}, transparent 65%)`,
+            maskImage: 'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 70%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 70%, transparent 100%)',
+          }} />
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: `linear-gradient(90deg, ${hexAlpha(aura.c1, 0.55)}, ${hexAlpha(aura.c1, 0.10)} 55%, transparent)`,
+          }} />
         </div>
 
-      {hasScenes && (
-        <div className="scene-categories">
-          {roomScenes.some(sc => (sc.category || 'light') === 'light') && (
-            <div className="scene-category">
-              <h4 className="scene-category-title">Lights</h4>
-              <div className="scene-pills">
-                {roomScenes.filter(sc => (sc.category || 'light') === 'light').map(sc => (
-                  <button key={sc.id} className="scene-pill" onClick={() => handleSceneAction(room, sc)}>
-                    {sc.name || `Scene ${sc.sceneNumber}`}
-                  </button>
-                ))}
-              </div>
+        {/* Header */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)', lineHeight: 1.1 }} title={room.name}>
+              {room.name}
             </div>
-          )}
-          {roomScenes.some(sc => sc.category === 'shade') && (
-            <div className="scene-category" style={{ marginTop: '0.4rem' }}>
-              <h4 className="scene-category-title">Shades</h4>
-              <div className="scene-pills">
-                {roomScenes.filter(sc => sc.category === 'shade').map(sc => (
-                  <button key={sc.id} className="scene-pill shade-pill" onClick={() => handleSceneAction(room, sc)}>
-                    {sc.name || `Scene ${sc.sceneNumber}`}
-                  </button>
-                ))}
-              </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-tertiary)', lineHeight: 1.3 }}>
+              {[
+                roomScenes.length ? `${roomScenes.length} Szenen` : null,
+                roomFunctions.filter(f => f.type === 'percentage').length ? `${roomFunctions.filter(f => f.type === 'percentage').length} Shades` : null,
+                roomFunctions.filter(f => f.type !== 'percentage').length ? `${roomFunctions.filter(f => f.type !== 'percentage').length} Funktionen` : null,
+              ].filter(Boolean).join(' · ')}
             </div>
-          )}
-        </div>
-      )}
-
-      {hasFunctions && (
-        <div className="scene-category" style={{ marginTop: hasScenes ? '0.4rem' : '0' }}>
-          <h4 className="scene-category-title">Functions</h4>
-          <div className="functions-grid">
-            {roomFunctions.map(func => {
-              if (func.type === 'percentage') {
-                return (
-                  <BlindsCard key={func.id} func={func}
-                    istPosition={deviceStates[func.statusGroupAddress] !== undefined ? deviceStates[func.statusGroupAddress] : 0}
-                    isMoving={func.movingGroupAddress ? deviceStates[func.movingGroupAddress] : undefined}
-                    onAction={handleAction} />
-                );
-              }
-              if (func.type === 'binary_selector') {
-                return (
-                  <BinarySelectorCard key={func.id} func={func}
-                    currentState={deviceStates[func.statusGroupAddress]}
-                    onAction={handleAction} />
-                );
-              }
-              if (func.type === 'dimmer') {
-                return (
-                  <DimmerCard key={func.id} func={func}
-                    istPosition={deviceStates[func.statusGroupAddress] !== undefined ? deviceStates[func.statusGroupAddress] : 0}
-                    onAction={handleAction} />
-                );
-              }
-              if (func.type === 'hue') {
-                const hueOn = !!hueStates[`hue_${func.hueLightId}`];
-                return (
-                  <button key={func.id} className={`action-btn ${hueOn ? 'active' : ''}`} onClick={() => handleHueAction(func)}>
-                    <div className="action-icon-wrapper"><Lightbulb size={24} fill={hueOn ? 'currentColor' : 'none'} /></div>
-                    <span className="action-name">{func.name}</span>
-                    <div className={`toggle-switch ${hueOn ? 'active' : ''}`}><div className="toggle-knob" /></div>
-                  </button>
-                );
-              }
-              // Binary types: switch, light, lock, socket, scene
-              const isBinary = ['switch', 'light', 'lock', 'socket'].includes(func.type);
-              const isOn = isBinary ? !!deviceStates[func.statusGroupAddress] : false;
-              return (
-                <button key={func.id} className={`action-btn ${isBinary && isOn ? 'active' : ''}`} onClick={() => handleAction(func)}>
-                  <div className="action-icon-wrapper">{renderFuncIcon(func, isOn)}</div>
-                  <span className="action-name">{func.name}</span>
-                  {isBinary && <div className={`toggle-switch ${isOn ? 'active' : ''}`}><div className="toggle-knob" /></div>}
-                  {func.type === 'scene' && <span className="action-hint">Tap to apply</span>}
-                </button>
-              );
-            })}
           </div>
+          {showRoomTemperature && (
+            <button
+              className="interactive"
+              onClick={() => {
+                if (isInteractiveHeating) setIsHeatingModalOpen(true);
+                else addToast('Temperature control not set up for this room', 'info');
+              }}
+              title={isInteractiveHeating ? 'Adjust Temperature' : 'Current Temperature'}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '6px 10px', borderRadius: 999,
+                background: 'rgba(255,159,112,0.10)',
+                border: '1px solid rgba(255,159,112,0.22)',
+                color: '#ffc89a', fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em',
+                cursor: isInteractiveHeating ? 'pointer' : 'default', flexShrink: 0,
+              }}>
+              <Thermometer size={12} color="#ffc89a" />
+              {parsedRoomTemperature.toFixed(1)}°
+            </button>
+          )}
         </div>
-      )}
 
-      {!hasFunctions && !hasScenes && (
-        <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No functions available</div>
-      )}
-    </div>
+        {/* Light scenes */}
+        {roomScenes.filter(sc => (sc.category || 'light') === 'light').length > 0 && (
+          <div style={{ position: 'relative', marginBottom: 12 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
+              Licht · Szenen
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {roomScenes.filter(sc => (sc.category || 'light') === 'light').map(sc => (
+                <button key={sc.id}
+                  onClick={() => handleSceneAction(room, sc)}
+                  style={{
+                    padding: '7px 14px', borderRadius: 999,
+                    background: 'rgba(255,222,184,0.06)',
+                    border: '1px solid rgba(255,222,184,0.10)',
+                    color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 500, letterSpacing: '-0.01em',
+                    cursor: 'pointer', transition: 'all 0.15s ease',
+                  }}>
+                  {sc.name || `Scene ${sc.sceneNumber}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-    {isHeatingModalOpen && (
-      <RoomTemperatureModal
-        room={room}
-        currentTemp={parsedRoomTemperature}
-        targetTemp={targetTempValue !== undefined ? Number(targetTempValue) : undefined}
-        currentShift={shiftStatusValue !== undefined ? Number(shiftStatusValue) : 0}
-        heatingCoolingStatus={heatingCoolingStatusValue !== undefined ? Number(heatingCoolingStatusValue) : undefined}
-        onClose={() => setIsHeatingModalOpen(false)}
-        onAction={handleAction}
-      />
-    )}
+        {/* Shade scenes */}
+        {roomScenes.filter(sc => sc.category === 'shade').length > 0 && (
+          <div style={{ position: 'relative', marginBottom: 12 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
+              Beschattung
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {roomScenes.filter(sc => sc.category === 'shade').map(sc => (
+                <button key={sc.id}
+                  onClick={() => handleSceneAction(room, sc)}
+                  style={{
+                    padding: '7px 14px 7px 11px', borderRadius: 999,
+                    background: 'rgba(216,150,100,0.08)',
+                    border: '1px solid rgba(216,150,100,0.18)',
+                    color: '#e8c39c', fontSize: 12.5, fontWeight: 500, letterSpacing: '-0.01em',
+                    cursor: 'pointer', transition: 'all 0.15s ease',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}>
+                  <Blinds size={10} color="#e8c39c" />
+                  {sc.name || `Scene ${sc.sceneNumber}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Functions */}
+        {hasFunctions && (
+          <div style={{ position: 'relative' }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
+              Funktionen
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+              {roomFunctions.map(func => {
+                if (func.type === 'percentage') {
+                  return (
+                    <BlindsCard key={func.id} func={func}
+                      istPosition={deviceStates[func.statusGroupAddress] !== undefined ? deviceStates[func.statusGroupAddress] : 0}
+                      isMoving={func.movingGroupAddress ? deviceStates[func.movingGroupAddress] : undefined}
+                      onAction={handleAction} />
+                  );
+                }
+                if (func.type === 'binary_selector') {
+                  return (
+                    <BinarySelectorCard key={func.id} func={func}
+                      currentState={deviceStates[func.statusGroupAddress]}
+                      onAction={handleAction} />
+                  );
+                }
+                if (func.type === 'dimmer') {
+                  return (
+                    <DimmerCard key={func.id} func={func}
+                      istPosition={deviceStates[func.statusGroupAddress] !== undefined ? deviceStates[func.statusGroupAddress] : 0}
+                      onAction={handleAction} />
+                  );
+                }
+                // Binary types: hue, switch, light, lock, socket, scene
+                const isBinary = ['switch', 'light', 'lock', 'socket', 'scene'].includes(func.type);
+                const isHue = func.type === 'hue';
+                const isOn = isHue ? !!hueStates[`hue_${func.hueLightId}`] : (isBinary ? !!deviceStates[func.statusGroupAddress] : false);
+                const onToggle = () => isHue ? handleHueAction(func) : handleAction(func);
+                const effective = func.invertIcon ? !isOn : isOn;
+                let icon;
+                switch (func.type) {
+                  case 'scene': icon = <Play size={16} color="var(--accent-color)" />; break;
+                  case 'light': icon = <Lightbulb size={16} color={effective ? '#ffd089' : 'var(--text-tertiary)'} fill={effective ? '#ffd089' : 'none'} />; break;
+                  case 'lock': icon = effective ? <Lock size={16} color="#9ee2bd" /> : <LockOpen size={16} color="var(--text-tertiary)" />; break;
+                  case 'socket': icon = <Plug size={16} color={isOn ? '#9ee2bd' : 'var(--text-tertiary)'} />; break;
+                  case 'hue': icon = <Lightbulb size={16} color={isOn ? '#ffd089' : 'var(--text-tertiary)'} fill={isOn ? '#ffd089' : 'none'} />; break;
+                  case 'switch': {
+                    const t = func.iconType || 'lightbulb';
+                    icon = t === 'lock'
+                      ? (effective ? <Lock size={16} color="#9ee2bd" /> : <LockOpen size={16} color="var(--text-tertiary)" />)
+                      : <Lightbulb size={16} color={effective ? '#ffd089' : 'var(--text-tertiary)'} fill={effective ? '#ffd089' : 'none'} />;
+                    break;
+                  }
+                  default: icon = <Power size={16} color={isOn ? '#9ee2bd' : 'var(--text-tertiary)'} />;
+                }
+                const isScene = func.type === 'scene';
+                return (
+                  <button key={func.id}
+                    data-testid="function-tile"
+                    data-active={String(isOn)}
+                    onClick={onToggle}
+                    style={{
+                      background: isOn ? 'rgba(111,212,156,0.06)' : 'rgba(255,222,184,0.03)',
+                      border: `1px solid ${isOn ? 'rgba(111,212,156,0.20)' : 'rgba(255,222,184,0.07)'}`,
+                      borderRadius: 16, padding: 12,
+                      display: 'flex', flexDirection: 'column', gap: 10,
+                      cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+                    }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      {icon}
+                      {!isScene && (
+                        <div
+                          data-testid="toggle-switch"
+                          data-active={String(isOn)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            width: 36, height: 22, borderRadius: 999,
+                            background: isOn ? 'linear-gradient(135deg,#ffc78a,#c66a35)' : 'rgba(255,222,184,0.08)',
+                            border: isOn ? '1px solid transparent' : '1px solid rgba(255,222,184,0.10)',
+                            position: 'relative', flexShrink: 0,
+                            transition: 'all 0.2s ease',
+                          }}>
+                          <div style={{
+                            position: 'absolute', top: 2, left: 2,
+                            width: 16, height: 16, borderRadius: 999,
+                            background: isOn ? '#fff' : '#b6a995',
+                            transform: isOn ? 'translateX(14px)' : 'translateX(0)',
+                            transition: 'transform 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                          }} />
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)', lineHeight: 1.25 }}>
+                      {func.name}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {!hasFunctions && !hasScenes && (
+          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>No functions available</div>
+        )}
+      </div>
+
+      {isHeatingModalOpen && (
+        <RoomTemperatureModal
+          room={room}
+          currentTemp={parsedRoomTemperature}
+          targetTemp={targetTempValue !== undefined ? Number(targetTempValue) : undefined}
+          currentShift={shiftStatusValue !== undefined ? Number(shiftStatusValue) : 0}
+          heatingCoolingStatus={heatingCoolingStatusValue !== undefined ? Number(heatingCoolingStatusValue) : undefined}
+          onClose={() => setIsHeatingModalOpen(false)}
+          onAction={handleAction}
+        />
+      )}
     </>
   );
 }
