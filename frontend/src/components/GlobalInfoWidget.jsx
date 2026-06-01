@@ -49,12 +49,11 @@ export default function GlobalInfoWidget({ globals, deviceStates }) {
 
       {/* Global Information / Weather */}
       {infos.length > 0 && (
-        <div className="glass-panel" style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', padding: '1rem 1.5rem', alignItems: 'center' }}>
+        <div className="glass-panel" style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', padding: '1rem 1.5rem', alignItems: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-warm)' }}>
           {infos.map(info => {
             let val = deviceStates[info.statusGroupAddress];
             let displayVal = val !== undefined ? val : '--';
-            
-            // Format display based on category
+
             let Icon = Info;
             if (info.category === 'temperature') {
               Icon = Thermometer;
@@ -74,7 +73,7 @@ export default function GlobalInfoWidget({ globals, deviceStates }) {
               <div key={info.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{
                   width: '36px', height: '36px', borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.1)', display: 'flex',
+                  background: 'var(--accent-tint)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center'
                 }}>
                   <Icon size={18} style={{ color: 'var(--accent-color)' }} />

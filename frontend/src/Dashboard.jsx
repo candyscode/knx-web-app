@@ -5,6 +5,17 @@ import { Lightbulb, Gamepad2, Blinds, Lock, LockOpen, Play, Plug, Power, Sliders
 import FloorTabs from './components/FloorTabs';
 import GlobalInfoWidget from './components/GlobalInfoWidget';
 
+const AURA_COLORS = [
+  'rgba(255, 138, 61, 0.28)',
+  'rgba(255, 93, 143, 0.24)',
+  'rgba(79, 169, 255, 0.22)',
+  'rgba(111, 201, 156, 0.22)',
+  'rgba(255, 122, 77, 0.26)',
+  'rgba(110, 147, 184, 0.24)',
+  'rgba(162, 133, 255, 0.22)',
+  'rgba(77, 208, 197, 0.22)',
+];
+
 // ── Blinds Card ───────────────────────────────────────────
 const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
   const [sollPosition, setSollPosition] = useState(istPosition !== undefined ? istPosition : 0);
@@ -357,7 +368,8 @@ const RoomTemperatureModal = ({ room, currentTemp, targetTemp, currentShift, hea
 
 
 // ── Room Card ─────────────────────────────────────────────
-function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction, handleSceneAction, addToast }) {
+function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, handleHueAction, handleSceneAction, addToast }) {
+  const auraColor = AURA_COLORS[roomIndex % AURA_COLORS.length];
   const roomScenes = room.scenes || [];
   const hasScenes = roomScenes.length > 0;
   const roomFunctions = room.functions || [];
@@ -398,6 +410,7 @@ function RoomCard({ room, deviceStates, hueStates, handleAction, handleHueAction
   return (
     <>
       <div className="room-card">
+        <div className="room-aura" style={{ '--aura-color': auraColor }} />
         <div className="room-header">
           <h2 title={room.name}>{room.name}</h2>
           {showRoomTemperature && (
@@ -646,8 +659,8 @@ export default function Dashboard({
         </div>
       ) : (
         <div className={`room-grid ${multiFloor ? 'room-grid--with-tabs' : ''}`}>
-          {activeRooms.map(room => (
-            <RoomCard key={room.id} room={room}
+          {activeRooms.map((room, index) => (
+            <RoomCard key={room.id} room={room} roomIndex={index}
               deviceStates={deviceStates} hueStates={hueStates}
               handleAction={(func) => handleAction(func, activeFloor?.isShared ? 'shared' : 'apartment')}
               handleHueAction={(func) => handleHueAction(func, activeFloor?.isShared ? 'shared' : 'apartment')}
