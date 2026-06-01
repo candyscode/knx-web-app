@@ -125,7 +125,7 @@ describe('Dashboard — room card', () => {
       deviceStates: { '5/1/1': 22.6 },
     });
 
-    expect(screen.getByText('22.6 °C')).toBeInTheDocument();
+    expect(screen.getByText('22.6°')).toBeInTheDocument();
   });
 
   it('hides room temperature badge when no room temperature GA is configured', () => {
@@ -165,7 +165,7 @@ describe('Dashboard — globals widget', () => {
 
     expect(screen.getByText('Outside Temperature')).toBeInTheDocument();
     expect(screen.getByText('21.4 °C')).toBeInTheDocument();
-    expect(screen.getByText('Active Alarms')).toBeInTheDocument();
+    expect(screen.getByText('Aktive Alarme')).toBeInTheDocument();
     const rainAlarmPill = screen.getByText('Rain Alarm');
     expect(rainAlarmPill).toBeInTheDocument();
     expect(rainAlarmPill.className).toContain('active-alarm-pill');
@@ -283,7 +283,7 @@ describe('Dashboard — light scenes', () => {
 
   it('light scenes appear under "Lights" section heading', () => {
     renderDashboard({ rooms: [ROOM_WITH_SCENES] });
-    expect(screen.getByText('Lights')).toBeInTheDocument();
+    expect(screen.getByText('Licht · Szenen')).toBeInTheDocument();
   });
 
   it('clicking a light scene calls triggerAction with correct args', async () => {
@@ -315,7 +315,7 @@ describe('Dashboard — light scenes', () => {
 describe('Dashboard — shade scenes', () => {
   it('renders shade scene pills under "Shades" heading', () => {
     renderDashboard({ rooms: [ROOM_WITH_SCENES] });
-    expect(screen.getByText('Shades')).toBeInTheDocument();
+    expect(screen.getByText('Beschattung')).toBeInTheDocument();
     expect(screen.getByText('Offen')).toBeInTheDocument();
   });
 });
@@ -328,7 +328,7 @@ describe('Dashboard — switch function', () => {
 
   it('renders toggle switch element', () => {
     renderDashboard({ rooms: [{ ...ROOM_WITH_SCENES, scenes: [] }] });
-    expect(document.querySelector('.toggle-switch')).toBeTruthy();
+    expect(document.querySelector('[data-testid="toggle-switch"]')).toBeTruthy();
   });
 
   it('shows active state when switch is ON in deviceStates', () => {
@@ -336,7 +336,7 @@ describe('Dashboard — switch function', () => {
       rooms: [{ ...ROOM_WITH_SCENES, scenes: [] }],
       deviceStates: { '1/0/1': true },
     });
-    expect(document.querySelector('.toggle-switch.active')).toBeTruthy();
+    expect(document.querySelector('[data-testid="toggle-switch"][data-active="true"]')).toBeTruthy();
   });
 
   it('optimistically toggles state on click', async () => {
@@ -387,15 +387,10 @@ describe('Dashboard — new widget types', () => {
     expect(screen.getByText('Movie Mode')).toBeInTheDocument();
   });
 
-  it('shows the "Tap to apply" hint for scene widgets instead of a toggle', () => {
+  it('scene function tiles do not have a toggle switch', () => {
     renderDashboard({ rooms: [ROOM_WITH_NEW_TYPES] });
-    expect(screen.getByText('Tap to apply')).toBeInTheDocument();
-    
-    // Light, lock, socket should have a toggle (they are binary types)
-    // The scene does not have a toggle class (we test this indirectly by counting toggles if needed, 
-    // or just asserting the hint is present).
     const sceneBtn = screen.getByText('Movie Mode').closest('button');
-    expect(sceneBtn.querySelector('.toggle-switch')).not.toBeInTheDocument();
+    expect(sceneBtn.querySelector('[data-testid="toggle-switch"]')).not.toBeInTheDocument();
   });
 });
 
@@ -465,8 +460,8 @@ describe('Dashboard — Hue lamp function', () => {
       rooms: [ROOM_WITH_HUE],
       hueStates: { 'hue_1': true },
     });
-    const btn = screen.getByText('Ambient Light').closest('button');
-    expect(btn).toHaveClass('active');
+    const btn = screen.getByText('Ambient Light').closest('[data-testid="function-tile"]');
+    expect(btn).toHaveAttribute('data-active', 'true');
   });
 
   it('optimistically toggles Hue light on click', async () => {
@@ -646,7 +641,7 @@ describe('Dashboard — Room Temperature Control', () => {
       rooms: [HEATING_ROOM],
       deviceStates: { '4/1/1': 22.5 }
     });
-    const badge = screen.getByText('22.5 °C');
+    const badge = screen.getByText('22.5°');
     expect(badge).toHaveClass('interactive');
   });
 
@@ -657,7 +652,7 @@ describe('Dashboard — Room Temperature Control', () => {
       deviceStates: { '4/1/1': 22.5 }
     });
     
-    await user.click(screen.getByText('22.5 °C'));
+    await user.click(screen.getByText('22.5°'));
     
     expect(addToast).toHaveBeenCalledWith('Temperature control not set up for this room', 'info');
     expect(document.querySelector('.widget-modal-overlay')).not.toBeInTheDocument();
@@ -670,7 +665,7 @@ describe('Dashboard — Room Temperature Control', () => {
       deviceStates: { '4/1/1': 22.5, '4/1/3': 21.0 } // 4/1/4 missing
     });
     
-    await user.click(screen.getByText('22.5 °C'));
+    await user.click(screen.getByText('22.5°'));
     
     expect(document.querySelector('.widget-modal-overlay')).toBeInTheDocument();
     expect(api.triggerAction).toHaveBeenCalledWith(expect.objectContaining({
@@ -687,7 +682,7 @@ describe('Dashboard — Room Temperature Control', () => {
       deviceStates: { '4/1/1': 22.5, '4/1/3': 21.0, '4/1/4': 1 }
     });
     
-    await user.click(screen.getByText('22.5 °C'));
+    await user.click(screen.getByText('22.5°'));
     
     expect(screen.getByText('Bathroom Temperature Control')).toBeInTheDocument();
     expect(screen.getByText('Heating Mode')).toBeInTheDocument();
@@ -714,7 +709,7 @@ describe('Dashboard — Room Temperature Control', () => {
       deviceStates: { '4/1/1': 22.5, '4/1/4': 0 } // target setpoint missing
     });
     
-    await user.click(screen.getByText('22.5 °C'));
+    await user.click(screen.getByText('22.5°'));
     
     expect(screen.getByText('Cooling Mode')).toBeInTheDocument();
     const modalContent = document.querySelector('.widget-modal-content');

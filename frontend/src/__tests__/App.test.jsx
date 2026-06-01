@@ -546,7 +546,7 @@ describe('App — socket state updates', () => {
 
     // The toggle should now show "active" state  
     await waitFor(() => {
-      const toggle = document.querySelector('.toggle-switch.active');
+      const toggle = document.querySelector('[data-testid="toggle-switch"][data-active="true"]');
       expect(toggle).toBeTruthy();
     });
   });
