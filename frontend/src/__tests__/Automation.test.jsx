@@ -56,7 +56,7 @@ describe('Automation page', () => {
 
   it('renders empty state when no routines', () => {
     render(<Automation {...mockProps()} />);
-    expect(screen.getByText(/no routines yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/keine routinen/i)).toBeInTheDocument();
   });
 
   it('renders list of routines from config', () => {
@@ -79,14 +79,14 @@ describe('Automation page', () => {
 
   it('"Add Routine" button opens modal', () => {
     render(<Automation {...mockProps()} />);
-    fireEvent.click(screen.getAllByText(/add routine/i)[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
     expect(screen.getByText(/new routine/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/morning routine/i)).toBeInTheDocument();
   });
 
   it('modal requires name before saving', async () => {
     render(<Automation {...mockProps()} />);
-    fireEvent.click(screen.getAllByText(/add routine/i)[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
 
     // Try to save without name
     fireEvent.click(screen.getByText(/create routine/i));
@@ -96,7 +96,7 @@ describe('Automation page', () => {
 
   it('modal requires at least 1 action', async () => {
     render(<Automation {...mockProps()} />);
-    fireEvent.click(screen.getAllByText(/add routine/i)[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
 
     fireEvent.change(screen.getByPlaceholderText(/morning routine/i), { target: { value: 'Test' } });
     fireEvent.click(screen.getByText(/create routine/i));
@@ -105,7 +105,7 @@ describe('Automation page', () => {
 
   it('saves correctly with name + action (scene)', async () => {
     render(<Automation {...mockProps()} />);
-    fireEvent.click(screen.getAllByText(/add routine/i)[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
 
     fireEvent.change(screen.getByPlaceholderText(/morning routine/i), { target: { value: 'Dawn' } });
 
@@ -134,7 +134,7 @@ describe('Automation page', () => {
     // Add sun trigger config so modal doesn't show missing config warnings
     const props = mockProps({ sunTrigger: { groupAddress: '7/0/0', bus: 'main', dayValue: 1 } });
     render(<Automation {...props} />);
-    fireEvent.click(screen.getAllByText(/add routine/i)[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
 
     fireEvent.change(screen.getByPlaceholderText(/morning routine/i), { target: { value: 'Dawn' } });
     fireEvent.click(screen.getByText('Sunrise'));
