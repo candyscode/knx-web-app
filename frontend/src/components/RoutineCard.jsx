@@ -46,98 +46,105 @@ export default function RoutineCard({ routine, floors, onToggle, onEdit, onDelet
   const nextRun = (!routine.triggerType || routine.triggerType === 'time') ? getNextRun(routine.time) : null;
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const isOn = routine.enabled;
+  const trigIcon = (!routine.triggerType || routine.triggerType === 'time')
+    ? <Clock size={11} color="#a8c5bf" />
+    : routine.triggerType === 'sunrise'
+    ? <Sunrise size={11} color="#ffc89a" />
+    : <Sunset size={11} color="#ffc89a" />;
+  const trigLabel = (!routine.triggerType || routine.triggerType === 'time')
+    ? routine.time
+    : routine.triggerType === 'sunrise' ? 'Sonnenaufgang' : 'Sonnenuntergang';
+
+  const TAG = { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 999, background: 'rgba(255,222,184,0.04)', border: '1px solid rgba(255,222,184,0.08)', color: 'var(--text-secondary)', fontSize: 11, whiteSpace: 'nowrap' };
+
   return (
     <>
-      <div className={`routine-card ${broken ? 'routine-card--broken' : ''}`}>
-        {/* Header row */}
-        <div className="routine-card-header">
-          <div className="routine-card-title-row">
-            <span className="routine-card-name">{routine.name || 'Unnamed Routine'}</span>
-            {broken && (
-              <span className="badge badge-broken">
-                <AlertTriangle size={12} /> Broken
-              </span>
-            )}
-            {routine.lastRunStatus === 'error' && !broken && (
-              <span className="badge badge-error">
-                <XCircle size={12} /> Last run failed
-              </span>
-            )}
-            {routine.lastRunStatus === 'ok' && (
-              <span className="badge badge-ok">
-                <CheckCircle size={12} /> OK
-              </span>
-            )}
+      <div style={{
+        background: 'var(--bg-card)', border: `1px solid ${broken ? 'rgba(239,68,68,0.25)' : 'rgba(255,222,184,0.08)'}`,
+        borderRadius: 18, padding: 14, opacity: isOn ? 1 : 0.6, transition: 'opacity 0.2s ease',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{routine.name || 'Unnamed Routine'}</span>
+              {broken && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <AlertTriangle size={10} /> Broken
+                </span>
+              )}
+              {routine.lastRunStatus === 'ok' && !broken && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(111,212,156,0.10)', color: '#9ee2bd' }}>OK</span>
+              )}
+              {routine.lastRunStatus === 'error' && !broken && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(239,68,68,0.10)', color: '#fca5a5' }}>Fehler</span>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <span style={TAG}>{trigIcon} {trigLabel}</span>
+              <span style={TAG}><Repeat size={11} /> Täglich</span>
+              {nextRun && <span style={{ ...TAG, background: 'rgba(224,139,93,0.12)', border: '1px solid rgba(224,139,93,0.26)', color: '#e8c39c' }}>Nächste: {nextRun}</span>}
+              {routine.lastRunAt && (
+                <span style={{ ...TAG, background: 'transparent', border: 'none', color: 'var(--text-tertiary)', paddingLeft: 0 }}>
+                  Zuletzt: {new Date(routine.lastRunAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
           </div>
-
-          <div className="routine-card-actions">
-            {/* Toggle switch */}
-            <button
-              className={`routine-toggle-switch ${routine.enabled ? 'enabled' : ''}`}
-              onClick={() => onToggle(!routine.enabled)}
-              title={routine.enabled ? 'Disable routine' : 'Enable routine'}
-              disabled={broken && !routine.enabled}
-              aria-label={routine.enabled ? 'Routine enabled' : 'Routine disabled'}
-            >
-              <span className="routine-toggle-knob" />
-            </button>
-            <button className="icon-btn" onClick={onEdit} title="Edit routine">
-              <Pencil size={15} />
-            </button>
-            <button className="icon-btn btn-danger" onClick={() => setConfirmDelete(true)} title="Delete routine">
-              <Trash2 size={15} />
-            </button>
-          </div>
-        </div>
-
-        {/* Meta row */}
-        <div className="routine-card-meta">
-          <span className="routine-meta-tag" title="Trigger">
-            {(!routine.triggerType || routine.triggerType === 'time') ? (
-              <><Clock size={12} /> {routine.time}</>
-            ) : routine.triggerType === 'sunrise' ? (
-              <><Sunrise size={12} /> Sunrise</>
-            ) : (
-              <><Sunset size={12} /> Sunset</>
-            )}
-          </span>
-          <span className="routine-meta-sep" />
-          <span className="routine-meta-tag" title="Frequency">
-            <Repeat size={12} /> Daily
-          </span>
-          {nextRun && (
-            <>
-              <span className="routine-meta-sep" />
-              <span className="routine-meta-tag routine-meta-tag--next" title="Next run">
-                Next: {nextRun}
-              </span>
-            </>
-          )}
-          {routine.lastRunAt && (
-            <>
-              <span className="routine-meta-sep" />
-              <span className="routine-meta-tag routine-meta-tag--last" title="Last run">
-                Last: {new Date(routine.lastRunAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </>
-          )}
+          {/* Toggle */}
+          <button
+            onClick={() => onToggle(!isOn)}
+            title={isOn ? 'Disable routine' : 'Enable routine'}
+            disabled={broken && !isOn}
+            aria-label={isOn ? 'Routine enabled' : 'Routine disabled'}
+            className={`routine-toggle-switch${isOn ? ' enabled' : ''}`}
+            style={{
+              width: 40, height: 24, borderRadius: 999, border: 'none', cursor: broken && !isOn ? 'not-allowed' : 'pointer',
+              background: isOn ? 'linear-gradient(135deg,#ffc78a,#c66a35)' : 'rgba(255,222,184,0.08)',
+              position: 'relative', flexShrink: 0, padding: 0,
+            }}
+          >
+            <span className="routine-toggle-knob" style={{
+              position: 'absolute', top: 3, left: 3,
+              width: 18, height: 18, borderRadius: 999,
+              background: isOn ? '#fff' : '#b6a995',
+              transform: isOn ? 'translateX(16px)' : 'translateX(0)',
+              transition: 'transform 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              display: 'block',
+            }} />
+          </button>
+          <button
+            title="Edit routine"
+            onClick={onEdit}
+            style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(255,222,184,0.08)', background: 'rgba(255,222,184,0.04)', cursor: 'pointer', display: 'grid', placeItems: 'center', color: 'var(--text-secondary)', flexShrink: 0 }}>
+            <Pencil size={14} />
+          </button>
+          <button
+            title="Delete routine"
+            onClick={() => setConfirmDelete(true)}
+            style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(239,68,68,0.20)', background: 'rgba(239,68,68,0.06)', cursor: 'pointer', display: 'grid', placeItems: 'center', color: '#fca5a5', flexShrink: 0 }}>
+            <Trash2 size={14} />
+          </button>
         </div>
 
         {/* Actions list */}
         {routine.actions && routine.actions.length > 0 && (
-          <div className="routine-card-action-list">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8, paddingTop: 10, borderTop: '1px solid rgba(255,222,184,0.06)' }}>
             {routine.actions.map((action, i) => {
               const info = resolveActionInfo(action, floors);
               return (
-                <div key={action.id} className={`routine-action-chip ${info === null ? 'broken' : ''}`}>
-                  <span className="routine-action-index">{i + 1}</span>
-                  <span className="routine-action-label">
-                    {info ? info.label : <span style={{ color: 'var(--danger-color)' }}>⚠ Target deleted</span>}
+                <div key={action.id} className={`routine-action-chip ${info === null ? 'broken' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                  <div style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'rgba(255,222,184,0.05)', border: '1px solid rgba(255,222,184,0.08)', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>{i + 1}</div>
+                  <span className="routine-action-label" style={{ flex: 1, color: info ? 'var(--text-primary)' : 'var(--danger-color)', fontSize: 12.5, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {info ? info.label : '⚠ Target deleted'}
                   </span>
                   {info?.valueStr && (
-                    <span className="routine-action-value-badge">{info.valueStr}</span>
+                    <span className="routine-action-value-badge" style={{ padding: '2px 6px', borderRadius: 5, background: 'rgba(224,139,93,0.12)', color: '#e8c39c', fontSize: 10, fontWeight: 600 }}>{info.valueStr}</span>
                   )}
-                  <span className="routine-action-kind">{action.kind}</span>
+                  <span className="routine-action-kind" style={{ padding: '2px 6px', borderRadius: 5, background: 'rgba(255,222,184,0.04)', color: 'var(--text-tertiary)', fontSize: 10, fontWeight: 600 }}>{action.kind}</span>
                 </div>
               );
             })}

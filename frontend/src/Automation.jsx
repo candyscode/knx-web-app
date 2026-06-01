@@ -50,38 +50,56 @@ export default function Automation({ apartment, config, fetchConfig, applyConfig
   };
 
   return (
-    <div className="glass-panel settings-panel automation-page">
-      <div className="page-hero">
+    <div style={{ padding: '0 18px 100px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
         <div>
-          <div className="page-eyebrow">Automation</div>
-          <h2 className="page-title">Routines</h2>
-          <p className="page-copy">
-            Time-based routines — executed at local server time
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 4 }}>Automation</div>
+          <h2 style={{ margin: 0, fontSize: 26, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)' }}>Routinen</h2>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
+            Zeit, Sonnenauf- und -untergang Trigger
           </p>
         </div>
-        <div className="page-hero-statuses">
-          <button
-            className="btn-primary"
-            onClick={() => setModalState({ open: true, routine: null })}
-          >
-            <Plus size={16} /> Add Routine
-          </button>
-        </div>
+        <button
+          onClick={() => setModalState({ open: true, routine: null })}
+          style={{
+            padding: '10px 14px', borderRadius: 12, flexShrink: 0,
+            background: 'linear-gradient(135deg,#ffc78a,#c66a35)',
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: 13, fontWeight: 600, color: '#fff',
+          }}
+        >
+          <Plus size={13} color="#fff" /> Routine
+        </button>
       </div>
 
       {automations.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-          <Bot size={40} style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }} />
-          <h3 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>No routines yet</h3>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-            Create your first routine to automate scenes and functions on a schedule.
+        <div style={{
+          textAlign: 'center', padding: '4rem 2rem',
+          background: 'rgba(255,222,184,0.02)', borderRadius: 18,
+          border: '1px dashed rgba(255,222,184,0.10)',
+        }}>
+          <Bot size={36} style={{ color: 'var(--text-tertiary)', marginBottom: '1rem' }} />
+          <h3 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: 16, fontWeight: 600 }}>Keine Routinen</h3>
+          <p style={{ color: 'var(--text-tertiary)', marginBottom: '1.5rem', fontSize: 13 }}>
+            Erstelle deine erste Routine für zeitgesteuerte Aktionen.
           </p>
-          <button className="btn-primary" onClick={() => setModalState({ open: true, routine: null })}>
-            <Plus size={16} /> Add Routine
+          <button
+            onClick={() => setModalState({ open: true, routine: null })}
+            style={{
+              padding: '10px 18px', borderRadius: 12,
+              background: 'linear-gradient(135deg,#ffc78a,#c66a35)',
+              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 13, fontWeight: 600, color: '#fff',
+            }}
+          >
+            <Plus size={13} color="#fff" /> Routine hinzufügen
           </button>
         </div>
       ) : (
-        <div className="automation-list">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {automations.map((routine) => (
             <RoutineCard
               key={routine.id}

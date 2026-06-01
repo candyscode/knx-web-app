@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { io } from 'socket.io-client';
-import { Home, Settings as SettingsIcon, Wifi, WifiOff, Plug, Bot, ChevronDown } from 'lucide-react';
+import { Home, Settings as SettingsIcon, Wifi, WifiOff, Plug, Bot, ChevronDown, Check } from 'lucide-react';
 import Dashboard from './Dashboard';
 import Settings from './Settings';
 import Connections from './Connections';
@@ -29,6 +30,7 @@ function App() {
   });
   const [configPasswordValue, setConfigPasswordValue] = useState('');
   const [configPasswordError, setConfigPasswordError] = useState('');
+  const [aptSwitcherOpen, setAptSwitcherOpen] = useState(false);
 
   const normalizedConfig = useMemo(() => {
     if (!configReady && !config?.apartments?.length && !config?.building?.sharedInfos?.length) {
@@ -323,7 +325,11 @@ function App() {
       <header className="app-header">
         <div className="app-header-row">
           {/* Left: apartment pill switcher */}
-          <div className="apt-switcher-pill">
+          <button
+            className="apt-switcher-pill"
+            onClick={() => normalizedConfig.apartments.length > 1 && setAptSwitcherOpen(true)}
+            style={{ cursor: normalizedConfig.apartments.length > 1 ? 'pointer' : 'default', background: 'none', border: 'none', padding: 0, fontFamily: 'inherit' }}
+          >
             <div className="apt-switcher-icon">
               <Home size={12} color="#fff" />
             </div>
@@ -334,18 +340,77 @@ function App() {
             {normalizedConfig.apartments.length > 1 && (
               <ChevronDown size={12} className="apt-switcher-chevron" />
             )}
-            <select
-              className="apt-switcher-select"
-              value={apartment?.slug || ''}
-              onChange={(e) => navigateTo(e.target.value, route.section)}
-              aria-label="Select apartment"
-              style={normalizedConfig.apartments.length <= 1 ? { pointerEvents: 'none' } : undefined}
+          </button>
+          {/* Hidden select for accessibility and tests */}
+          <select
+            value={apartment?.slug || ''}
+            onChange={(e) => navigateTo(e.target.value, route.section)}
+            aria-label="Select apartment"
+            style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}
+          >
+            {normalizedConfig.apartments.map((entry) => (
+              <option key={entry.id} value={entry.slug}>{entry.name}</option>
+            ))}
+          </select>
+          {/* Apartment switcher modal */}
+          {aptSwitcherOpen && createPortal(
+            <div
+              onClick={(e) => e.target === e.currentTarget && setAptSwitcherOpen(false)}
+              style={{
+                position: 'fixed', inset: 0,
+                background: 'rgba(8,6,5,0.72)',
+                backdropFilter: 'blur(8px) saturate(140%)',
+                WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+                display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                zIndex: 9999, padding: '40px 12px 100px',
+              }}
             >
-              {normalizedConfig.apartments.map((entry) => (
-                <option key={entry.id} value={entry.slug}>{entry.name}</option>
-              ))}
-            </select>
-          </div>
+              <div style={{
+                width: 320, maxWidth: '94%',
+                background: 'var(--bg-secondary)',
+                border: '1px solid rgba(255,222,184,0.10)',
+                borderRadius: 24,
+                boxShadow: '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.02)',
+                overflow: 'hidden', padding: 20,
+              }}>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 4 }}>Apartment wählen</div>
+                <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 14, color: 'var(--text-primary)' }}>Wohnung wechseln</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {normalizedConfig.apartments.map((apt) => {
+                    const active = apt.slug === apartment?.slug;
+                    return (
+                      <button key={apt.id}
+                        onClick={() => { navigateTo(apt.slug, route.section); setAptSwitcherOpen(false); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '12px 14px', borderRadius: 14,
+                          background: active ? 'rgba(224,139,93,0.10)' : 'rgba(255,222,184,0.04)',
+                          border: `1px solid ${active ? 'rgba(224,139,93,0.45)' : 'rgba(255,222,184,0.08)'}`,
+                          cursor: 'pointer', textAlign: 'left', color: 'var(--text-primary)', fontFamily: 'inherit',
+                        }}
+                      >
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          background: active ? 'linear-gradient(135deg,#ffc78a,#c66a35)' : 'rgba(255,222,184,0.05)',
+                          display: 'grid', placeItems: 'center',
+                        }}>
+                          <Home size={16} color={active ? '#fff' : '#b6a995'} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600 }}>{apt.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'ui-monospace, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {apt.knxIp ? `${apt.knxIp} · ` : ''}{'/' + apt.slug}
+                          </div>
+                        </div>
+                        {active && <Check size={16} color="#e8c39c" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
 
           {/* Right: KNX status pill + desktop nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
