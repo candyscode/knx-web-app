@@ -311,10 +311,10 @@ function App() {
   };
 
   const NAV_TABS = [
-    { section: 'dashboard',  label: 'Dashboard',  Icon: Home },
-    { section: 'rooms',      label: 'Rooms',      Icon: SettingsIcon },
-    { section: 'automation', label: 'Automation', Icon: Bot },
-    { section: 'connections',label: 'Setup',      Icon: Plug },
+    { section: 'dashboard',   label: 'Dashboard',  mobileLabel: 'Home',     Icon: Home },
+    { section: 'rooms',       label: 'Rooms',      mobileLabel: 'Rooms',    Icon: SettingsIcon },
+    { section: 'automation',  label: 'Automation', mobileLabel: 'Routinen', Icon: Bot },
+    { section: 'connections', label: 'Setup',      mobileLabel: 'Setup',    Icon: Plug },
   ];
 
   return (
@@ -440,18 +440,17 @@ function App() {
 
       {/* ── Bottom tab bar (mobile) — aria-hidden so tests find only the desktop nav buttons ── */}
       <nav className="bottom-tab-bar" aria-hidden="true">
-        {NAV_TABS.map(({ section, label, Icon }) => {
+        {NAV_TABS.map(({ section, mobileLabel, Icon }) => {
           const active = route.section === section;
           return (
             <button
               key={section}
               className={`bottom-tab ${active ? 'active' : ''}`}
               onClick={() => apartment && navigateTo(apartment.slug, section)}
-              aria-current={active ? 'page' : undefined}
             >
               {active && <span className="bottom-tab-glow" aria-hidden="true" />}
               <Icon size={20} color={active ? '#f3eadc' : '#7a6e60'} />
-              <span>{label}</span>
+              <span>{mobileLabel}</span>
             </button>
           );
         })}
