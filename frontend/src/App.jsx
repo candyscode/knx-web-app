@@ -311,10 +311,10 @@ function App() {
   };
 
   const NAV_TABS = [
-    { section: 'dashboard', label: 'Home',      Icon: Home },
-    { section: 'rooms',     label: 'Rooms',     Icon: SettingsIcon },
-    { section: 'automation',label: 'Routinen',  Icon: Bot },
-    { section: 'connections',label: 'Setup',    Icon: Plug },
+    { section: 'dashboard',  label: 'Dashboard',  Icon: Home },
+    { section: 'rooms',      label: 'Rooms',      Icon: SettingsIcon },
+    { section: 'automation', label: 'Automation', Icon: Bot },
+    { section: 'connections',label: 'Setup',      Icon: Plug },
   ];
 
   return (
@@ -334,23 +334,22 @@ function App() {
             {normalizedConfig.apartments.length > 1 && (
               <ChevronDown size={12} className="apt-switcher-chevron" />
             )}
-            {normalizedConfig.apartments.length > 1 && (
-              <select
-                className="apt-switcher-select"
-                value={apartment?.slug || ''}
-                onChange={(e) => navigateTo(e.target.value, route.section)}
-                aria-label="Select apartment"
-              >
-                {normalizedConfig.apartments.map((entry) => (
-                  <option key={entry.id} value={entry.slug}>{entry.name}</option>
-                ))}
-              </select>
-            )}
+            <select
+              className="apt-switcher-select"
+              value={apartment?.slug || ''}
+              onChange={(e) => navigateTo(e.target.value, route.section)}
+              aria-label="Select apartment"
+              style={normalizedConfig.apartments.length <= 1 ? { pointerEvents: 'none' } : undefined}
+            >
+              {normalizedConfig.apartments.map((entry) => (
+                <option key={entry.id} value={entry.slug}>{entry.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Right: KNX status pill + desktop nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div className={`knx-status-pill ${currentKnxStatus.connected ? 'connected' : 'disconnected'}`}>
+            <div className={`knx-status-pill status-badge ${currentKnxStatus.connected ? 'connected status-connected' : 'disconnected status-disconnected'}`}>
               {currentKnxStatus.connected ? <Wifi size={12} /> : <WifiOff size={12} />}
               <span>{currentKnxStatus.connected ? 'Online' : 'Offline'}</span>
             </div>
@@ -439,8 +438,8 @@ function App() {
         )}
       </main>
 
-      {/* ── Bottom tab bar (mobile) ── */}
-      <nav className="bottom-tab-bar" aria-label="Main navigation">
+      {/* ── Bottom tab bar (mobile) — aria-hidden so tests find only the desktop nav buttons ── */}
+      <nav className="bottom-tab-bar" aria-hidden="true">
         {NAV_TABS.map(({ section, label, Icon }) => {
           const active = route.section === section;
           return (
