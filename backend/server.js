@@ -873,16 +873,246 @@ app.delete('/api/config-protection', (req, res) => {
   res.json({ success: true, config: buildPublicConfig(config) });
 });
 
+const DEV_CONFIG_DEMO = {
+  version: 2,
+  building: {
+    houseWideInfoReadApartmentId: 'apartment_1',
+    configurationPassword: '',
+    sharedInfos: [
+      { id: 'info_temp', name: 'Außentemperatur', type: 'info', category: 'temperature', statusGroupAddress: '0/0/1', dpt: '9.001' },
+      { id: 'info_wind', name: 'Windgeschwindigkeit', type: 'info', category: 'wind', statusGroupAddress: '0/0/2', dpt: '9.005' },
+      { id: 'info_lux', name: 'Helligkeit', type: 'info', category: 'lux', statusGroupAddress: '0/0/3', dpt: '9.004' },
+    ],
+    sharedAreas: [
+      {
+        id: 'area_shared', name: 'Gemeinschaftsbereich',
+        rooms: [{
+          id: 'room_eingang', name: 'Eingang', sceneGroupAddress: '', scenes: [],
+          functions: [
+            { id: 'sfunc_1', name: 'Eingangslampe', type: 'switch', groupAddress: '0/1/1', statusGroupAddress: '0/1/2', iconType: 'lightbulb' },
+            { id: 'sfunc_2', name: 'Türschloss', type: 'lock', groupAddress: '0/1/3', statusGroupAddress: '0/1/4' },
+          ],
+        }],
+      },
+    ],
+  },
+  apartments: [
+    {
+      id: 'apartment_1', name: 'Wohnung 1 · EG', slug: 'wohnung-1-eg',
+      knxIp: '192.168.1.10', knxPort: 3671, knxLocalInterface: '',
+      hue: { bridgeIp: '', apiKey: '' },
+      areaOrder: ['floor_eg', 'floor_aussen'],
+      alarms: [
+        { id: 'alarm_rauch', name: 'Rauchmelder', type: 'alarm', category: 'alarm', statusGroupAddress: '1/99/1', dpt: '1.001' },
+        { id: 'alarm_fenster', name: 'Fenster offen', type: 'alarm', category: 'alarm', statusGroupAddress: '1/99/2', dpt: '1.001' },
+      ],
+      automations: [
+        { id: 'auto_1', name: 'Guten Morgen', enabled: true, triggerType: 'time', time: '07:00', frequency: 'daily', actions: [{ id: 'act_1', kind: 'scene', areaId: 'floor_eg', roomId: 'room_schlafen', targetId: 'sc_s1', targetType: 'scene', value: null }] },
+        { id: 'auto_2', name: 'Gute Nacht', enabled: true, triggerType: 'time', time: '23:00', frequency: 'daily', actions: [{ id: 'act_2', kind: 'scene', areaId: 'floor_eg', roomId: 'room_schlafen', targetId: 'sc_s3', targetType: 'scene', value: null }] },
+        { id: 'auto_3', name: 'Sonnenuntergang', enabled: true, triggerType: 'sunset', time: '20:00', frequency: 'daily', actions: [{ id: 'act_3', kind: 'scene', areaId: 'floor_eg', roomId: 'room_wohnzimmer', targetId: 'sc_2', targetType: 'scene', value: null }] },
+      ],
+      importedGroupAddresses: [], importedGroupAddressesFileName: '',
+      floors: [
+        {
+          id: 'floor_eg', name: 'Erdgeschoss',
+          rooms: [
+            {
+              id: 'room_wohnzimmer', name: 'Wohnzimmer', sceneGroupAddress: '1/0/1',
+              roomTemperatureGroupAddress: '1/5/1', roomSetpointShiftGroupAddress: '1/5/2',
+              roomSetpointStatusGroupAddress: '1/5/3', roomHeatingCoolingStatusGroupAddress: '1/5/4',
+              roomSetpointShiftStatusGroupAddress: '1/5/5',
+              scenes: [
+                { id: 'sc_1', name: 'Kino', sceneNumber: 1 },
+                { id: 'sc_2', name: 'Abend', sceneNumber: 2 },
+                { id: 'sc_3', name: 'Tageslicht', sceneNumber: 3 },
+                { id: 'sc_4', name: 'Party', sceneNumber: 4 },
+                { id: 'sc_5', name: 'Sonnenschutz', sceneNumber: 5, category: 'shade' },
+                { id: 'sc_6', name: 'Verdunkelt', sceneNumber: 6, category: 'shade' },
+              ],
+              functions: [
+                { id: 'f_wz_1', name: 'Deckenlampe', type: 'switch', groupAddress: '1/1/1', statusGroupAddress: '1/1/2', iconType: 'lightbulb' },
+                { id: 'f_wz_2', name: 'Stehlampe', type: 'dimmer', groupAddress: '1/1/3', statusGroupAddress: '1/1/4' },
+                { id: 'f_wz_3', name: 'Rolladen', type: 'percentage', groupAddress: '1/2/1', statusGroupAddress: '1/2/2' },
+                { id: 'f_wz_4', name: 'Steckdose Couch', type: 'socket', groupAddress: '1/1/5', statusGroupAddress: '1/1/6' },
+              ],
+            },
+            {
+              id: 'room_kueche', name: 'Küche', sceneGroupAddress: '1/0/2',
+              roomTemperatureGroupAddress: '1/5/6',
+              scenes: [
+                { id: 'sc_k1', name: 'Kochen', sceneNumber: 1 },
+                { id: 'sc_k2', name: 'Essen', sceneNumber: 2 },
+                { id: 'sc_k3', name: 'Aufräumen', sceneNumber: 3 },
+              ],
+              functions: [
+                { id: 'f_ku_1', name: 'Arbeitsplatz', type: 'switch', groupAddress: '1/3/1', statusGroupAddress: '1/3/2', iconType: 'lightbulb' },
+                { id: 'f_ku_2', name: 'Dunstabzug', type: 'switch', groupAddress: '1/3/3', statusGroupAddress: '1/3/4', iconType: 'power' },
+                { id: 'f_ku_3', name: 'Jalousie', type: 'percentage', groupAddress: '1/4/1', statusGroupAddress: '1/4/2' },
+              ],
+            },
+            {
+              id: 'room_schlafen', name: 'Schlafzimmer', sceneGroupAddress: '1/0/3',
+              roomTemperatureGroupAddress: '1/5/7', roomSetpointShiftGroupAddress: '1/5/8',
+              roomSetpointStatusGroupAddress: '1/5/9', roomHeatingCoolingStatusGroupAddress: '1/5/10',
+              roomSetpointShiftStatusGroupAddress: '1/5/11',
+              scenes: [
+                { id: 'sc_s1', name: 'Guten Morgen', sceneNumber: 1 },
+                { id: 'sc_s2', name: 'Lesen', sceneNumber: 2 },
+                { id: 'sc_s3', name: 'Nacht', sceneNumber: 3 },
+                { id: 'sc_s4', name: 'Verdunkelt', sceneNumber: 4, category: 'shade' },
+                { id: 'sc_s5', name: 'Morgen', sceneNumber: 5, category: 'shade' },
+              ],
+              functions: [
+                { id: 'f_sz_1', name: 'Deckenlampe', type: 'switch', groupAddress: '1/6/1', statusGroupAddress: '1/6/2', iconType: 'lightbulb' },
+                { id: 'f_sz_2', name: 'Leseleuchte', type: 'dimmer', groupAddress: '1/6/3', statusGroupAddress: '1/6/4' },
+                { id: 'f_sz_3', name: 'Rolladen', type: 'percentage', groupAddress: '1/7/1', statusGroupAddress: '1/7/2' },
+              ],
+            },
+            {
+              id: 'room_bad', name: 'Badezimmer', sceneGroupAddress: '',
+              roomTemperatureGroupAddress: '1/5/12',
+              scenes: [],
+              functions: [
+                { id: 'f_bad_1', name: 'Hauptlicht', type: 'switch', groupAddress: '1/8/1', statusGroupAddress: '1/8/2', iconType: 'lightbulb' },
+                { id: 'f_bad_2', name: 'Spiegellicht', type: 'switch', groupAddress: '1/8/3', statusGroupAddress: '1/8/4', iconType: 'lightbulb' },
+                { id: 'f_bad_3', name: 'Fußbodenheizung', type: 'switch', groupAddress: '1/8/5', statusGroupAddress: '1/8/6', iconType: 'power' },
+                { id: 'f_bad_4', name: 'Lüftung', type: 'switch', groupAddress: '1/8/7', statusGroupAddress: '1/8/8', iconType: 'power' },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'floor_aussen', name: 'Außenbereich',
+          rooms: [{
+            id: 'room_terrasse', name: 'Terrasse', sceneGroupAddress: '1/0/4',
+            scenes: [
+              { id: 'sc_t1', name: 'Abend', sceneNumber: 1 },
+              { id: 'sc_t2', name: 'Party', sceneNumber: 2 },
+            ],
+            functions: [
+              { id: 'f_ter_1', name: 'Außenlampe', type: 'switch', groupAddress: '1/9/1', statusGroupAddress: '1/9/2', iconType: 'lightbulb' },
+              { id: 'f_ter_2', name: 'Steckdose', type: 'socket', groupAddress: '1/9/3', statusGroupAddress: '1/9/4' },
+              { id: 'f_ter_3', name: 'Sonnensegel', type: 'percentage', groupAddress: '1/9/5', statusGroupAddress: '1/9/6' },
+            ],
+          }],
+        },
+      ],
+    },
+    {
+      id: 'apartment_2', name: 'Wohnung 2 · OG', slug: 'wohnung-2-og',
+      knxIp: '192.168.1.11', knxPort: 3671, knxLocalInterface: '',
+      hue: { bridgeIp: '', apiKey: '' },
+      areaOrder: ['floor_og', 'floor_dach'],
+      alarms: [
+        { id: 'alarm2_rauch', name: 'Rauchmelder', type: 'alarm', category: 'alarm', statusGroupAddress: '2/99/1', dpt: '1.001' },
+      ],
+      automations: [
+        { id: 'auto2_1', name: 'Morgenroutine', enabled: true, triggerType: 'time', time: '06:30', frequency: 'daily', actions: [{ id: 'act2_1', kind: 'scene', areaId: 'floor_og', roomId: 'room2_wohnzimmer', targetId: 'sc2_3', targetType: 'scene', value: null }] },
+        { id: 'auto2_2', name: 'Sonnenaufgang', enabled: true, triggerType: 'sunrise', time: '08:00', frequency: 'daily', actions: [{ id: 'act2_2', kind: 'scene', areaId: 'floor_og', roomId: 'room2_wohnzimmer', targetId: 'sc2_4', targetType: 'scene', value: null }] },
+        { id: 'auto2_3', name: 'Abendstimmung', enabled: false, triggerType: 'sunset', time: '19:30', frequency: 'daily', actions: [{ id: 'act2_3', kind: 'scene', areaId: 'floor_og', roomId: 'room2_wohnzimmer', targetId: 'sc2_1', targetType: 'scene', value: null }] },
+      ],
+      importedGroupAddresses: [], importedGroupAddressesFileName: '',
+      floors: [
+        {
+          id: 'floor_og', name: 'Obergeschoss',
+          rooms: [
+            {
+              id: 'room2_wohnzimmer', name: 'Wohnzimmer', sceneGroupAddress: '2/0/1',
+              roomTemperatureGroupAddress: '2/5/1', roomSetpointShiftGroupAddress: '2/5/2',
+              roomSetpointStatusGroupAddress: '2/5/3', roomHeatingCoolingStatusGroupAddress: '2/5/4',
+              roomSetpointShiftStatusGroupAddress: '2/5/5',
+              scenes: [
+                { id: 'sc2_1', name: 'Kino', sceneNumber: 1 },
+                { id: 'sc2_2', name: 'Lesen', sceneNumber: 2 },
+                { id: 'sc2_3', name: 'Hell', sceneNumber: 3 },
+                { id: 'sc2_4', name: 'Sonnenschutz', sceneNumber: 4, category: 'shade' },
+                { id: 'sc2_5', name: 'Verdunkelt', sceneNumber: 5, category: 'shade' },
+              ],
+              functions: [
+                { id: 'f2_wz_1', name: 'Deckenlampe', type: 'switch', groupAddress: '2/1/1', statusGroupAddress: '2/1/2', iconType: 'lightbulb' },
+                { id: 'f2_wz_2', name: 'TV-Ambilicht', type: 'hue', groupAddress: '', statusGroupAddress: '', hueLightId: '1' },
+                { id: 'f2_wz_3', name: 'Dimmer', type: 'dimmer', groupAddress: '2/1/3', statusGroupAddress: '2/1/4' },
+                { id: 'f2_wz_4', name: 'Rolladen', type: 'percentage', groupAddress: '2/2/1', statusGroupAddress: '2/2/2' },
+              ],
+            },
+            {
+              id: 'room2_kinderzimmer', name: 'Kinderzimmer', sceneGroupAddress: '2/0/2',
+              roomTemperatureGroupAddress: '2/5/6',
+              scenes: [
+                { id: 'sc2_k1', name: 'Spielen', sceneNumber: 1 },
+                { id: 'sc2_k2', name: 'Hausaufgaben', sceneNumber: 2 },
+                { id: 'sc2_k3', name: 'Schlafen', sceneNumber: 3 },
+              ],
+              functions: [
+                { id: 'f2_ki_1', name: 'Deckenlampe', type: 'switch', groupAddress: '2/3/1', statusGroupAddress: '2/3/2', iconType: 'lightbulb' },
+                { id: 'f2_ki_2', name: 'Nachtlicht', type: 'switch', groupAddress: '2/3/3', statusGroupAddress: '2/3/4', iconType: 'lightbulb' },
+                { id: 'f2_ki_3', name: 'Rolladen', type: 'percentage', groupAddress: '2/4/1', statusGroupAddress: '2/4/2' },
+              ],
+            },
+            {
+              id: 'room2_buero', name: 'Büro', sceneGroupAddress: '2/0/3',
+              roomTemperatureGroupAddress: '2/5/7', roomSetpointShiftGroupAddress: '2/5/8',
+              roomSetpointStatusGroupAddress: '2/5/9', roomHeatingCoolingStatusGroupAddress: '2/5/10',
+              roomSetpointShiftStatusGroupAddress: '2/5/11',
+              scenes: [
+                { id: 'sc2_b1', name: 'Arbeit', sceneNumber: 1 },
+                { id: 'sc2_b2', name: 'Video Call', sceneNumber: 2 },
+              ],
+              functions: [
+                { id: 'f2_b_1', name: 'Schreibtischlampe', type: 'switch', groupAddress: '2/6/1', statusGroupAddress: '2/6/2', iconType: 'lightbulb' },
+                { id: 'f2_b_2', name: 'Bias Lighting', type: 'hue', groupAddress: '', statusGroupAddress: '', hueLightId: '2' },
+                { id: 'f2_b_3', name: 'Jalousien', type: 'percentage', groupAddress: '2/7/1', statusGroupAddress: '2/7/2' },
+                { id: 'f2_b_4', name: 'Steckdose', type: 'socket', groupAddress: '2/6/5', statusGroupAddress: '2/6/6' },
+              ],
+            },
+            {
+              id: 'room2_bad', name: 'Badezimmer', sceneGroupAddress: '',
+              roomTemperatureGroupAddress: '2/5/12',
+              scenes: [],
+              functions: [
+                { id: 'f2_bad_1', name: 'Hauptlicht', type: 'switch', groupAddress: '2/8/1', statusGroupAddress: '2/8/2', iconType: 'lightbulb' },
+                { id: 'f2_bad_2', name: 'Spiegellicht', type: 'dimmer', groupAddress: '2/8/3', statusGroupAddress: '2/8/4' },
+                { id: 'f2_bad_3', name: 'Fußbodenheizung', type: 'switch', groupAddress: '2/8/5', statusGroupAddress: '2/8/6', iconType: 'power' },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'floor_dach', name: 'Dachterrasse',
+          rooms: [{
+            id: 'room2_dach', name: 'Dachterrasse', sceneGroupAddress: '2/0/4',
+            scenes: [
+              { id: 'sc2_d1', name: 'Abend', sceneNumber: 1 },
+              { id: 'sc2_d2', name: 'Party', sceneNumber: 2 },
+            ],
+            functions: [
+              { id: 'f2_d_1', name: 'Terrassenlampe', type: 'switch', groupAddress: '2/9/1', statusGroupAddress: '2/9/2', iconType: 'lightbulb' },
+              { id: 'f2_d_2', name: 'Markise', type: 'percentage', groupAddress: '2/9/3', statusGroupAddress: '2/9/4' },
+            ],
+          }],
+        },
+      ],
+    },
+  ],
+};
+
 app.post('/api/dev/load-config', (req, res) => {
   const devConfigFile = path.join(__dirname, 'config.dev.json');
-  if (!fs.existsSync(devConfigFile)) {
-    res.status(404).json({ success: false, error: 'config.dev.json not found' });
-    return;
+  let rawConfig;
+
+  if (fs.existsSync(devConfigFile)) {
+    try {
+      rawConfig = JSON.parse(fs.readFileSync(devConfigFile, 'utf8'));
+    } catch (error) {
+      logger.error('Failed to parse config.dev.json, falling back to built-in demo', { error: error.message });
+      rawConfig = DEV_CONFIG_DEMO;
+    }
+  } else {
+    rawConfig = DEV_CONFIG_DEMO;
   }
 
   try {
-    const data = fs.readFileSync(devConfigFile, 'utf8');
-    config = normalizeConfigShape(JSON.parse(data));
+    config = normalizeConfigShape(rawConfig);
     saveConfig('load dev config');
     syncApartmentContexts();
     config.apartments.forEach((apartment) => {
@@ -893,8 +1123,8 @@ app.post('/api/dev/load-config', (req, res) => {
     emitAllStatuses();
     res.json({ success: true, config: buildPublicConfig(config) });
   } catch (error) {
-    logger.error('Failed to parse config.dev.json', { error: error.message });
-    res.status(500).json({ success: false, error: 'Internal Server Error reading dev config' });
+    logger.error('Failed to apply dev config', { error: error.message });
+    res.status(500).json({ success: false, error: 'Internal Server Error applying dev config' });
   }
 });
 
