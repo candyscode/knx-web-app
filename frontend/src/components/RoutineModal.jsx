@@ -20,20 +20,20 @@ function SortableActionRow({ action, floors, index, onDelete }) {
 
   return (
     <div ref={setNodeRef} style={style} className="routine-action-row">
-      <span className="drag-handle" {...attributes} {...listeners} title="Drag to reorder">
+      <span className="drag-handle" {...attributes} {...listeners} title="Zum Sortieren ziehen">
         <GripVertical size={16} />
       </span>
       <span className="routine-action-index">{index + 1}</span>
       <span className="routine-action-label" style={{ flex: 1 }}>
-        {label ?? <span style={{ color: 'var(--danger-color)' }}>⚠ Target deleted</span>}
+        {label ?? <span style={{ color: 'var(--danger-color)' }}>⚠ Ziel gelöscht</span>}
       </span>
-      <span className="routine-action-kind">{action.kind}</span>
+      <span className="routine-action-kind">{action.kind === 'scene' ? 'Szene' : 'Funktion'}</span>
       {action.kind === 'function' && (
         <span className="routine-action-value">
-          {action.targetType === 'percentage' || action.targetType === 'dimmer' ? `${action.value}%` : (action.value ? 'On' : 'Off')}
+          {action.targetType === 'percentage' || action.targetType === 'dimmer' ? `${action.value}%` : (action.value ? 'An' : 'Aus')}
         </span>
       )}
-      <button className="icon-btn btn-danger" onClick={() => onDelete(action.id)} title="Remove action">
+      <button className="icon-btn btn-danger" onClick={() => onDelete(action.id)} title="Aktion entfernen">
         <Trash2 size={14} />
       </button>
     </div>
@@ -58,9 +58,9 @@ function resolveActionLabel(action, floors) {
 }
 
 function validate(routine) {
-  if (!routine.name || !routine.name.trim()) return 'Name is required.';
-  if (!routine.time || !/^\d{2}:\d{2}$/.test(routine.time)) return 'Valid time (HH:mm) is required.';
-  if (!routine.actions || routine.actions.length === 0) return 'At least one action is required.';
+  if (!routine.name || !routine.name.trim()) return 'Name ist erforderlich.';
+  if (!routine.time || !/^\d{2}:\d{2}$/.test(routine.time)) return 'Gültige Uhrzeit (HH:MM) erforderlich.';
+  if (!routine.actions || routine.actions.length === 0) return 'Mindestens eine Aktion ist erforderlich.';
   return null;
 }
 
@@ -120,7 +120,7 @@ export default function RoutineModal({ routine, floors, sunTriggerConfigured, on
       >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3 style={{ margin: 0 }}>{isNew ? 'New Routine' : 'Edit Routine'}</h3>
+          <h3 style={{ margin: 0 }}>{isNew ? 'Neue Routine' : 'Routine bearbeiten'}</h3>
           <button className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
 
@@ -133,29 +133,29 @@ export default function RoutineModal({ routine, floors, sunTriggerConfigured, on
                 className="form-input"
                 value={draft.name}
                 onChange={(e) => update('name', e.target.value)}
-                placeholder="e.g. Morning Routine"
+                placeholder="z.B. Morgenroutine"
                 autoFocus
               />
             </div>
 
             <div className="settings-field routine-modal-frequency-field">
               <label className="settings-field-label">
-                Frequency
+                Häufigkeit
                 <span className="ga-tooltip-wrap">
                   <HelpCircle size={11} className="ga-tooltip-icon" />
-                  <span className="ga-tooltip-bubble">Currently, only daily is available.</span>
+                  <span className="ga-tooltip-bubble">Aktuell ist nur „täglich“ verfügbar.</span>
                 </span>
               </label>
-              <input className="form-input" value="Daily" readOnly style={{ opacity: 0.72 }} />
+              <input className="form-input" value="Täglich" readOnly style={{ opacity: 0.72 }} />
             </div>
 
             <div className="settings-field routine-modal-enabled-field">
-              <label className="settings-field-label">Enabled</label>
+              <label className="settings-field-label">Aktiv</label>
               <button
                 className={`routine-toggle-switch ${draft.enabled ? 'enabled' : ''}`}
                 onClick={() => update('enabled', !draft.enabled)}
-                aria-label={draft.enabled ? 'Enabled' : 'Disabled'}
-                title={draft.enabled ? 'Click to disable' : 'Click to enable'}
+                aria-label={draft.enabled ? 'Aktiv' : 'Inaktiv'}
+                title={draft.enabled ? 'Zum Deaktivieren klicken' : 'Zum Aktivieren klicken'}
               >
                 <span className="routine-toggle-knob" />
               </button>
@@ -164,38 +164,38 @@ export default function RoutineModal({ routine, floors, sunTriggerConfigured, on
 
           <div className="routine-modal-row routine-modal-row--secondary">
             <div className="settings-field routine-modal-trigger-field">
-              <label className="settings-field-label">Trigger</label>
+              <label className="settings-field-label">Auslöser</label>
               <div className="routine-trigger-selector">
                 <button
                   className={`routine-trigger-btn ${draft.triggerType === 'time' ? 'active' : ''}`}
                   onClick={() => update('triggerType', 'time')}
                 >
-                  Time
+                  Zeit
                 </button>
                 <button
                   className={`routine-trigger-btn ${draft.triggerType === 'sunrise' ? 'active' : ''}`}
                   onClick={() => update('triggerType', 'sunrise')}
-                  title={!sunTriggerConfigured ? 'Sun Trigger GA not configured in Setup' : ''}
+                  title={!sunTriggerConfigured ? 'Sonnen-Trigger-GA ist im Setup nicht konfiguriert' : ''}
                 >
-                  Sunrise
+                  Sonnenaufgang
                 </button>
                 <button
                   className={`routine-trigger-btn ${draft.triggerType === 'sunset' ? 'active' : ''}`}
                   onClick={() => update('triggerType', 'sunset')}
-                  title={!sunTriggerConfigured ? 'Sun Trigger GA not configured in Setup' : ''}
+                  title={!sunTriggerConfigured ? 'Sonnen-Trigger-GA ist im Setup nicht konfiguriert' : ''}
                 >
-                  Sunset
+                  Sonnenuntergang
                 </button>
               </div>
               {!sunTriggerConfigured && draft.triggerType !== 'time' && (
                 <div className="routine-trigger-note">
-                  Note: Sun trigger requires GA configuration in Building Setup.
+                  Hinweis: Der Sonnen-Trigger benötigt eine GA-Konfiguration im Gebäude-Setup.
                 </div>
               )}
             </div>
 
             <div className={`settings-field routine-modal-time-field ${draft.triggerType === 'time' ? '' : 'routine-modal-time-field--hidden'}`}>
-              <label className="settings-field-label">Time</label>
+              <label className="settings-field-label">Uhrzeit</label>
               <input
                 className="form-input routine-time-input"
                 type="time"
@@ -212,16 +212,16 @@ export default function RoutineModal({ routine, floors, sunTriggerConfigured, on
         <div className="routine-actions-section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <label className="settings-field-label" style={{ margin: 0 }}>
-              Actions <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>({draft.actions.length})</span>
+              Aktionen <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>({draft.actions.length})</span>
             </label>
             <button className="btn-secondary" onClick={() => setShowActionPicker(true)}>
-              <Plus size={14} /> Add Action
+              <Plus size={14} /> Aktion hinzufügen
             </button>
           </div>
 
           {draft.actions.length === 0 ? (
             <div style={{ background: 'var(--glass-bg)', borderRadius: '10px', padding: '1.25rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              No actions added yet. Click "Add Action" to get started.
+              Noch keine Aktionen. Klicke auf „Aktion hinzufügen", um zu starten.
             </div>
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleActionDragEnd}>
@@ -250,9 +250,9 @@ export default function RoutineModal({ routine, floors, sunTriggerConfigured, on
         )}
 
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-secondary" onClick={onClose}>Abbrechen</button>
           <button className="btn-primary" onClick={handleSave}>
-            <Check size={16} /> {isNew ? 'Create Routine' : 'Save Changes'}
+            <Check size={16} /> {isNew ? 'Routine erstellen' : 'Änderungen speichern'}
           </button>
         </div>
       </div>

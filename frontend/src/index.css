@@ -34,6 +34,15 @@
   --glass-border: rgba(255, 222, 184, 0.08);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
 
+  /* radii — unified scale for the redesign */
+  --radius-xs: 6px;    /* badges, inner chips */
+  --radius-sm: 8px;    /* icon buttons, small controls */
+  --radius-md: 10px;   /* inputs, selects, buttons */
+  --radius-lg: 14px;   /* cards, function cards */
+  --radius-xl: 18px;   /* panels, room cards */
+  --radius-2xl: 24px;  /* modals */
+  --radius-pill: 999px;
+
   /* room aurae */
   --aura-amber: #ff8a3d;
   --aura-rose: #ff5d8f;
@@ -547,7 +556,7 @@ body {
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
@@ -569,7 +578,7 @@ body {
   color: var(--danger-color);
   border: 1px solid rgba(255, 123, 114, 0.2);
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1406,7 +1415,7 @@ body {
 .sort-btn {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   padding: 0.28rem 0.38rem;
   cursor: pointer;
@@ -1753,7 +1762,7 @@ body {
   max-width: 640px;
   max-height: 85vh;
   background: #1c1711;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   display: flex;
   flex-direction: column;
   box-shadow: 0 16px 48px rgba(0,0,0,0.8);
@@ -1905,7 +1914,7 @@ body {
   background: rgba(255, 123, 114, 0.08);
   border: 1px solid rgba(255, 123, 114, 0.15);
   color: var(--danger-color);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0.3rem;
   cursor: pointer;
   margin-left: auto;
@@ -1922,7 +1931,7 @@ body {
   background: rgba(255, 123, 114, 0.08);
   border: 1px solid rgba(255, 123, 114, 0.15);
   color: var(--danger-color);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0.35rem;
   cursor: pointer;
   flex-shrink: 0;
@@ -1957,7 +1966,7 @@ body {
   font-size: 0.82rem;
   font-weight: 600;
   padding: 0.38rem 0.8rem;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
@@ -2659,13 +2668,85 @@ html { overflow-x: hidden; }
 }
 
 .room-card-body {
-  padding-top: 0.75rem;
+  padding-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
   animation: expandDown 0.2s ease;
 }
 
 @keyframes expandDown {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Room sub-cards — clean, icon-led sections (Setup-menu inspired) ── */
+.room-subcard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.2rem 1.2rem;
+}
+
+.room-subcard-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.room-subcard-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.room-subcard-icon.tone-scene  { background: rgba(224, 139, 93, 0.12);  color: var(--accent-color); }
+.room-subcard-icon.tone-temp   { background: rgba(255, 123, 114, 0.13); color: #ff9c95; }
+.room-subcard-icon.tone-scenes { background: rgba(167, 139, 250, 0.15); color: #c4b5fd; }
+.room-subcard-icon.tone-func   { background: rgba(79, 169, 255, 0.13);  color: #8fc6ff; }
+
+.room-subcard-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.room-subcard-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.room-subcard-copy {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.room-subcard-header-extra {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Responsive two-column grid for grouped GA fields (declutters long stacks) */
+.room-ga-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem 1rem;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .room-subcard { padding: 0.85rem; }
+  .room-subcard-header { gap: 0.6rem; margin-bottom: 0.75rem; }
+  .room-subcard-icon { width: 32px; height: 32px; }
+  .room-ga-grid { grid-template-columns: 1fr; }
 }
 
 /* Move-to-floor select */
@@ -3019,7 +3100,7 @@ html { overflow-x: hidden; }
   font-size: 0.9rem;
   font-weight: 600;
   padding: 0.6rem 1.2rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
   color: var(--text-primary);
@@ -3143,7 +3224,7 @@ html { overflow-x: hidden; }
   padding: 0;
 }
 .routine-toggle-switch.enabled {
-  background: var(--success-color, #22c55e);
+  background: linear-gradient(135deg, #ffc78a, #c66a35);
 }
 .routine-toggle-switch:disabled {
   opacity: 0.4;
@@ -3466,7 +3547,166 @@ html { overflow-x: hidden; }
 }
 
 .binary-selector-btn.active {
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--text-primary);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  background: var(--accent-tint);
+  color: var(--accent-light);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PREMIUM POLISH — motion, liquid glass & cohesion
+   Appended in the UX redesign pass. Kept at the end so these
+   refinements win the cascade over earlier base rules.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Motion primitives ─────────────────────────────────────── */
+@keyframes sheetUp {
+  from { opacity: 0; transform: translateY(28px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes sheetPop {
+  from { opacity: 0; transform: translateY(10px) scale(0.965); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes overlayFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes cardRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes softPulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+@keyframes movingSheen {
+  0%   { transform: translateY(-120%); }
+  100% { transform: translateY(120%); }
+}
+
+/* ── Modal entrance + Apple-style liquid glass ─────────────── */
+.widget-modal-overlay { animation: overlayFade 0.25s ease; }
+
+.widget-modal-content {
+  /* Translucent, deeply-blurred glass instead of a flat panel.
+     The dark base keeps text contrast while the blur + saturation
+     give the frosted "liquid glass" read. */
+  background:
+    linear-gradient(165deg, rgba(46, 39, 31, 0.74) 0%, rgba(24, 20, 15, 0.86) 60%);
+  backdrop-filter: blur(34px) saturate(180%);
+  -webkit-backdrop-filter: blur(34px) saturate(180%);
+  border: 1px solid rgba(255, 222, 184, 0.14);
+  box-shadow:
+    0 32px 80px -12px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  animation: sheetUp 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Specular top highlight — the glass "edge of light" */
+.widget-modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 70%);
+  z-index: 0;
+}
+
+.modal-content { animation: sheetUp 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Desktop: float modals to the centre rather than docking them to the
+   bottom edge (which reads as a mobile sheet). */
+@media (min-width: 768px) {
+  .widget-modal-overlay,
+  .modal-overlay {
+    align-items: center;
+    padding-top: 6vh;
+    padding-bottom: 6vh;
+  }
+  .widget-modal-content,
+  .modal-content { animation: sheetPop 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+}
+
+/* ── Dashboard room cards: staggered entrance ──────────────── */
+.room-grid > * {
+  animation: cardRise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.room-grid > *:nth-child(1) { animation-delay: 0.02s; }
+.room-grid > *:nth-child(2) { animation-delay: 0.07s; }
+.room-grid > *:nth-child(3) { animation-delay: 0.12s; }
+.room-grid > *:nth-child(4) { animation-delay: 0.17s; }
+.room-grid > *:nth-child(5) { animation-delay: 0.22s; }
+.room-grid > *:nth-child(6) { animation-delay: 0.27s; }
+.room-grid > *:nth-child(n+7) { animation-delay: 0.3s; }
+
+/* ── Scene category headers (Rooms config) ─────────────────────
+   Replace the filled coloured banners with the clean, icon-led
+   heading language used by the room sub-cards everywhere else. */
+.scene-category-header {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 0.85rem;
+  gap: 0.6rem;
+}
+.scene-category-icon-chip {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 196, 128, 0.12);
+  color: var(--accent-light);
+}
+.scene-category-block--shade .scene-category-icon-chip {
+  background: rgba(216, 150, 100, 0.14);
+  color: #e8c39c;
+}
+.scene-category-header .scene-category-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ── Interactive feedback refinements ──────────────────────── */
+.nav-link { transition: background 0.18s ease, color 0.18s ease; }
+.nav-link.active {
+  box-shadow: inset 0 0 0 1px rgba(224, 139, 93, 0.18);
+}
+
+/* Dashboard tiles: consistent hover-lift + press feedback.
+   Backgrounds are set inline per state, so we only animate transform
+   and shadow here (which inline styles don't touch). */
+[data-testid="function-tile"],
+.binary-selector-btn,
+.routine-toggle-switch {
+  -webkit-tap-highlight-color: transparent;
+}
+[data-testid="function-tile"] {
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.16s ease, border-color 0.16s ease;
+}
+@media (hover: hover) {
+  [data-testid="function-tile"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.7);
+  }
+}
+[data-testid="function-tile"]:active { transform: scale(0.975); }
+
+/* ── Respect reduced-motion preferences ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .room-grid > * { animation: none; opacity: 1; transform: none; }
 }

@@ -112,14 +112,14 @@ describe('App — rendering', () => {
 
   it('shows Dashboard content by default', async () => {
     await act(async () => { render(<App />); });
-    expect(screen.getByText(/No rooms on/i)).toBeInTheDocument();
+    expect(screen.getByText(/Keine Räume in/i)).toBeInTheDocument();
   });
 
   it('navigates to Settings when Settings tab is clicked', async () => {
     const user = userEvent.setup();
     await act(async () => { render(<App />); });
 
-    const settingsBtn = screen.getByRole('button', { name: /rooms/i });
+    const settingsBtn = screen.getByRole('button', { name: /räume/i });
     await user.click(settingsBtn);
 
     expect(screen.getByPlaceholderText(/Add room to/i)).toBeInTheDocument();
@@ -129,10 +129,10 @@ describe('App — rendering', () => {
     const user = userEvent.setup();
     await act(async () => { render(<App />); });
 
-    await user.click(screen.getByRole('button', { name: /rooms/i }));
+    await user.click(screen.getByRole('button', { name: /räume/i }));
     await user.click(screen.getByRole('button', { name: /dashboard/i }));
 
-    expect(screen.getByText(/No rooms on/i)).toBeInTheDocument();
+    expect(screen.getByText(/Keine Räume in/i)).toBeInTheDocument();
   });
 
   it('loads the bookmarked apartment and section from the URL', async () => {
@@ -298,7 +298,7 @@ describe('App — configuration lock', () => {
     });
 
     await act(async () => { render(<App />); });
-    await user.click(screen.getByRole('button', { name: /rooms/i }));
+    await user.click(screen.getByRole('button', { name: /räume/i }));
 
     expect(screen.getByText('Configuration Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /back to dashboard/i })).toBeInTheDocument();
@@ -332,7 +332,7 @@ describe('App — configuration lock', () => {
     });
 
     await act(async () => { render(<App />); });
-    await user.click(screen.getByRole('button', { name: /automation/i }));
+    await user.click(screen.getByRole('button', { name: /routinen/i }));
 
     expect(screen.getByText('Configuration Password')).toBeInTheDocument();
     expect(screen.getByText(/open automation/i)).toBeInTheDocument();

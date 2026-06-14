@@ -109,8 +109,21 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Blinds size={14} color="#e8c39c" />
           <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-primary)' }}>{func.name}</span>
-          {isMoving && !!func.movingGroupAddress && (
-            <span style={{ fontSize: 10, color: '#e8c39c', marginLeft: 'auto', opacity: 0.8 }}>⬆⬇</span>
+          {isMoving && !!func.movingGroupAddress ? (
+            <span style={{
+              marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '2px 7px', borderRadius: 999,
+              background: 'rgba(216,150,100,0.14)', border: '1px solid rgba(216,150,100,0.28)',
+              color: '#e8c39c', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
+              animation: 'softPulse 1.3s ease-in-out infinite',
+            }}>
+              <ArrowLeftRight size={9} style={{ transform: 'rotate(90deg)' }} /> Fährt
+            </span>
+          ) : (
+            <span style={{
+              marginLeft: 'auto', fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em',
+              color: previewPos > 0 ? '#e8c39c' : 'var(--text-tertiary)', fontFeatureSettings: '"tnum"',
+            }}>{previewPos}%</span>
           )}
         </div>
         <div style={{
@@ -126,11 +139,6 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
             borderBottom: previewPos > 0 ? '1px solid rgba(255,222,184,0.15)' : 'none',
             transition: 'height 0.18s ease',
           }} />
-          <div style={{
-            position: 'absolute', bottom: 4, right: 8,
-            fontSize: 10, fontWeight: 700, color: 'rgba(255,222,184,0.5)',
-            fontFamily: 'ui-monospace, monospace',
-          }}>{previewPos}%</div>
         </div>
       </button>
 
@@ -150,7 +158,16 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
               <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 4 }}>Beschattung</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <Blinds size={20} color="#e8c39c" />
-                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)' }}>{func.name}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{func.name}</div>
+                <span style={{
+                  flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '4px 10px', borderRadius: 999,
+                  background: 'rgba(216,150,100,0.10)', border: '1px solid rgba(216,150,100,0.22)',
+                  color: '#e8c39c', fontSize: 11.5, fontWeight: 600, fontFeatureSettings: '"tnum"',
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: '#e8c39c', boxShadow: '0 0 6px #e8c39c' }} />
+                  Ist {istPosition}%
+                </span>
               </div>
 
               <div style={{ display: 'flex', gap: 14, marginBottom: 14 }}>
@@ -356,22 +373,23 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Lightbulb size={14} color={previewPos > 0 ? '#ffd089' : 'var(--text-tertiary)'} fill={previewPos > 0 ? '#ffd089' : 'none'} />
           <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-primary)' }}>{func.name}</span>
+          <span style={{
+            marginLeft: 'auto', fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em',
+            color: previewPos > 0 ? '#ffd089' : 'var(--text-tertiary)',
+            fontFeatureSettings: '"tnum"',
+          }}>{previewPos > 0 ? `${previewPos}%` : 'Aus'}</span>
         </div>
         <div style={{
           borderRadius: 8, height: 52, position: 'relative', overflow: 'hidden',
-          background: '#111827', border: '1px solid rgba(255,222,184,0.08)',
+          background: '#15110d', border: '1px solid rgba(255,222,184,0.08)',
         }}>
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
             height: `${previewPos}%`,
-            background: `linear-gradient(to top, #111827, ${warmAlpha(0.85)})`,
+            background: `linear-gradient(to top, #15110d, ${warmAlpha(0.85)})`,
+            boxShadow: previewPos > 0 ? `0 -2px 12px ${warmAlpha(0.25)}` : 'none',
             transition: 'height 0.18s ease',
           }} />
-          <div style={{
-            position: 'absolute', bottom: 4, right: 8,
-            fontSize: 10, fontWeight: 700, color: 'rgba(255,222,184,0.5)',
-            fontFamily: 'ui-monospace, monospace',
-          }}>{previewPos}%</div>
         </div>
       </button>
 
@@ -413,7 +431,12 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
                     >
                       {/* warm glow at top when bright */}
                       {sollPosition > 0 && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(ellipse 80% 40% at 50% 0%, ${warmAlpha(0.15 * sollPosition / 100)}, transparent 70%)` }} />}
-                      <div className="dimmer-fill" style={{ height: `${sollPosition}%`, background: `linear-gradient(to top, #111827, ${warmAlpha(0.7)})`, borderTop: sollPosition > 0 ? `2px solid ${warmAlpha(0.9)}` : 'none', boxShadow: sollPosition > 0 ? `0 -4px 18px ${warmAlpha(0.25)}` : 'none', transition: isDragging ? 'none' : undefined }} />
+                      <div className="dimmer-fill" style={{ height: `${sollPosition}%`, background: `linear-gradient(to top, #15110d, ${warmAlpha(0.7)})`, borderTop: sollPosition > 0 ? `2px solid ${warmAlpha(0.9)}` : 'none', boxShadow: sollPosition > 0 ? `0 -4px 18px ${warmAlpha(0.25)}` : 'none', transition: isDragging ? 'none' : undefined }} />
+                      {istPosition !== undefined && Math.abs(istPosition - sollPosition) > 1 && (
+                        <div style={{ position: 'absolute', left: 0, right: 0, top: `clamp(1px, ${100 - istPosition}%, calc(100% - 1px))`, height: 0, borderTop: '1.5px dashed rgba(255,255,255,0.40)', pointerEvents: 'none', zIndex: 3 }}>
+                          <span style={{ position: 'absolute', right: 6, top: -7, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', background: 'rgba(16,13,10,0.7)', padding: '1px 4px', borderRadius: 4 }}>Ist {istPosition}%</span>
+                        </div>
+                      )}
                       <span style={{ position: 'absolute', top: 8, left: 12, fontSize: 10, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', color: 'rgba(255,222,184,0.35)', pointerEvents: 'none' }}>Hell</span>
                       <span style={{ position: 'absolute', bottom: 8, left: 12, fontSize: 10, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', color: 'rgba(255,222,184,0.25)', pointerEvents: 'none' }}>Aus</span>
                     </div>
@@ -504,57 +527,115 @@ const RoomTemperatureModal = ({ room, currentTemp, targetTemp, currentShift, hea
     });
   };
 
-  let modalBg = '#1e293b'; // default background
-  let modeText = null;
+  // Warm, on-theme mode treatment (replaces the old cool slate/blue backgrounds).
+  let mode = null;          // 'heating' | 'cooling' | null
+  let modeLabel = null;
+  let modeColor = '#e8c39c';
+  let auraColor = 'rgba(216,150,100,0.14)';
   if (heatingCoolingStatus === 1) {
-    modalBg = '#4f2a32'; // pastel red for dark mode
-    modeText = 'Heating Mode';
+    mode = 'heating';
+    modeLabel = 'Heizen';
+    modeColor = '#ff9f87';
+    auraColor = 'rgba(255,123,114,0.16)';
   } else if (heatingCoolingStatus === 0) {
-    modalBg = '#1c2636'; // slight bluish
-    modeText = 'Cooling Mode';
+    mode = 'cooling';
+    modeLabel = 'Kühlen';
+    modeColor = '#86c5ff';
+    auraColor = 'rgba(79,169,255,0.14)';
   }
+
+  const circleBtn = (disabled) => ({
+    width: 48, height: 48, borderRadius: 999, padding: 0,
+    display: 'grid', placeItems: 'center', flexShrink: 0,
+    background: 'rgba(255,222,184,0.06)',
+    border: '1px solid rgba(255,222,184,0.14)',
+    color: disabled ? 'var(--text-muted)' : 'var(--text-primary)',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'background 0.15s ease, transform 0.1s ease',
+  });
 
   return createPortal(
     <div className="widget-modal-overlay" onClick={onClose}>
-      <div className="widget-modal-content" onClick={e => e.stopPropagation()} style={{ width: '320px', height: 'auto', padding: '1.5rem', textAlign: 'center', position: 'relative', backgroundColor: modalBg }}>
-        <button onClick={onClose} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-          <X size={24} />
-        </button>
-        <h3 style={{ margin: '0 2rem 0.2rem 2rem', fontSize: '1.2rem', fontWeight: 500, lineHeight: '1.3' }}>{room.name} Temperature Control</h3>
-        {modeText && <div style={{ fontSize: '0.8rem', color: heatingCoolingStatus === 1 ? '#ef4444' : '#3b82f6', marginBottom: '0.5rem' }}>{modeText}</div>}
-        
-        <div style={{ margin: '1.5rem 0' }}>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Current Temperature</div>
-          <div style={{ fontSize: '3rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-            {currentTemp !== undefined ? `${currentTemp.toFixed(1)}°` : '--°'}
-          </div>
-        </div>
+      <div
+        className="widget-modal-content temp-modal-content"
+        data-mode={mode || 'neutral'}
+        onClick={e => e.stopPropagation()}
+        style={{ maxWidth: 360, padding: '22px 20px 20px' }}
+      >
+        {/* Mode-tinted aura */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 24, background: `radial-gradient(140% 80% at 50% 0%, ${auraColor}, transparent 62%)` }} />
+        <button onClick={onClose} style={{
+          position: 'absolute', top: 14, right: 14, zIndex: 5,
+          width: 32, height: 32, borderRadius: 999, padding: 0,
+          background: 'rgba(255,222,184,0.06)', border: '1px solid rgba(255,222,184,0.10)',
+          color: '#b6a995', display: 'grid', placeItems: 'center', cursor: 'pointer',
+        }}><X size={14} /></button>
 
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button 
-            className="btn-secondary icon-btn" 
-            style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            onClick={() => handleAdjust(-0.5)}
-            disabled={targetTemp === undefined}
-          >
-            <Minus size={20} />
-          </button>
-          
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Target Setpoint</span>
-            <span style={{ fontSize: '1.4rem', fontWeight: 500 }}>
-              {targetTemp !== undefined ? `${targetTemp.toFixed(1)}°` : '--°'}
-            </span>
+        <div style={{ position: 'relative' }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 4 }}>Temperatur</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <Thermometer size={20} color={modeColor} />
+            <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</div>
+            {modeLabel && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                padding: '4px 10px', borderRadius: 999,
+                background: mode === 'heating' ? 'rgba(255,123,114,0.12)' : 'rgba(79,169,255,0.12)',
+                border: `1px solid ${mode === 'heating' ? 'rgba(255,123,114,0.30)' : 'rgba(79,169,255,0.30)'}`,
+                color: modeColor, fontSize: 11.5, fontWeight: 600,
+              }}>{modeLabel}</span>
+            )}
           </div>
 
-          <button 
-            className="btn-secondary icon-btn" 
-            style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            onClick={() => handleAdjust(0.5)}
-            disabled={targetTemp === undefined}
-          >
-            <Plus size={20} />
-          </button>
+          {/* Current temperature — hero readout */}
+          <div style={{
+            position: 'relative', textAlign: 'center', padding: '18px 0 22px',
+            borderRadius: 18, marginBottom: 14,
+            background: 'rgba(255,222,184,0.03)', border: '1px solid rgba(255,222,184,0.07)',
+          }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 6 }}>Aktuell</div>
+            <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--text-primary)', fontFeatureSettings: '"tnum"' }}>
+              {currentTemp !== undefined ? `${currentTemp.toFixed(1)}°` : '--°'}
+            </div>
+          </div>
+
+          {/* Target setpoint control */}
+          <div style={{
+            background: 'rgba(255,222,184,0.04)', border: '1px solid rgba(255,222,184,0.08)',
+            borderRadius: 16, padding: '12px 14px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          }}>
+            <button
+              aria-label="Soll absenken"
+              style={circleBtn(targetTemp === undefined)}
+              onClick={() => handleAdjust(-0.5)}
+              disabled={targetTemp === undefined}
+            >
+              <Minus size={20} />
+            </button>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>Soll</span>
+              <span style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', color: modeColor, fontFeatureSettings: '"tnum"' }}>
+                {targetTemp !== undefined ? `${targetTemp.toFixed(1)}°` : '--°'}
+              </span>
+            </div>
+
+            <button
+              aria-label="Soll anheben"
+              style={circleBtn(targetTemp === undefined)}
+              onClick={() => handleAdjust(0.5)}
+              disabled={targetTemp === undefined}
+            >
+              <Plus size={20} />
+            </button>
+          </div>
+
+          {targetTemp === undefined && (
+            <p style={{ margin: '12px 2px 0', fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.4, textAlign: 'center' }}>
+              Nur Anzeige – für diesen Raum ist keine Soll­wert­verstellung konfiguriert.
+            </p>
+          )}
         </div>
       </div>
     </div>,
@@ -650,9 +731,9 @@ function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, hand
               className="interactive"
               onClick={() => {
                 if (isInteractiveHeating) setIsHeatingModalOpen(true);
-                else addToast('Temperature control not set up for this room', 'info');
+                else addToast('Temperatursteuerung ist für diesen Raum nicht eingerichtet', 'info');
               }}
-              title={isInteractiveHeating ? 'Adjust Temperature' : 'Current Temperature'}
+              title={isInteractiveHeating ? 'Temperatur anpassen' : 'Aktuelle Temperatur'}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '6px 10px', borderRadius: 999,
@@ -670,20 +751,15 @@ function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, hand
         {/* Light scenes */}
         {roomScenes.filter(sc => (sc.category || 'light') === 'light').length > 0 && (
           <div style={{ position: 'relative', marginBottom: 12 }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
-              Licht · Szenen
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
+              <Lightbulb size={11} />
+              <span>Licht · Szenen</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {roomScenes.filter(sc => (sc.category || 'light') === 'light').map(sc => (
                 <button key={sc.id}
-                  onClick={() => handleSceneAction(room, sc)}
-                  style={{
-                    padding: '7px 14px', borderRadius: 999,
-                    background: 'rgba(255,222,184,0.06)',
-                    border: '1px solid rgba(255,222,184,0.10)',
-                    color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 500, letterSpacing: '-0.01em',
-                    cursor: 'pointer', transition: 'all 0.15s ease',
-                  }}>
+                  className="scene-pill"
+                  onClick={() => handleSceneAction(room, sc)}>
                   {sc.name || `Scene ${sc.sceneNumber}`}
                 </button>
               ))}
@@ -694,21 +770,15 @@ function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, hand
         {/* Shade scenes */}
         {roomScenes.filter(sc => sc.category === 'shade').length > 0 && (
           <div style={{ position: 'relative', marginBottom: 12 }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
-              Beschattung
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
+              <Blinds size={11} />
+              <span>Beschattung</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {roomScenes.filter(sc => sc.category === 'shade').map(sc => (
                 <button key={sc.id}
-                  onClick={() => handleSceneAction(room, sc)}
-                  style={{
-                    padding: '7px 14px 7px 11px', borderRadius: 999,
-                    background: 'rgba(216,150,100,0.08)',
-                    border: '1px solid rgba(216,150,100,0.18)',
-                    color: '#e8c39c', fontSize: 12.5, fontWeight: 500, letterSpacing: '-0.01em',
-                    cursor: 'pointer', transition: 'all 0.15s ease',
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                  }}>
+                  className="scene-pill shade-pill"
+                  onClick={() => handleSceneAction(room, sc)}>
                   <Blinds size={10} color="#e8c39c" />
                   {sc.name || `Scene ${sc.sceneNumber}`}
                 </button>
@@ -720,8 +790,9 @@ function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, hand
         {/* Functions */}
         {hasFunctions && (
           <div style={{ position: 'relative' }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
-              Funktionen
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>
+              <SlidersHorizontal size={11} />
+              <span>Funktionen</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
               {roomFunctions.map(func => {
@@ -788,8 +859,11 @@ function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, hand
                         <div
                           data-testid="toggle-switch"
                           data-active={String(isOn)}
-                          onClick={(e) => e.stopPropagation()}
+                          role="switch"
+                          aria-checked={isOn}
+                          onClick={(e) => { e.stopPropagation(); onToggle(); }}
                           style={{
+                            cursor: 'pointer',
                             width: 36, height: 22, borderRadius: 999,
                             background: isOn ? 'linear-gradient(135deg,#ffc78a,#c66a35)' : 'rgba(255,222,184,0.08)',
                             border: isOn ? '1px solid transparent' : '1px solid rgba(255,222,184,0.10)',
@@ -818,7 +892,7 @@ function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, hand
         )}
 
         {!hasFunctions && !hasScenes && (
-          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>No functions available</div>
+          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>Keine Funktionen verfügbar</div>
         )}
       </div>
 
@@ -936,8 +1010,8 @@ export default function Dashboard({
       <div>
         <GlobalInfoWidget globals={[...(config.sharedInfos || []), ...(config.alarms || [])]} deviceStates={deviceStates} />
         <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-          <h2 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>No rooms configured</h2>
-          <p>Go to <strong>Rooms</strong> to add your first area and rooms.</p>
+          <h2 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>Keine Räume konfiguriert</h2>
+          <p>Öffne <strong>Räume</strong>, um deinen ersten Bereich und Räume anzulegen.</p>
         </div>
       </div>
     );
@@ -960,7 +1034,7 @@ export default function Dashboard({
 
       {activeRooms.length === 0 ? (
         <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 2rem', marginTop: multiFloor ? '1rem' : 0 }}>
-          <p style={{ color: 'var(--text-secondary)' }}>No rooms on <strong>{activeFloor?.name}</strong>.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Keine Räume in <strong>{activeFloor?.name}</strong>.</p>
         </div>
       ) : (
         <div className={`room-grid ${multiFloor ? 'room-grid--with-tabs' : ''}`}>

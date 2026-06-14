@@ -36,19 +36,17 @@ export default function GlobalInfoWidget({ globals, deviceStates }) {
     <div style={{ marginBottom: 18 }}>
       {activeAlarms.length > 0 && (
         <div style={{
-          background: 'rgba(239,68,68,0.12)',
-          border: '1px solid rgba(239,68,68,0.25)',
+          background: 'rgba(255,123,114,0.10)',
+          border: '1px solid rgba(255,123,114,0.24)',
           borderRadius: 18, padding: '12px 16px', marginBottom: 12,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#fca5a5', fontSize: 13, fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#ff9c95', fontSize: 13, fontWeight: 600 }}>
             <AlertTriangle size={16} /> Aktive Alarme
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {activeAlarms.map(alarm => (
               <span key={alarm.id} className="active-alarm-pill" style={{
-                padding: '4px 10px', borderRadius: 999,
-                background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.30)',
-                color: '#fca5a5', fontSize: 12, fontWeight: 600,
+                padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600,
               }}>{alarm.name}</span>
             ))}
           </div>

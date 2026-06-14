@@ -27,7 +27,7 @@ function resolveActionInfo(action, floors) {
         : null;
     } else {
       const func = Array.isArray(room.functions) ? room.functions.find((f) => f.id === action.targetId) : null;
-      const valueStr = (action.targetType === 'percentage' || action.targetType === 'dimmer') ? `${action.value}%` : (action.value ? 'On' : 'Off');
+      const valueStr = (action.targetType === 'percentage' || action.targetType === 'dimmer') ? `${action.value}%` : (action.value ? 'An' : 'Aus');
       return func
         ? { label: `${floor.name} › ${room.name} › ${func.name}`, valueStr }
         : null;
@@ -69,17 +69,17 @@ export default function RoutineCard({ routine, floors, onToggle, onEdit, onDelet
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{routine.name || 'Unnamed Routine'}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{routine.name || 'Unbenannte Routine'}</span>
               {broken && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <AlertTriangle size={10} /> Broken
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(255,123,114,0.12)', border: '1px solid rgba(255,123,114,0.25)', color: '#ff9c95', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <AlertTriangle size={10} /> Fehlerhaft
                 </span>
               )}
               {routine.lastRunStatus === 'ok' && !broken && (
                 <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(111,212,156,0.10)', color: '#9ee2bd' }}>OK</span>
               )}
               {routine.lastRunStatus === 'error' && !broken && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(239,68,68,0.10)', color: '#fca5a5' }}>Fehler</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(255,123,114,0.10)', color: '#ff9c95' }}>Fehler</span>
               )}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -96,9 +96,9 @@ export default function RoutineCard({ routine, floors, onToggle, onEdit, onDelet
           {/* Toggle */}
           <button
             onClick={() => onToggle(!isOn)}
-            title={isOn ? 'Disable routine' : 'Enable routine'}
+            title={isOn ? 'Routine deaktivieren' : 'Routine aktivieren'}
             disabled={broken && !isOn}
-            aria-label={isOn ? 'Routine enabled' : 'Routine disabled'}
+            aria-label={isOn ? 'Routine aktiviert' : 'Routine deaktiviert'}
             className={`routine-toggle-switch${isOn ? ' enabled' : ''}`}
             style={{
               width: 40, height: 24, borderRadius: 999, border: 'none', cursor: broken && !isOn ? 'not-allowed' : 'pointer',
@@ -117,15 +117,15 @@ export default function RoutineCard({ routine, floors, onToggle, onEdit, onDelet
             }} />
           </button>
           <button
-            title="Edit routine"
+            title="Routine bearbeiten"
             onClick={onEdit}
             style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(255,222,184,0.08)', background: 'rgba(255,222,184,0.04)', cursor: 'pointer', display: 'grid', placeItems: 'center', color: 'var(--text-secondary)', flexShrink: 0 }}>
             <Pencil size={14} />
           </button>
           <button
-            title="Delete routine"
+            title="Routine löschen"
             onClick={() => setConfirmDelete(true)}
-            style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(239,68,68,0.20)', background: 'rgba(239,68,68,0.06)', cursor: 'pointer', display: 'grid', placeItems: 'center', color: '#fca5a5', flexShrink: 0 }}>
+            style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(255,123,114,0.22)', background: 'rgba(255,123,114,0.06)', cursor: 'pointer', display: 'grid', placeItems: 'center', color: '#ff9c95', flexShrink: 0 }}>
             <Trash2 size={14} />
           </button>
         </div>
@@ -139,12 +139,12 @@ export default function RoutineCard({ routine, floors, onToggle, onEdit, onDelet
                 <div key={action.id} className={`routine-action-chip ${info === null ? 'broken' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
                   <div style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'rgba(255,222,184,0.05)', border: '1px solid rgba(255,222,184,0.08)', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>{i + 1}</div>
                   <span className="routine-action-label" style={{ flex: 1, color: info ? 'var(--text-primary)' : 'var(--danger-color)', fontSize: 12.5, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {info ? info.label : '⚠ Target deleted'}
+                    {info ? info.label : '⚠ Ziel gelöscht'}
                   </span>
                   {info?.valueStr && (
                     <span className="routine-action-value-badge" style={{ padding: '2px 6px', borderRadius: 5, background: 'rgba(224,139,93,0.12)', color: '#e8c39c', fontSize: 10, fontWeight: 600 }}>{info.valueStr}</span>
                   )}
-                  <span className="routine-action-kind" style={{ padding: '2px 6px', borderRadius: 5, background: 'rgba(255,222,184,0.04)', color: 'var(--text-tertiary)', fontSize: 10, fontWeight: 600 }}>{action.kind}</span>
+                  <span className="routine-action-kind" style={{ padding: '2px 6px', borderRadius: 5, background: 'rgba(255,222,184,0.04)', color: 'var(--text-tertiary)', fontSize: 10, fontWeight: 600 }}>{action.kind === 'scene' ? 'Szene' : 'Funktion'}</span>
                 </div>
               );
             })}

@@ -102,7 +102,7 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ margin: 0 }}>
-            {selectedItem ? 'Configure Action Value' : 'Add Action'}
+            {selectedItem ? 'Aktionswert festlegen' : 'Aktion hinzufügen'}
           </h3>
           <button className="icon-btn" onClick={selectedItem ? () => setSelectedItem(null) : onClose}>
             <X size={16} />
@@ -116,7 +116,7 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
               <Search size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
               <input
                 className="action-picker-search-input"
-                placeholder="Search areas, rooms, scenes, functions…"
+                placeholder="Bereiche, Räume, Szenen, Funktionen suchen…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
@@ -126,7 +126,7 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {filteredItems.length === 0 && (
                 <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
-                  No matching scenes or functions found.
+                  Keine passenden Szenen oder Funktionen gefunden.
                 </div>
               )}
               {filteredItems.map((item) => (
@@ -154,7 +154,7 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
                     </div>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', flexShrink: 0, background: 'rgba(255,255,255,0.07)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
-                    {item.kind === 'scene' ? 'Scene' : (item.targetType === 'percentage' || item.targetType === 'dimmer') ? 'Percentage' : 'Switch'}
+                    {item.kind === 'scene' ? 'Szene' : (item.targetType === 'percentage' || item.targetType === 'dimmer') ? 'Prozent' : 'Schalter'}
                   </span>
                 </button>
               ))}
@@ -172,7 +172,7 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
 
             <div className="settings-field" style={{ marginBottom: '1.5rem' }}>
               <label className="settings-field-label">
-                {(selectedItem.targetType === 'percentage' || selectedItem.targetType === 'dimmer') ? 'Target Value (0–100%)' : 'Target State'}
+                {(selectedItem.targetType === 'percentage' || selectedItem.targetType === 'dimmer') ? 'Zielwert (0–100%)' : 'Zielzustand'}
               </label>
               {(selectedItem.targetType === 'percentage' || selectedItem.targetType === 'dimmer') ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -189,25 +189,25 @@ export default function ActionPickerModal({ floors, onAdd, onClose }) {
                   <button
                     className={`btn-secondary ${value === false ? 'active' : ''}`}
                     onClick={() => setValue(false)}
-                    style={{ flex: 1, background: value === false ? 'rgba(239,68,68,0.2)' : '' }}
+                    style={{ flex: 1, background: value === false ? 'rgba(255,123,114,0.18)' : '' }}
                   >
-                    Off
+                    Aus
                   </button>
                   <button
                     className={`btn-secondary ${value === true ? 'active' : ''}`}
                     onClick={() => setValue(true)}
-                    style={{ flex: 1, background: value === true ? 'rgba(34,197,94,0.2)' : '' }}
+                    style={{ flex: 1, background: value === true ? 'rgba(111,212,156,0.18)' : '' }}
                   >
-                    On
+                    An
                   </button>
                 </div>
               )}
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-              <button className="btn-secondary" onClick={() => setSelectedItem(null)}>← Back</button>
+              <button className="btn-secondary" onClick={() => setSelectedItem(null)}>← Zurück</button>
               <button className="btn-primary" onClick={handleAddFunction}>
-                Add Action
+                Aktion hinzufügen
               </button>
             </div>
           </>
