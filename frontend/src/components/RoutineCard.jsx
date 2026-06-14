@@ -102,7 +102,7 @@ export default function RoutineCard({ routine, floors, onToggle, onEdit, onDelet
             className={`routine-toggle-switch${isOn ? ' enabled' : ''}`}
             style={{
               width: 40, height: 24, borderRadius: 999, border: 'none', cursor: broken && !isOn ? 'not-allowed' : 'pointer',
-              background: isOn ? 'linear-gradient(135deg,#ffc78a,#c66a35)' : 'rgba(255,222,184,0.08)',
+              background: isOn ? 'linear-gradient(180deg,#c47a47 0%,#ad5d2e 100%)' : 'rgba(255,222,184,0.08)',
               position: 'relative', flexShrink: 0, padding: 0,
             }}
           >
