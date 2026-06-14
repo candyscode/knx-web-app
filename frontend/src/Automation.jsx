@@ -64,10 +64,11 @@ export default function Automation({ apartment, config, fetchConfig, applyConfig
           onClick={() => setModalState({ open: true, routine: null })}
           style={{
             padding: '10px 14px', borderRadius: 12, flexShrink: 0,
-            background: 'linear-gradient(135deg,#ffc78a,#c66a35)',
-            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            background: 'linear-gradient(180deg, #c47a47 0%, #ad5d2e 100%)',
+            border: '1px solid rgba(0,0,0,0.18)', cursor: 'pointer', fontFamily: 'inherit',
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontSize: 13, fontWeight: 600, color: '#fff',
+            fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '-0.01em',
+            boxShadow: 'inset 0 1px 0 rgba(255,236,210,0.28), 0 6px 16px -8px rgba(176,90,40,0.55)',
           }}
         >
           <Plus size={13} color="#fff" /> Routine
@@ -89,10 +90,11 @@ export default function Automation({ apartment, config, fetchConfig, applyConfig
             onClick={() => setModalState({ open: true, routine: null })}
             style={{
               padding: '10px 18px', borderRadius: 12,
-              background: 'linear-gradient(135deg,#ffc78a,#c66a35)',
-              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              background: 'linear-gradient(180deg, #c47a47 0%, #ad5d2e 100%)',
+              border: '1px solid rgba(0,0,0,0.18)', cursor: 'pointer', fontFamily: 'inherit',
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              fontSize: 13, fontWeight: 600, color: '#fff',
+              fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '-0.01em',
+              boxShadow: 'inset 0 1px 0 rgba(255,236,210,0.28), 0 6px 16px -8px rgba(176,90,40,0.55)',
             }}
           >
             <Plus size={13} color="#fff" /> Routine hinzufügen

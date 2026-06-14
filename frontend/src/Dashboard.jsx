@@ -128,15 +128,21 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
         </div>
         <div style={{
           borderRadius: 8, height: 52, position: 'relative', overflow: 'hidden',
-          background: 'linear-gradient(180deg, #1b1813 0%, #14110d 100%)',
-          border: '1px solid rgba(255,222,184,0.08)',
+          background: 'linear-gradient(180deg, #2b2820 0%, #1c1813 100%)',
+          border: '1px solid rgba(255,222,184,0.10)',
+          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.25)',
         }}>
+          {/* Daylight through the open window — keeps the 0% (fully up) state from reading as a black void */}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: 'radial-gradient(120% 80% at 50% 135%, rgba(255,206,140,0.20), transparent 70%)' }} />
+          {/* The blind: a slim valance is always parked at the very top; slats drop down by the current position */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0,
-            height: `${previewPos}%`,
-            background: 'linear-gradient(180deg, #2a2218 0%, #221b13 100%)',
-            backgroundImage: 'repeating-linear-gradient(180deg, rgba(255,222,184,0.06) 0px, rgba(255,222,184,0.06) 1px, transparent 1px, transparent 6px)',
-            borderBottom: previewPos > 0 ? '1px solid rgba(255,222,184,0.15)' : 'none',
+            height: `max(7px, ${previewPos}%)`,
+            background: 'linear-gradient(180deg, #7c6b51 0%, #564833 100%)',
+            backgroundImage: 'repeating-linear-gradient(180deg, rgba(255,238,206,0.32) 0px, rgba(255,238,206,0.32) 1px, rgba(0,0,0,0.34) 2px, rgba(0,0,0,0.34) 3px, transparent 3px, transparent 6px)',
+            borderBottom: '2px solid rgba(20,14,8,0.85)',
+            boxShadow: 'inset 0 1px 0 rgba(255,238,206,0.38), 0 3px 7px rgba(0,0,0,0.45)',
             transition: 'height 0.18s ease',
           }} />
         </div>
@@ -156,18 +162,9 @@ const BlindsCard = ({ func, istPosition, isMoving, onAction }) => {
 
             <div style={{ position: 'relative' }}>
               <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 4 }}>Beschattung</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingRight: 44 }}>
                 <Blinds size={20} color="#e8c39c" />
                 <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{func.name}</div>
-                <span style={{
-                  flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '4px 10px', borderRadius: 999,
-                  background: 'rgba(216,150,100,0.10)', border: '1px solid rgba(216,150,100,0.22)',
-                  color: '#e8c39c', fontSize: 11.5, fontWeight: 600, fontFeatureSettings: '"tnum"',
-                }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: '#e8c39c', boxShadow: '0 0 6px #e8c39c' }} />
-                  Ist {istPosition}%
-                </span>
               </div>
 
               <div style={{ display: 'flex', gap: 14, marginBottom: 14 }}>
@@ -407,9 +404,9 @@ const DimmerCard = ({ func, istPosition, onAction }) => {
 
             <div style={{ position: 'relative' }}>
               <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 4 }}>Dimmer</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingRight: 44 }}>
                 <Lightbulb size={20} color="#ffc89a" fill={sollPosition > 0 ? '#ffc89a' : 'none'} />
-                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)' }}>{func.name}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{func.name}</div>
               </div>
 
               <div style={{ display: 'flex', gap: 14, marginBottom: 14 }}>
@@ -573,7 +570,7 @@ const RoomTemperatureModal = ({ room, currentTemp, targetTemp, currentShift, hea
 
         <div style={{ position: 'relative' }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 4 }}>Temperatur</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingRight: 44 }}>
             <Thermometer size={20} color={modeColor} />
             <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</div>
             {modeLabel && (
@@ -865,7 +862,7 @@ function RoomCard({ room, roomIndex, deviceStates, hueStates, handleAction, hand
                           style={{
                             cursor: 'pointer',
                             width: 36, height: 22, borderRadius: 999,
-                            background: isOn ? 'linear-gradient(135deg,#ffc78a,#c66a35)' : 'rgba(255,222,184,0.08)',
+                            background: isOn ? 'linear-gradient(180deg,#c47a47 0%,#ad5d2e 100%)' : 'rgba(255,222,184,0.08)',
                             border: isOn ? '1px solid transparent' : '1px solid rgba(255,222,184,0.10)',
                             position: 'relative', flexShrink: 0,
                             transition: 'all 0.2s ease',
