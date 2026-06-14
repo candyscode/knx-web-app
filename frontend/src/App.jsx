@@ -313,9 +313,9 @@ function App() {
   };
 
   const NAV_TABS = [
-    { section: 'dashboard',   label: 'Dashboard',  mobileLabel: 'Home',     Icon: Home },
-    { section: 'rooms',       label: 'Rooms',      mobileLabel: 'Rooms',    Icon: SettingsIcon },
-    { section: 'automation',  label: 'Automation', mobileLabel: 'Routinen', Icon: Bot },
+    { section: 'dashboard',   label: 'Dashboard',  mobileLabel: 'Start',    Icon: Home },
+    { section: 'rooms',       label: 'Räume',      mobileLabel: 'Räume',    Icon: SettingsIcon },
+    { section: 'automation',  label: 'Routinen',   mobileLabel: 'Routinen', Icon: Bot },
     { section: 'connections', label: 'Setup',      mobileLabel: 'Setup',    Icon: Plug },
   ];
 
@@ -334,7 +334,7 @@ function App() {
               <Home size={12} color="#fff" />
             </div>
             <div className="apt-switcher-text">
-              <span className="apt-switcher-eyebrow">Apartment</span>
+              <span className="apt-switcher-eyebrow">Wohnung</span>
               <span className="apt-switcher-name">{apartment?.name || '—'}</span>
             </div>
             {normalizedConfig.apartments.length > 1 && (

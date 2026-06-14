@@ -109,7 +109,7 @@ beforeEach(() => {
 describe('Dashboard — empty state', () => {
   it('shows "No rooms configured" when rooms array is empty', () => {
     renderDashboard({ rooms: [] });
-    expect(screen.getByText(/No rooms configured/i)).toBeInTheDocument();
+    expect(screen.getByText(/Keine Räume konfiguriert/i)).toBeInTheDocument();
   });
 });
 
@@ -136,14 +136,14 @@ describe('Dashboard — room card', () => {
   it('shows "No functions available" when room has no scenes or functions', () => {
     const emptyRoom = { id: 'empty', name: 'Garage', scenes: [], functions: [], sceneGroupAddress: '' };
     renderDashboard({ rooms: [emptyRoom] });
-    expect(screen.getByText(/No functions available/i)).toBeInTheDocument();
+    expect(screen.getByText(/Keine Funktionen verfügbar/i)).toBeInTheDocument();
   });
 
   it('does not crash when a legacy room is missing scenes and functions arrays', () => {
     const legacyRoom = { id: 'legacy', name: 'Garage', sceneGroupAddress: '' };
     renderDashboard({ rooms: [legacyRoom] });
     expect(screen.getByText('Garage')).toBeInTheDocument();
-    expect(screen.getByText(/No functions available/i)).toBeInTheDocument();
+    expect(screen.getByText(/Keine Funktionen verfügbar/i)).toBeInTheDocument();
   });
 });
 
@@ -654,7 +654,7 @@ describe('Dashboard — Room Temperature Control', () => {
     
     await user.click(screen.getByText('22.5°'));
     
-    expect(addToast).toHaveBeenCalledWith('Temperature control not set up for this room', 'info');
+    expect(addToast).toHaveBeenCalledWith('Temperatursteuerung ist für diesen Raum nicht eingerichtet', 'info');
     expect(document.querySelector('.widget-modal-overlay')).not.toBeInTheDocument();
   });
 
@@ -684,12 +684,12 @@ describe('Dashboard — Room Temperature Control', () => {
     
     await user.click(screen.getByText('22.5°'));
     
-    expect(screen.getByText('Bathroom Temperature Control')).toBeInTheDocument();
-    expect(screen.getByText('Heating Mode')).toBeInTheDocument();
-    
-    // Check background color applied via style in modal content
+    expect(screen.getByText('Temperatur')).toBeInTheDocument();
+    expect(screen.getByText('Heizen')).toBeInTheDocument();
+
+    // Heating mode is conveyed via a theme-consistent data attribute (was an off-theme bg color)
     const modalContent = document.querySelector('.widget-modal-content');
-    expect(modalContent.style.backgroundColor).toBe('rgb(79, 42, 50)'); // #4f2a32
+    expect(modalContent).toHaveAttribute('data-mode', 'heating');
 
     // Click +
     const plusBtn = document.querySelector('button .lucide-plus').parentElement;
@@ -711,9 +711,9 @@ describe('Dashboard — Room Temperature Control', () => {
     
     await user.click(screen.getByText('22.5°'));
     
-    expect(screen.getByText('Cooling Mode')).toBeInTheDocument();
+    expect(screen.getByText('Kühlen')).toBeInTheDocument();
     const modalContent = document.querySelector('.widget-modal-content');
-    expect(modalContent.style.backgroundColor).toBe('rgb(28, 38, 54)'); // #1c2636
+    expect(modalContent).toHaveAttribute('data-mode', 'cooling');
     
     // Minus and Plus buttons should be disabled because targetTemp is undefined
     const minusBtn = document.querySelector('button .lucide-minus').parentElement;

@@ -19,7 +19,7 @@ export default function Automation({ apartment, config, fetchConfig, applyConfig
       else await fetchConfig();
       return true;
     } catch {
-      addToast('Failed to save automations', 'error');
+      addToast('Routinen konnten nicht gespeichert werden', 'error');
       return false;
     }
   };
@@ -32,7 +32,7 @@ export default function Automation({ apartment, config, fetchConfig, applyConfig
   const handleDelete = async (id) => {
     const next = automations.filter((a) => a.id !== id);
     const ok = await persistAutomations(next);
-    if (ok) addToast('Routine deleted', 'success');
+    if (ok) addToast('Routine gelöscht', 'success');
   };
 
   const handleSaveRoutine = async (routine) => {
@@ -44,7 +44,7 @@ export default function Automation({ apartment, config, fetchConfig, applyConfig
     }
     const ok = await persistAutomations(next);
     if (ok) {
-      addToast(routine.name ? `"${routine.name}" saved` : 'Routine saved', 'success');
+      addToast(routine.name ? `„${routine.name}" gespeichert` : 'Routine gespeichert', 'success');
       setModalState({ open: false, routine: null });
     }
   };

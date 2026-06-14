@@ -12,7 +12,8 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronDown, GripVertical, Trash2, Lightbulb, Plus,
   HelpCircle, Sparkles, Lock, LockOpen, Pencil,
-  Blinds, SlidersHorizontal, Power, Plug, Play, Search, X, LayoutGrid, ArrowLeftRight
+  Blinds, SlidersHorizontal, Power, Plug, Play, Search, X, LayoutGrid, ArrowLeftRight,
+  Thermometer
 } from 'lucide-react';
 import { getSelectOption } from '../iconSelectUtils';
 import { KNXGroupAddressModal } from './KNXGroupAddressModal';
@@ -470,6 +471,24 @@ function SortableFunctionCard({ func, room, handleUpdateFunction, handleDeleteFu
   );
 }
 
+// ── RoomSubCard ───────────────────────────────────────────
+// Clean, icon-led sub-section card (mirrors the Setup menu's SetupCard look)
+function RoomSubCard({ icon, tone = 'knx-icon', title, copy, headerExtra, children }) {
+  return (
+    <section className="room-subcard">
+      <div className="room-subcard-header">
+        <div className={`room-subcard-icon ${tone}`}>{icon}</div>
+        <div className="room-subcard-heading">
+          <h4 className="room-subcard-title">{title}</h4>
+          {copy && <p className="room-subcard-copy">{copy}</p>}
+        </div>
+        {headerExtra && <div className="room-subcard-header-extra">{headerExtra}</div>}
+      </div>
+      <div className="room-subcard-body">{children}</div>
+    </section>
+  );
+}
+
 // ── CollapsibleRoomCard ───────────────────────────────────
 function CollapsibleRoomCard({
   room, floors, floorId,
@@ -577,10 +596,13 @@ function CollapsibleRoomCard({
 
       {isExpanded && (
         <div className="room-card-body" onClick={e => e.stopPropagation()}>
-          {/* Room Scenes */}
-          <div className="room-section">
-            <h4 className="section-label">Room Scenes</h4>
-            <p className="section-subtitle">All scenes in this room share a single group address.</p>
+          {/* ── Scene Control ── */}
+          <RoomSubCard
+            icon={<Play size={18} />}
+            tone="tone-scene"
+            title="Scene Control"
+            copy="All scenes in this room share a single scene group address."
+          >
             <div style={{ marginBottom: '1rem' }}>
               <GAField label="Scene GA" tooltipKey="sceneGA"
                 value={room.sceneGroupAddress || ''}
@@ -590,14 +612,20 @@ function CollapsibleRoomCard({
                 onChange={(val) => updateRoom(floorId, room.id, { sceneGroupAddress: val })} placeholder="e.g. 3/5/0"
                 onBrowse={() => openGroupAddressModal({ roomId: room.id, floorId, title: 'Select Scene Group Address', mode: 'scene', target: { kind: 'sceneGA' }, helperText: 'Select a scene or 1-byte value ETS group address.' })} />
             </div>
-            <div className="room-section temperature-section" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', marginBottom: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <h4 className="section-label" style={{ marginBottom: '0.25rem' }}>Temperature Control</h4>
+          </RoomSubCard>
+
+          {/* ── Temperature Control ── */}
+          <RoomSubCard
+            icon={<Thermometer size={18} />}
+            tone="tone-temp"
+            title="Temperature Control"
+          >
               <p className="section-subtitle" style={{ marginBottom: '1rem' }}>
                 If you only provide the Room Temperature GA, the dashboard will only display the current temperature. 
                 Provide all four GAs (including Status Setpoint Shift) to enable the interactive heating control modal.
               </p>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div className="room-ga-grid">
                 <GAField
                   label="Room Temperature GA"
                   tooltipKey="roomTemperature"
@@ -702,7 +730,15 @@ function CollapsibleRoomCard({
                   })}
                 />
               </div>
-            </div>
+          </RoomSubCard>
+
+          {/* ── Scenes ── */}
+          <RoomSubCard
+            icon={<Sparkles size={18} />}
+            tone="tone-scenes"
+            title="Scenes"
+            copy="Light and shade scenes available in this room."
+          >
             {hueStatus && hueStatus.paired && (
               <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', minWidth: '90px' }}>Hue Room:</span>
@@ -722,7 +758,10 @@ function CollapsibleRoomCard({
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={e => onSceneDragEnd(e, floorId, room.id)}>
               <SortableContext items={allSceneIds} strategy={verticalListSortingStrategy}>
                 <div className="scene-category-block scene-category-block--light">
-                  <div className="scene-category-header"><h5 className="scene-category-title">Light Scenes</h5></div>
+                  <div className="scene-category-header">
+                    <span className="scene-category-icon-chip"><Lightbulb size={14} /></span>
+                    <h5 className="scene-category-title">Light Scenes</h5>
+                  </div>
                   <div className="scene-list">
                     {lightScenes.map(sc => (
                     <SortableSceneRow key={sc.id} sc={sc} roomId={room.id}
@@ -740,7 +779,10 @@ function CollapsibleRoomCard({
                   </div>
                 </div>
                 <div className="scene-category-block scene-category-block--shade">
-                  <div className="scene-category-header"><h5 className="scene-category-title">Shade Scenes</h5></div>
+                  <div className="scene-category-header">
+                    <span className="scene-category-icon-chip"><Blinds size={14} /></span>
+                    <h5 className="scene-category-title">Shade Scenes</h5>
+                  </div>
                   <div className="scene-list">
                     {shadeScenes.map(sc => (
                       <SortableSceneRow key={sc.id} sc={sc} roomId={room.id}
@@ -754,12 +796,15 @@ function CollapsibleRoomCard({
                 </div>
               </SortableContext>
             </DndContext>
-          </div>
+          </RoomSubCard>
 
-          {/* Additional Functions */}
-          <div className="room-section">
-            <h4 className="section-label">Additional Functions</h4>
-            <p className="section-subtitle">Switches, blinds, scenes and Hue lamps.</p>
+          {/* ── Additional Functions ── */}
+          <RoomSubCard
+            icon={<LayoutGrid size={18} />}
+            tone="tone-func"
+            title="Additional Functions"
+            copy="Switches, blinds, scenes and Hue lamps."
+          >
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={e => onFuncDragEnd(e, floorId, room.id)}>
               <SortableContext items={funcIds} strategy={verticalListSortingStrategy}>
                 {(room.functions || []).map(func => (
@@ -790,7 +835,7 @@ function CollapsibleRoomCard({
                 huePaired={!!(hueStatus && hueStatus.paired)}
               />
             )}
-          </div>
+          </RoomSubCard>
 
         </div>
       )}

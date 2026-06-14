@@ -80,8 +80,8 @@ describe('Automation page', () => {
   it('"Add Routine" button opens modal', () => {
     render(<Automation {...mockProps()} />);
     fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
-    expect(screen.getByText(/new routine/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/morning routine/i)).toBeInTheDocument();
+    expect(screen.getByText(/neue routine/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/morgenroutine/i)).toBeInTheDocument();
   });
 
   it('modal requires name before saving', async () => {
@@ -89,8 +89,8 @@ describe('Automation page', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
 
     // Try to save without name
-    fireEvent.click(screen.getByText(/create routine/i));
-    expect(await screen.findByText(/name is required/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/routine erstellen/i));
+    expect(await screen.findByText(/name ist erforderlich/i)).toBeInTheDocument();
     expect(updateConfig).not.toHaveBeenCalled();
   });
 
@@ -98,19 +98,19 @@ describe('Automation page', () => {
     render(<Automation {...mockProps()} />);
     fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
 
-    fireEvent.change(screen.getByPlaceholderText(/morning routine/i), { target: { value: 'Test' } });
-    fireEvent.click(screen.getByText(/create routine/i));
-    expect(await screen.findByText(/at least one action/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/morgenroutine/i), { target: { value: 'Test' } });
+    fireEvent.click(screen.getByText(/routine erstellen/i));
+    expect(await screen.findByText(/mindestens eine aktion/i)).toBeInTheDocument();
   });
 
   it('saves correctly with name + action (scene)', async () => {
     render(<Automation {...mockProps()} />);
     fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
 
-    fireEvent.change(screen.getByPlaceholderText(/morning routine/i), { target: { value: 'Dawn' } });
+    fireEvent.change(screen.getByPlaceholderText(/morgenroutine/i), { target: { value: 'Dawn' } });
 
     // Open action picker
-    fireEvent.click(screen.getByRole('button', { name: /add action/i }));
+    fireEvent.click(screen.getByRole('button', { name: /aktion hinzufügen/i }));
     await waitFor(() =>
       expect(screen.getByText('Bright')).toBeInTheDocument()
     );
@@ -119,7 +119,7 @@ describe('Automation page', () => {
     fireEvent.click(screen.getByText('Bright'));
 
     // Back in modal, save
-    fireEvent.click(screen.getByText(/create routine/i));
+    fireEvent.click(screen.getByText(/routine erstellen/i));
     await waitFor(() => expect(updateConfig).toHaveBeenCalledWith(
       expect.objectContaining({
         apartmentId: 'apt1',
@@ -136,14 +136,14 @@ describe('Automation page', () => {
     render(<Automation {...props} />);
     fireEvent.click(screen.getAllByRole('button', { name: /routine/i })[0]);
 
-    fireEvent.change(screen.getByPlaceholderText(/morning routine/i), { target: { value: 'Dawn' } });
-    fireEvent.click(screen.getByText('Sunrise'));
+    fireEvent.change(screen.getByPlaceholderText(/morgenroutine/i), { target: { value: 'Dawn' } });
+    fireEvent.click(screen.getByText('Sonnenaufgang'));
 
-    fireEvent.click(screen.getByRole('button', { name: /add action/i }));
+    fireEvent.click(screen.getByRole('button', { name: /aktion hinzufügen/i }));
     await waitFor(() => expect(screen.getByText('Bright')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Bright'));
 
-    fireEvent.click(screen.getByText(/create routine/i));
+    fireEvent.click(screen.getByText(/routine erstellen/i));
     await waitFor(() => expect(updateConfig).toHaveBeenCalledWith(
       expect.objectContaining({
         automations: expect.arrayContaining([
@@ -162,7 +162,7 @@ describe('Automation page', () => {
     });
     render(<Automation {...props} />);
     // Toggle switch has aria-label 'Routine enabled'
-    fireEvent.click(screen.getByTitle(/disable routine/i));
+    fireEvent.click(screen.getByTitle(/routine deaktivieren/i));
     await waitFor(() => expect(updateConfig).toHaveBeenCalledWith(
       expect.objectContaining({
         automations: expect.arrayContaining([expect.objectContaining({ id: 'a1', enabled: false })]),
@@ -179,9 +179,9 @@ describe('Automation page', () => {
     });
     render(<Automation {...props} />);
     // Click trash icon → opens ConfirmDialog
-    fireEvent.click(screen.getByTitle(/delete routine/i));
+    fireEvent.click(screen.getByTitle(/routine löschen/i));
     // Confirm dialog should appear; click the confirm button
-    const confirmBtn = await screen.findByRole('button', { name: /löschen/i });
+    const confirmBtn = await screen.findByRole("button", { name: /^löschen$/i });
     fireEvent.click(confirmBtn);
     await waitFor(() => expect(updateConfig).toHaveBeenCalledWith(
       expect.objectContaining({ automations: [] })
@@ -210,7 +210,7 @@ describe('RoutineCard', () => {
         onToggle={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()}
       />
     );
-    expect(screen.getByText(/broken/i)).toBeInTheDocument();
+    expect(screen.getByText(/fehlerhaft/i)).toBeInTheDocument();
   });
 
   it('resolves valid scene label in action list', () => {
