@@ -19,19 +19,17 @@ The app is designed for installations where the Main Line does **not** have its 
 
 ## Screenshots
 
-| Dashboard | Automation Routines |
-|---|---|
-| ![Dashboard overview](marketing/dashboard-overview.png) | ![Automation routines](marketing/automation-routines.png) |
+![Dashboard - Erdgeschoss](marketing/dashboard-erdgeschoss.png)
 
-| Temperature Control | Shading Control |
-|---|---|
-| ![Temperature control popup](marketing/temperature-control.png) | ![Shading control popup](marketing/shading-control.png) |
+![Dashboard - Obergeschoss](marketing/dashboard-obergeschoss.png)
 
-| Room Setup | House-Wide Information |
-|---|---|
-| ![Room setup](marketing/room-setup.png) | ![House-wide information & alarms setup](marketing/house-wide-information.png) |
+![Temperature control popup](marketing/temperature-control.png)
 
-![House-wide KNX data setup](marketing/setup-house-wide-knx.png)
+![Shading control popup](marketing/shading-control.png)
+
+![Room setup](marketing/room-setup.png)
+
+![Automation routines](marketing/automation-routines.png)
 
 ---
 
